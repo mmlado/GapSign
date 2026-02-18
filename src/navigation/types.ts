@@ -2,6 +2,7 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {ScanResult} from '../types';
 
 export type SigningStackParamList = {
+  KeycardTest: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
 };
