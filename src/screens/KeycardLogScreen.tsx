@@ -1,14 +1,5 @@
-/**
- * GapSign - Air-Gap Android wallet that works with Keycards
- *
- * @format
- */
-
-import 'react-native-get-random-values';
-
 import React, {useCallback, useEffect, useState} from 'react';
 import {
-  StatusBar,
   StyleSheet,
   Text,
   useColorScheme,
@@ -16,10 +7,7 @@ import {
   Button,
   ScrollView,
 } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import RNKeycard from 'react-native-keycard';
 import Keycard from 'keycard-sdk';
 
@@ -34,18 +22,7 @@ type LogEntry = {
   message: string;
 };
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
+export default function KeycardLogScreen() {
   const insets = useSafeAreaInsets();
   const isDarkMode = useColorScheme() === 'dark';
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -279,5 +256,3 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 });
-
-export default App;
