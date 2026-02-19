@@ -12,7 +12,6 @@ import {
   Button,
   ActivityIndicator,
   Icon,
-  ProgressBar,
 } from 'react-native-paper';
 import {Camera} from 'react-native-camera-kit';
 import type {OnReadCodeData} from 'react-native-camera-kit/src/CameraProps';
@@ -26,7 +25,6 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
   const insets = useSafeAreaInsets();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
-  const [frameInfo, setFrameInfo] = useState('');
   const decoderRef = useRef<URDecoder | null>(null);
   const scannedRef = useRef(false);
 
@@ -48,7 +46,6 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
     useCallback(() => {
       scannedRef.current = false;
       setProgress(0);
-      setFrameInfo('');
       decoderRef.current = null;
     }, []),
   );
@@ -79,12 +76,6 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
 
       const pct = decoder.estimatedPercentComplete();
       setProgress(pct);
-
-      const received = decoder.receivedPartIndexes().length;
-      const expected = decoder.expectedPartCount();
-      if (expected > 0) {
-        setFrameInfo(`${received} / ${expected} frames`);
-      }
 
       if (decoder.isComplete()) {
         scannedRef.current = true;
@@ -149,10 +140,7 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
 
       <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
         <Text variant="headlineMedium" style={styles.topTitle}>
-          GapSign
-        </Text>
-        <Text variant="bodyMedium" style={styles.topSubtitle}>
-          Scan ERC-4527 QR code
+          Scan transaction QR
         </Text>
       </View>
 
@@ -164,19 +152,13 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
           <View style={[styles.corner, styles.cornerBR]} />
         </View>
 
-        {progress > 0 && (
-          <View style={styles.progressContainer}>
-            <ProgressBar
-              progress={progress}
-              color={theme.colors.primary}
-              style={styles.progressBar}
-            />
-            <Text variant="labelMedium" style={styles.progressText}>
-              {frameInfo} ({Math.round(progress * 100)}%)
-            </Text>
-          </View>
-        )}
       </View>
+
+      {progress > 0 && (
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, {width: `${progress * 100}%`}]} />
+        </View>
+      )}
     </View>
   );
 }
@@ -271,19 +253,19 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     borderBottomRightRadius: 8,
   },
-  progressContainer: {
-    marginTop: 24,
-    width: 250,
-    alignItems: 'center',
+  progressTrack: {
+    position: 'absolute',
+    bottom: 27,
+    left: 20,
+    width: 335,
+    height: 16,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF1A',
+    overflow: 'hidden',
   },
-  progressBar: {
-    width: '100%',
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  progressText: {
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 8,
+  progressFill: {
+    height: '100%',
+    borderRadius: 24,
+    backgroundColor: '#1C8A80',
   },
 });
