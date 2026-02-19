@@ -22,8 +22,10 @@
     "react-native-get-random-values": "^2.0.0",
     "react-native-keycard": "github:choppu/react-native-keycard",
     "react-native-paper": "^5.15.0",
+    "react-native-qrcode-svg": "^6.3.21",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.23.0",
+    "react-native-svg": "^15.15.3",
     "react-native-vector-icons": "^10.3.0"
   },
   "devDependencies": {
