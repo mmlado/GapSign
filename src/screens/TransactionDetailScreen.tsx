@@ -6,6 +6,8 @@ import theme from '../theme';
 import type {EthSignRequest} from '../types';
 import {DATA_TYPE_LABELS} from '../types';
 import type {TransactionDetailScreenProps} from '../navigation/types';
+import PrimaryButton from '../components/PrimaryButton';
+import { Icons } from '../assets/icons';
 
 function InfoRow({label, value}: {label: string; value: string}) {
   return (
@@ -130,21 +132,7 @@ export default function TransactionDetailScreen({
 
       {result.kind === 'eth-sign-request' && (
         <View style={[styles.actions, {paddingBottom: insets.bottom + 16}]}>
-          <Pressable
-            style={styles.signButton}
-            android_ripple={{color: 'rgba(255,255,255,0.3)'}}
-            onPress={handleSign}>
-            <View style={styles.signButtonContent}>
-              <Text variant="labelLarge" style={styles.signButtonText}>
-                Sign transaction
-              </Text>
-              <Image
-                source={require('../assets/icons/keycard.png')}
-                style={styles.signButtonIcon}
-                resizeMode="contain"
-              />
-            </View>
-          </Pressable>
+          <PrimaryButton label='Sign transaction' onPress={handleSign} icon={Icons.keycard} />
         </View>
       )}
     </View>
@@ -198,29 +186,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     backgroundColor: theme.colors.background,
-  },
-  signButton: {
-    backgroundColor: '#FF6400',
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    minHeight: 40,
-  },
-  signButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  signButtonIcon: {
-    width: 32,
-    height: 32,
-  },
-  signButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
   },
   errorContainer: {
     alignItems: 'center',

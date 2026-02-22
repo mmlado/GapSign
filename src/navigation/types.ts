@@ -13,6 +13,7 @@ export type KeycardParams =
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
 export type SigningStackParamList = {
+  Dashboard: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
   Keycard: KeycardParams;
@@ -21,6 +22,12 @@ export type SigningStackParamList = {
     label?: string;   // text shown below the QR, e.g. "Scan with MetaMask"
   };
 };
+
+
+export type DashboardScreenProps = NativeStackScreenProps<
+  SigningStackParamList,
+  'Dashboard'
+>;
 
 export type QRScannerScreenProps = NativeStackScreenProps<
   SigningStackParamList,

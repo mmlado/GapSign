@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Image, Pressable, StyleSheet, View} from 'react-native';
+import {Pressable, StyleSheet, View} from 'react-native';
 import {Text} from 'react-native-paper';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Keycard from 'keycard-sdk';
@@ -8,6 +8,7 @@ import type {KeycardScreenProps} from '../navigation/types';
 import {useKeycardOperation} from '../hooks/useKeycardOperation';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import {buildEthSignatureUR} from '../utils/ethSignature';
+import { Icons } from '../assets/icons';
 
 const PIN_LENGTH = 6;
 
@@ -63,7 +64,7 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
     if (phase !== 'done' || !result || params.operation !== 'sign' || !hashRef.current) {
       return
     }
-    
+
     try {
       const urString = buildEthSignatureUR(
         Array.from(result.signRespData)
@@ -153,11 +154,7 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
                     onPress={() => handleKey(key)}
                     disabled={key === ''}>
                     {key === '⌫' ? (
-                      <Image
-                        source={require('../assets/icons/backspace.png')}
-                        style={styles.backspaceIcon}
-                        resizeMode="contain"
-                      />
+                      <Icons.backspace width={24} height={24} />
                     ) : (
                       <Text variant="headlineMedium" style={styles.padKeyText}>
                         {key}
