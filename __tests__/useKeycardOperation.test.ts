@@ -7,7 +7,6 @@ import type {UseKeycardOperation} from '../src/hooks/useKeycardOperation';
 // RNKeycard mock — captures event callbacks so tests can trigger them
 // ---------------------------------------------------------------------------
 
-let capturedOnConnected: (() => Promise<void>) | null = null;
 let capturedOnDisconnected: (() => void) | null = null;
 let capturedOnCancelled: (() => void) | null = null;
 let capturedOnTimeout: (() => void) | null = null;
@@ -19,10 +18,7 @@ jest.mock('react-native-keycard', () => ({
   __esModule: true,
   default: {
     Core: {
-      onKeycardConnected: (cb: () => Promise<void>) => {
-        capturedOnConnected = cb;
-        return {remove: jest.fn()};
-      },
+      onKeycardConnected: (_cb: () => Promise<void>) => ({remove: jest.fn()}),
       onKeycardDisconnected: (cb: () => void) => {
         capturedOnDisconnected = cb;
         return {remove: jest.fn()};
@@ -81,7 +77,6 @@ describe('useKeycardOperation', () => {
     mockStopNFC.mockResolvedValue(undefined);
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
-    capturedOnConnected = null;
     capturedOnDisconnected = null;
     capturedOnCancelled = null;
     capturedOnTimeout = null;
