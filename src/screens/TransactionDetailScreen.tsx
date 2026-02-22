@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import {StyleSheet, ScrollView, View, Image, Pressable} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text, Icon} from 'react-native-paper';
@@ -70,18 +70,31 @@ function EthSignRequestDetail({request}: {request: EthSignRequest}) {
 
 export default function TransactionDetailScreen({
   route,
+  navigation,
 }: TransactionDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const {result} = route.params;
+
+  const handleSign = useCallback(() => {
+    if (result.kind !== 'eth-sign-request') {
+      return;
+    }
+    const request = result.request;
+    navigation.navigate('Keycard', {
+      operation: 'sign',
+      signData: request.signData,
+      derivationPath: request.derivationPath,
+      chainId: request.chainId,
+      requestId: request.requestId,
+      dataType: request.dataType,
+    });
+  }, [result, navigation]);
 
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {paddingBottom: 24},
-        ]}>
+        contentContainerStyle={styles.scrollContent}>
         {result.kind === 'eth-sign-request' && (
           <EthSignRequestDetail request={result.request} />
         )}
@@ -119,7 +132,8 @@ export default function TransactionDetailScreen({
         <View style={[styles.actions, {paddingBottom: insets.bottom + 16}]}>
           <Pressable
             style={styles.signButton}
-            android_ripple={{color: 'rgba(255,255,255,0.3)'}}>
+            android_ripple={{color: 'rgba(255,255,255,0.3)'}}
+            onPress={handleSign}>
             <View style={styles.signButtonContent}>
               <Text variant="labelLarge" style={styles.signButtonText}>
                 Sign transaction
@@ -148,6 +162,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     gap: 12,
+    paddingBottom: 24,
   },
   typeChip: {
     flexDirection: 'row',
@@ -183,9 +198,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     backgroundColor: theme.colors.background,
-  },
-  scanAgainButton: {
-    borderColor: theme.colors.surfaceVariant,
   },
   signButton: {
     backgroundColor: '#FF6400',

@@ -1,100 +1,85 @@
 # GapSign
-Air-Gap Android wallet that works with Keycards
 
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+[![CI](https://github.com/mmlado/GapSign/actions/workflows/ci.yml/badge.svg)](https://github.com/mmlado/GapSign/actions/workflows/ci.yml)
 
-# Getting Started
+An air-gap Android wallet that uses [Status Keycard](https://keycard.tech) over NFC to sign Ethereum transactions without the private key ever touching an internet-connected device.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## How it works
 
-## Step 1: Start Metro
+1. MetaMask (or another wallet) displays a transaction as a **UR QR code** (`eth-sign-request`)
+2. GapSign scans the QR code with the camera
+3. GapSign communicates with the Keycard over **NFC** and requests a signature using your PIN
+4. The signed result is displayed as a **UR QR code** (`eth-signature`)
+5. MetaMask scans the result QR to broadcast the transaction
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+The private key never leaves the Keycard.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Requirements
+
+- Android 7.0+ (API 24)
+- A [Status Keycard](https://keycard.tech) with a loaded wallet
+- MetaMask Mobile or any wallet that supports UR QR air-gap signing
+
+## Getting a release APK
+
+Download the latest APK from [Releases](../../releases) and sideload it onto your device.
+
+> The APK is built and signed automatically by GitHub Actions on every version tag.
+
+## Building from source
+
+### Prerequisites
+
+- Node.js 20+
+- JDK 17
+- Android SDK with NDK 27.1.12297006
+
+### Setup
 
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+npm install
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+### Run (development)
 
 ```sh
-# Using npm
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+### Release build
 
 ```sh
-bundle install
+cd android && ./gradlew assembleRelease
 ```
 
-Then, and every time you update your native dependencies, run:
+## Development
 
 ```sh
-bundle exec pod install
+# Lint
+npm run lint
+
+# Tests
+npm test
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Architecture
 
-```sh
-# Using npm
-npm run ios
+| Layer | Technology |
+|---|---|
+| UI | React Native + React Native Paper (Material You dark theme) |
+| Navigation | React Navigation (native stack) |
+| QR scanning | react-native-camera-kit |
+| UR encoding/decoding | @ngraveio/bc-ur |
+| Keycard NFC | keycard-sdk + react-native-keycard |
+| Pairing storage | react-native-encrypted-storage |
+| Ethereum signatures | @noble/secp256k1 |
 
-# OR using Yarn
-yarn ios
-```
+## Security notes
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+- Pairing data is stored in encrypted storage (Android Keystore-backed)
+- The signing key (Keycard) is never exposed to the app — only the signature result is returned
+- QR communication uses the [Blockchain Commons UR](https://github.com/BlockchainCommons/bc-ur) standard for structured binary data
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## License
 
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+MIT

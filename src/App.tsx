@@ -17,8 +17,13 @@ import theme from './theme';
 import type {SigningStackParamList} from './navigation/types';
 import QRScannerScreen from './screens/QRScannerScreen';
 import TransactionDetailScreen from './screens/TransactionDetailScreen';
+import KeycardScreen from './screens/KeycardScreen';
+import QRResultScreen from './screens/QRResultScreen';
 
 const Stack = createNativeStackNavigator<SigningStackParamList>();
+
+const headerStyle = {backgroundColor: theme.colors.background};
+const headerTitleStyle = {fontWeight: '600' as const};
 
 export default function App() {
   return (
@@ -38,9 +43,33 @@ export default function App() {
               options={{
                 headerShown: true,
                 title: 'Review transaction',
-                headerStyle: {backgroundColor: theme.colors.background},
+                headerStyle,
                 headerTintColor: theme.colors.onSurface,
-                headerTitleStyle: {fontWeight: '600'},
+                headerTitleStyle,
+                headerShadowVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="Keycard"
+              component={KeycardScreen}
+              options={{
+                headerShown: true,
+                title: '',
+                headerStyle,
+                headerTintColor: theme.colors.onSurface,
+                headerTitleStyle,
+                headerShadowVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="QRResult"
+              component={QRResultScreen}
+              options={{
+                headerShown: true,
+                title: 'Signature',
+                headerStyle,
+                headerTintColor: theme.colors.onSurface,
+                headerTitleStyle,
                 headerShadowVisible: false,
               }}
             />
