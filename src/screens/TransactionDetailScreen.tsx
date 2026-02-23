@@ -1,5 +1,5 @@
 import React, {useCallback} from 'react';
-import {StyleSheet, ScrollView, View, Image, Pressable} from 'react-native';
+import {StyleSheet, ScrollView, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Text, Icon} from 'react-native-paper';
 import theme from '../theme';

@@ -48,3 +48,9 @@ export type QRResultScreenProps = NativeStackScreenProps<
   SigningStackParamList,
   'QRResult'
 >;
+
+export type DashboardAction = {
+  label: string;
+  onPress: () => void;
+};
+

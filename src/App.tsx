@@ -38,7 +38,17 @@ export default function App() {
         <NavigationContainer>
           <Stack.Navigator screenOptions={{headerShown: false}}>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="QRScanner" component={QRScannerScreen} />
+            <Stack.Screen name="QRScanner"
+              component={QRScannerScreen}
+              options={{
+                headerShown: true,
+                title: '',
+                headerStyle,
+                headerTintColor: theme.colors.onSurface,
+                headerTitleStyle,
+                headerShadowVisible: false,
+              }}
+            />
             <Stack.Screen
               name="TransactionDetail"
               component={TransactionDetailScreen}
