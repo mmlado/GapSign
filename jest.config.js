@@ -4,4 +4,7 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@noble/secp256k1|keycard-sdk)/)',
   ],
   setupFilesAfterEnv: ['./jest.setup.js'],
+  moduleNameMapper: {
+    '\\.svg': '<rootDir>/__mocks__/svgMock.js',
+  },
 };
