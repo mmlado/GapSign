@@ -52,7 +52,7 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
       signResp.checkOK();
       return signResp.data;
     });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExportKey = useCallback(() => {
     // TODO: use exportExtendedKey once keycard-sdk PR is merged and published to npm
@@ -61,12 +61,12 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
     //   resp.checkOK();
     //   return resp.data;
     // }, {requiresPin: true});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (params.operation === 'sign') handleSign();
     else if (params.operation === 'export_key') handleExportKey();
-  }, []); 
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (phase !== 'done' || !result) {
