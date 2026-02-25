@@ -55,13 +55,12 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExportKey = useCallback(() => {
-    // TODO: use exportExtendedKey once keycard-sdk PR is merged and published to npm
-    // execute(async cmdSet => {
-    //   const resp = await cmdSet.exportExtendedKey(0, params.derivationPath, false);
-    //   resp.checkOK();
-    //   return resp.data;
-    // }, {requiresPin: true});
-  }, []);
+    execute(async cmdSet => {
+      const resp = await cmdSet.exportExtendedKey(0, params.derivationPath, false);
+      resp.checkOK();
+      return resp.data;
+    }, {requiresPin: true});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (params.operation === 'sign') handleSign();
