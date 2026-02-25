@@ -14,7 +14,7 @@ export default function QRResultScreen({
   const {urString, label} = route.params;
 
   const handleScanAnother = useCallback(() => {
-    navigation.reset({index: 0, routes: [{name: 'QRScanner'}]});
+    navigation.reset({index: 0, routes: [{name: 'Dashboard'}]});
   }, [navigation]);
 
   return (
@@ -54,7 +54,7 @@ export default function QRResultScreen({
           android_ripple={{color: 'rgba(255,255,255,0.2)'}}
           onPress={handleScanAnother}>
           <Text variant="labelLarge" style={styles.buttonText}>
-            Scan another transaction
+            Done
           </Text>
         </Pressable>
       </View>

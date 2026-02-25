@@ -1,4 +1,3 @@
-import React, {useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -6,19 +5,23 @@ import {
   Pressable,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import { DashboardScreenProps } from '../navigation/types';
+import { DashboardAction, ExportKeyScreenProps } from '../navigation/types';
 import theme from '../theme';
-import PrimaryButton from '../components/PrimaryButton';
 import { Icons } from '../assets/icons';
 import { dashboardActions } from '../navigation/dashboardActions';
 import { Text } from 'react-native-paper';
 
-export default function DashboardScreen({navigation}: DashboardScreenProps) {
-  const insets = useSafeAreaInsets();
+export const dashboardEntry: DashboardAction = {
+  label: 'Connect software wallet',
+  navigate: (nav) => nav.navigate('ExportKey'),
+};
 
-  const handleSign = useCallback(() => {
-    navigation.navigate('QRScanner');
-  }, [navigation]);
+const KEY_EXPORT_OPTIONS = [
+  {label: 'Ethereum', derivationPath: "m/44'/60'/0'"},
+];
+
+export default function ExportKeyScreen({navigation}: ExportKeyScreenProps) {
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
@@ -26,11 +29,14 @@ export default function DashboardScreen({navigation}: DashboardScreenProps) {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}>
         <View style={styles.list}>
-          {dashboardActions.map((action, i) => (
+          {KEY_EXPORT_OPTIONS.map((action, i) => (
             <Pressable
               style={[styles.item, i < dashboardActions.length - 1 && styles.itemBorder]}
               key={i}
-              onPress={() => action.navigate(navigation)}>
+              onPress={() => navigation.navigate('Keycard', {
+                operation: 'export_key',
+                derivationPath: action.derivationPath
+              })}>
               <Text style={styles.itemLabel}>
                 {action.label}
               </Text>
@@ -39,10 +45,6 @@ export default function DashboardScreen({navigation}: DashboardScreenProps) {
           ))}
         </View>
       </ScrollView>
-
-      <View style={styles.actions}>
-        <PrimaryButton label='Scan transaction' onPress={handleSign} icon={Icons.scan} />
-      </View>
     </View>
   );
 }

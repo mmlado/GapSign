@@ -2,12 +2,12 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Pressable, StyleSheet, View} from 'react-native';
 import {Text} from 'react-native-paper';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Keycard from 'keycard-sdk';
 import {keccak_256} from '@noble/hashes/sha3';
 import type {KeycardScreenProps} from '../navigation/types';
 import {useKeycardOperation} from '../hooks/useKeycardOperation';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import {buildEthSignatureUR} from '../utils/ethSignature';
+import {buildCryptoHdKeyUR} from '../utils/cryptoHdKey';
 import { Icons } from '../assets/icons';
 
 const PIN_LENGTH = 6;
@@ -34,15 +34,13 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   const hashRef = useRef<Uint8Array | null>(null);
 
   const {phase, status, result, execute, submitPin, cancel} =
-    useKeycardOperation<{signRespData: Uint8Array}>();
+    useKeycardOperation<Uint8Array>();
 
-  useEffect(() => {
-    if (params.operation !== 'sign') {
-      return;
-    }
+  const handleSign = useCallback(() => {
+    if (params.operation !== 'sign') { return; }
     const hash = prepareHash(params.signData, params.dataType);
     hashRef.current = hash;
-    execute(async (cmdSet: Keycard.Commandset) => {
+    execute(async cmdSet => {
       console.log(
         `[Keycard] signWithPath — path: ${params.derivationPath}, dataType: ${params.dataType}`,
       );
@@ -51,40 +49,58 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
         params.derivationPath,
         false,
       );
-      console.log(
-        `[Keycard] signWithPath SW: 0x${signResp.sw.toString(16).toUpperCase()}`,
-      );
       signResp.checkOK();
-      return {signRespData: signResp.data};
+      return signResp.data;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleExportKey = useCallback(() => {
+    // TODO: use exportExtendedKey once keycard-sdk PR is merged and published to npm
+    // execute(async cmdSet => {
+    //   const resp = await cmdSet.exportExtendedKey(0, params.derivationPath, false);
+    //   resp.checkOK();
+    //   return resp.data;
+    // }, {requiresPin: true});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    if (phase !== 'done' || !result || params.operation !== 'sign' || !hashRef.current) {
-      return
+    if (params.operation === 'sign') handleSign();
+    else if (params.operation === 'export_key') handleExportKey();
+  }, []); 
+
+  useEffect(() => {
+    if (phase !== 'done' || !result) {
+      return;
     }
 
     try {
-      const urString = buildEthSignatureUR(
-        Array.from(result.signRespData)
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join(''),
-        hashRef.current,
-        params.dataType,
-        params.chainId,
-        params.requestId,
-      );
-      navigation.reset({
-        index: 1,
-        routes: [
-          {name: 'QRScanner'},
-          {
-            name: 'QRResult',
-            params: {urString, label: 'Scan with MetaMask'},
-          },
-        ],
-      });
+      if (params.operation === 'sign') {
+        if (!hashRef.current) return
+        const urString = buildEthSignatureUR(
+          Array.from(result)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join(''),
+          hashRef.current,
+          params.dataType,
+          params.chainId,
+          params.requestId,
+        );
+        navigation.reset({
+          index: 1,
+          routes: [
+            {name: 'QRScanner'},
+            {
+              name: 'QRResult',
+              params: {urString, label: 'Scan with MetaMask'},
+            },
+          ],
+        });
+        return;
+      } 
+      if (params.operation === 'export_key') {
+        const urString = buildCryptoHdKeyUR(result, params.derivationPath);
+        navigation.navigate('QRResult', {urString, label: 'Scan QR with youw software wallet'});
+      }
     } catch (e: any) {
       console.error('[KeycardScreen] Failed to build UR:', e.message);
     }

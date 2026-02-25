@@ -5,7 +5,7 @@ const KEY_PREFIX = 'pairing_';
 
 export async function loadPairing(
   instanceUID: string,
-): Promise<Keycard.Pairing | null> {
+): Promise<InstanceType<typeof Keycard.Pairing> | null> {
   try {
     const value = await EncryptedStorage.getItem(KEY_PREFIX + instanceUID);
     if (!value) {
@@ -19,7 +19,7 @@ export async function loadPairing(
 
 export async function savePairing(
   instanceUID: string,
-  pairing: Keycard.Pairing,
+  pairing: InstanceType<typeof Keycard.Pairing>,
 ): Promise<void> {
   await EncryptedStorage.setItem(KEY_PREFIX + instanceUID, pairing.toBase64());
 }
