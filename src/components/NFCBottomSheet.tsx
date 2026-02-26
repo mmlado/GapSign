@@ -1,12 +1,16 @@
 import React, {useEffect, useRef} from 'react';
 import {Animated, Modal, Pressable, StyleSheet, View} from 'react-native';
-import {Icon, Text} from 'react-native-paper';
+import {Text} from 'react-native-paper';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Icons} from '../assets/icons';
+
+export type NFCVariant = 'scanning' | 'success' | 'error';
 
 type Props = {
   visible: boolean;
   status: string;
   onCancel: () => void;
+  variant?: NFCVariant;
 };
 
 function PulseRing({delay, size}: {delay: number; size: number}) {
@@ -54,7 +58,12 @@ function PulseRing({delay, size}: {delay: number; size: number}) {
   );
 }
 
-export default function NFCBottomSheet({visible, status, onCancel}: Props) {
+export default function NFCBottomSheet({
+  visible,
+  status,
+  onCancel,
+  variant = 'scanning',
+}: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(400)).current;
 
@@ -66,6 +75,13 @@ export default function NFCBottomSheet({visible, status, onCancel}: Props) {
       friction: 12,
     }).start();
   }, [visible, slideAnim]);
+
+  const NfcIcon =
+    variant === 'success'
+      ? Icons.nfc.success
+      : variant === 'error'
+      ? Icons.nfc.failure
+      : Icons.nfc.default;
 
   return (
     <Modal
@@ -86,12 +102,16 @@ export default function NFCBottomSheet({visible, status, onCancel}: Props) {
           {/* drag handle */}
           <View style={styles.handle} />
 
-          {/* pulsing NFC icon */}
+          {/* NFC icon area */}
           <View style={styles.iconArea}>
-            <PulseRing delay={0} size={140} />
-            <PulseRing delay={500} size={190} />
-            <PulseRing delay={1000} size={240} />
-            <Icon source="nfc-variant" size={72} color="#bb86fc" />
+            {variant === 'scanning' && (
+              <>
+                <PulseRing delay={0} size={140} />
+                <PulseRing delay={500} size={190} />
+                <PulseRing delay={1000} size={240} />
+              </>
+            )}
+            <NfcIcon width={96} height={96} />
           </View>
 
           <Text variant="titleLarge" style={styles.title}>
@@ -101,14 +121,16 @@ export default function NFCBottomSheet({visible, status, onCancel}: Props) {
             {status}
           </Text>
 
-          <Pressable
-            style={styles.cancelButton}
-            android_ripple={{color: 'rgba(187,134,252,0.15)'}}
-            onPress={onCancel}>
-            <Text variant="labelLarge" style={styles.cancelText}>
-              Cancel
-            </Text>
-          </Pressable>
+          {variant !== 'success' && (
+            <Pressable
+              style={styles.cancelButton}
+              android_ripple={{color: 'rgba(187,134,252,0.15)'}}
+              onPress={onCancel}>
+              <Text variant="labelLarge" style={styles.cancelText}>
+                Cancel
+              </Text>
+            </Pressable>
+          )}
         </Animated.View>
       </View>
     </Modal>

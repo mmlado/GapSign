@@ -61,37 +61,41 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
       return;
     }
 
-    try {
-      if (params.operation === 'sign') {
-        if (!hashRef.current) return
-        const urString = buildEthSignatureUR(
-          Array.from(result)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join(''),
-          hashRef.current,
-          params.dataType,
-          params.chainId,
-          params.requestId,
-        );
-        navigation.reset({
-          index: 1,
-          routes: [
-            {name: 'QRScanner'},
-            {
-              name: 'QRResult',
-              params: {urString, label: 'Scan with MetaMask'},
-            },
-          ],
-        });
-        return;
-      } 
-      if (params.operation === 'export_key') {
-        const urString = buildCryptoHdKeyUR(result, params.derivationPath);
-        navigation.navigate('QRResult', {urString, label: 'Scan QR with youw software wallet'});
+    const timer = setTimeout(() => {
+      try {
+        if (params.operation === 'sign') {
+          if (!hashRef.current) return;
+          const urString = buildEthSignatureUR(
+            Array.from(result)
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join(''),
+            hashRef.current,
+            params.dataType,
+            params.chainId,
+            params.requestId,
+          );
+          navigation.reset({
+            index: 1,
+            routes: [
+              {name: 'QRScanner'},
+              {
+                name: 'QRResult',
+                params: {urString, label: 'Scan with MetaMask'},
+              },
+            ],
+          });
+          return;
+        }
+        if (params.operation === 'export_key') {
+          const urString = buildCryptoHdKeyUR(result, params.derivationPath);
+          navigation.navigate('QRResult', {urString, label: 'Scan QR with your software wallet'});
+        }
+      } catch (e: any) {
+        console.error('[KeycardScreen] Failed to build UR:', e.message);
       }
-    } catch (e: any) {
-      console.error('[KeycardScreen] Failed to build UR:', e.message);
-    }
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [phase, result, params, navigation]);
 
   const handleCancel = useCallback(() => {
@@ -109,8 +113,9 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
       )}
 
       <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error'}
+        visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
         status={status}
+        variant={phase === 'done' ? 'success' : phase === 'error' ? 'error' : 'scanning'}
         onCancel={handleCancel}
       />
     </View>
