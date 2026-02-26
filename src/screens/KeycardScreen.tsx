@@ -1,6 +1,5 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Pressable, StyleSheet, View} from 'react-native';
-import {Text} from 'react-native-paper';
+import React, {useCallback, useEffect, useRef} from 'react';
+import {StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {keccak_256} from '@noble/hashes/sha3';
 import type {KeycardScreenProps} from '../navigation/types';
@@ -8,16 +7,7 @@ import {useKeycardOperation} from '../hooks/useKeycardOperation';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import {buildEthSignatureUR} from '../utils/ethSignature';
 import {buildCryptoHdKeyUR} from '../utils/cryptoHdKey';
-import { Icons } from '../assets/icons';
-
-const PIN_LENGTH = 6;
-
-const PAD_KEYS = [
-  ['1', '2', '3'],
-  ['4', '5', '6'],
-  ['7', '8', '9'],
-  ['', '0', '⌫'],
-];
+import PinPad from '../components/PinPad';
 
 function prepareHash(signData: string, dataType: number | undefined): Uint8Array {
   const raw = new Uint8Array(Buffer.from(signData, 'hex'));
@@ -30,7 +20,6 @@ function prepareHash(signData: string, dataType: number | undefined): Uint8Array
 export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   const params = route.params;
   const insets = useSafeAreaInsets();
-  const [pin, setPin] = useState('');
   const hashRef = useRef<Uint8Array | null>(null);
 
   const {phase, status, result, execute, submitPin, cancel} =
@@ -105,31 +94,6 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
     }
   }, [phase, result, params, navigation]);
 
-  useEffect(() => {
-    if (phase === 'pin_entry') {
-      setPin('');
-    }
-  }, [phase]);
-
-  const handleKey = useCallback(
-    (key: string) => {
-      if (key === '') {
-        return
-      }
-      if (key === '⌫') {
-        setPin(p => p.slice(0, -1));
-      } else if (pin.length < PIN_LENGTH) {
-        const next = pin + key;
-        setPin(next);
-        if (next.length === PIN_LENGTH) {
-          submitPin(next);
-          setPin('');
-        }
-      }
-    },
-    [pin, submitPin],
-  );
-
   const handleCancel = useCallback(() => {
     cancel();
     navigation.goBack();
@@ -138,49 +102,10 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   return (
     <View style={[styles.container, {paddingBottom: insets.bottom + 16}]}>
       {phase === 'pin_entry' && (
-        <>
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              Enter Keycard PIN
-            </Text>
-            <View style={styles.dotsWrapper}>
-              <View style={styles.dots}>
-                {Array.from({length: PIN_LENGTH}).map((_, i) => (
-                  <View
-                    key={i}
-                    style={[styles.dot, i < pin.length && styles.dotFilled]}
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.pad}>
-            {PAD_KEYS.map((row, ri) => (
-              <View key={ri} style={styles.padRow}>
-                {row.map((key, ki) => (
-                  <Pressable
-                    key={ki}
-                    style={({pressed}) => [
-                      styles.padKey,
-                      key === '' && styles.padKeyEmpty,
-                      pressed && key !== '' && styles.padKeyPressed,
-                    ]}
-                    onPress={() => handleKey(key)}
-                    disabled={key === ''}>
-                    {key === '⌫' ? (
-                      <Icons.backspace width={24} height={24} />
-                    ) : (
-                      <Text variant="headlineMedium" style={styles.padKeyText}>
-                        {key}
-                      </Text>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            ))}
-          </View>
-        </>
+        <PinPad
+          title="Enter Keycard PIN"
+          onComplete={submitPin}
+        />
       )}
 
       <NFCBottomSheet
@@ -196,63 +121,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#121212',
-  },
-  header: {
-    flex: 1,
-    paddingTop: 8,
-    paddingHorizontal: 24,
-  },
-  title: {
-    color: '#ffffff',
-    fontFamily: 'Inter_18pt-SemiBold',
-    fontSize: 27,
-    lineHeight: 32,
-    letterSpacing: -0.567, // -2.1% of 27px
-    marginBottom: 8,
-  },
-  dotsWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  dotFilled: {
-    backgroundColor: '#ffffff',
-  },
-  pad: {
-    width: '100%',
-    gap: 4,
-  },
-  backspaceIcon: {
-    width: 32,
-    height: 32,
-    tintColor: '#ffffff',
-  },
-  padRow: {
-    flexDirection: 'row',
-  },
-  padKey: {
-    flex: 1,
-    height: 76,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  padKeyEmpty: {},
-  padKeyPressed: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 48,
-  },
-  padKeyText: {
-    color: '#ffffff',
-    fontWeight: '300',
   },
 });
