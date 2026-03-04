@@ -1,6 +1,7 @@
 import React, {act} from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import KeycardScreen from '../src/screens/KeycardScreen';
+import NFCBottomSheet from '../src/components/NFCBottomSheet';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -15,7 +16,10 @@ jest.mock('react-native-paper', () => {
   return {MD3DarkTheme: {colors: {}}, Text};
 });
 
-jest.mock('../src/components/NFCBottomSheet', () => () => null);
+jest.mock('../src/components/NFCBottomSheet', () => jest.fn(() => null));
+const MockNFCBottomSheet = NFCBottomSheet as jest.MockedFunction<
+  typeof NFCBottomSheet
+>;
 
 jest.mock('../src/utils/ethSignature', () => ({
   buildEthSignatureUR: jest.fn(),
@@ -85,6 +89,7 @@ describe('KeycardScreen', () => {
     mockExecute.mockClear();
     mockSubmitPin.mockClear();
     mockCancel.mockClear();
+    MockNFCBottomSheet.mockClear();
   });
 
   describe('phase-based rendering', () => {
@@ -108,6 +113,75 @@ describe('KeycardScreen', () => {
     it('calls execute for a sign operation', async () => {
       await renderScreen('pin_entry');
       expect(mockExecute).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('NFCBottomSheet variant prop', () => {
+    function lastProps() {
+      const calls = MockNFCBottomSheet.mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    it('passes variant=scanning and visible=true when phase is nfc', async () => {
+      await renderScreen('nfc');
+      expect(lastProps().variant).toBe('scanning');
+      expect(lastProps().visible).toBe(true);
+    });
+
+    it('passes variant=error and visible=true when phase is error', async () => {
+      await renderScreen('error');
+      expect(lastProps().variant).toBe('error');
+      expect(lastProps().visible).toBe(true);
+    });
+
+    it('passes variant=success and visible=true when phase is done', async () => {
+      await renderScreen('done');
+      expect(lastProps().variant).toBe('success');
+      expect(lastProps().visible).toBe(true);
+    });
+
+    it('passes visible=false when phase is pin_entry', async () => {
+      await renderScreen('pin_entry');
+      expect(lastProps().visible).toBe(false);
+    });
+  });
+
+  describe('navigation delay after done', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('does not navigate immediately when phase becomes done', async () => {
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: new Uint8Array([1, 2, 3]),
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={signRoute} navigation={navigation} />,
+        );
+      });
+      expect(navigation.reset).not.toHaveBeenCalled();
+    });
+
+    it('navigates after the 800ms timer fires', async () => {
+      const {buildEthSignatureUR} =
+        require('../src/utils/ethSignature') as {buildEthSignatureUR: jest.Mock};
+      buildEthSignatureUR.mockReturnValue('UR:ETH-SIGN/...');
+
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: new Uint8Array([1, 2, 3]),
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={signRoute} navigation={navigation} />,
+        );
+      });
+      expect(navigation.reset).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
     });
   });
 
