@@ -1,0 +1,148 @@
+import {URDecoder} from '@ngraveio/bc-ur';
+import CBOR from 'cbor-sync';
+import {buildCryptoHdKeyUR} from '../src/utils/cryptoHdKey';
+
+// ---------------------------------------------------------------------------
+// TLV builder helpers (mirrors the Keycard card response format)
+// ---------------------------------------------------------------------------
+
+function tlvEncode(tag: number, data: Uint8Array): Uint8Array {
+  const len = data.length;
+  let header: Uint8Array;
+  if (len < 0x80) {
+    header = new Uint8Array([tag, len]);
+  } else {
+    header = new Uint8Array([tag, 0x81, len]);
+  }
+  const out = new Uint8Array(header.length + len);
+  out.set(header, 0);
+  out.set(data, header.length);
+  return out;
+}
+
+function concat(...parts: Uint8Array[]): Uint8Array {
+  const total = parts.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const p of parts) {
+    out.set(p, offset);
+    offset += p.length;
+  }
+  return out;
+}
+
+/**
+ * Build a mock Keycard exportKey TLV response:
+ *   0xa1 (constructed) {
+ *     0x80  pubkey   (65 bytes, uncompressed: 0x04 || x || y)
+ *     0x82  chainCode (32 bytes)
+ *   }
+ */
+function buildExportKeyTLV(pubKey: Uint8Array, chainCode: Uint8Array): Uint8Array {
+  const inner = concat(tlvEncode(0x80, pubKey), tlvEncode(0x82, chainCode));
+  return tlvEncode(0xa1, inner);
+}
+
+// ---------------------------------------------------------------------------
+// Decode a single-part UR string back to CBOR
+// ---------------------------------------------------------------------------
+
+function decodeUR(urString: string): Record<number, any> {
+  const decoder = new URDecoder();
+  decoder.receivePart(urString);
+  return CBOR.decode(decoder.resultUR().cbor);
+}
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+// A minimal valid uncompressed public key (prefix 0x04, x=1, y=0 → even → prefix 0x02)
+const PUB_KEY_UNCOMPRESSED = new Uint8Array(65);
+PUB_KEY_UNCOMPRESSED[0] = 0x04;
+PUB_KEY_UNCOMPRESSED[32] = 0x01; // x[31] = 1
+
+const CHAIN_CODE = new Uint8Array(32).fill(0xcc);
+
+const DERIVATION_PATH = "m/44'/60'/0'";
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('buildCryptoHdKeyUR', () => {
+  let tlvData: Uint8Array;
+
+  beforeAll(() => {
+    tlvData = buildExportKeyTLV(PUB_KEY_UNCOMPRESSED, CHAIN_CODE);
+  });
+
+  it('returns a ur:crypto-hdkey string', () => {
+    const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+    expect(ur.toLowerCase()).toMatch(/^ur:crypto-hdkey\//);
+  });
+
+  describe('CBOR structure', () => {
+    let decoded: Record<number, any>;
+
+    beforeAll(() => {
+      const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+      decoded = decodeUR(ur);
+    });
+
+    it('key 2 (is-private) is false', () => {
+      expect(decoded[2]).toBe(false);
+    });
+
+    it('key 3 (key-data) is a 33-byte compressed public key', () => {
+      expect(Buffer.isBuffer(decoded[3])).toBe(true);
+      expect(decoded[3].length).toBe(33);
+    });
+
+    it('key 3 (key-data) starts with 0x02 (even y)', () => {
+      // PUB_KEY_UNCOMPRESSED has y = all zeros (even), so prefix = 0x02
+      expect(decoded[3][0]).toBe(0x02);
+    });
+
+    it('key 4 (chain-code) matches the input chain code', () => {
+      expect(Buffer.isBuffer(decoded[4])).toBe(true);
+      expect(decoded[4].length).toBe(32);
+      expect(Array.from(decoded[4] as Buffer)).toEqual(Array.from(CHAIN_CODE));
+    });
+
+    it('key 6 (origin) is defined (crypto-keypath)', () => {
+      expect(decoded[6]).toBeDefined();
+    });
+
+    it('key 9 (name) is "GapSign"', () => {
+      expect(decoded[9]).toBe('GapSign');
+    });
+  });
+
+  describe('derivation path encoding', () => {
+    it("encodes m/44'/60'/0' with correct depth", () => {
+      const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+      const decoded = decodeUR(ur);
+      // The origin (key 6) is a CBOR tagged value (tag 304).
+      // cbor-sync decodes tags as {tag, value} or unwraps them — check depth field (key 3).
+      const origin = decoded[6];
+      // Depth = 3 components (44', 60', 0')
+      const keypathMap = origin?.value ?? origin;
+      expect(keypathMap[3]).toBe(3);
+    });
+
+    it('encodes a non-hardened path correctly', () => {
+      const ur = buildCryptoHdKeyUR(tlvData, 'm/0/1');
+      const decoded = decodeUR(ur);
+      const origin = decoded[6];
+      const keypathMap = origin?.value ?? origin;
+      expect(keypathMap[3]).toBe(2); // depth = 2
+    });
+  });
+
+  it('throws when TLV data is malformed', () => {
+    expect(() =>
+      buildCryptoHdKeyUR(new Uint8Array([0x00, 0x00]), DERIVATION_PATH),
+    ).toThrow();
+  });
+});

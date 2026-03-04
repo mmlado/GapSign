@@ -15,7 +15,7 @@ jest.mock('react-native-paper', () => {
   return {MD3DarkTheme: {colors: {}}, Text};
 });
 
-const mockDashboardActions: {label: string; onPress: () => void}[] = [];
+const mockDashboardActions: {label: string; navigate: (nav: any) => void}[] = [];
 
 jest.mock('../src/navigation/dashboardActions', () => ({
   get dashboardActions() {
@@ -59,8 +59,8 @@ describe('DashboardScreen', () => {
       expect(toJson(renderer)).toContain('Scan transaction');
     });
 
-    it('renders no action labels when the list is empty', async () => {
-      mockDashboardActions.push({label: 'Sentinel', onPress: jest.fn()});
+    it('renders one fewer pressable when action list is empty', async () => {
+      mockDashboardActions.push({label: 'Sentinel', navigate: jest.fn()});
       const withOne = await renderScreen();
       const countWithOne = withOne.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
@@ -81,17 +81,17 @@ describe('DashboardScreen', () => {
   describe('action list', () => {
     it('renders items with their labels', async () => {
       mockDashboardActions.push(
-        {label: 'Action One', onPress: jest.fn()},
-        {label: 'Action Two', onPress: jest.fn()},
+        {label: 'Action One', navigate: jest.fn()},
+        {label: 'Action Two', navigate: jest.fn()},
       );
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Action One');
       expect(toJson(renderer)).toContain('Action Two');
     });
 
-    it('calls the action onPress when an item is pressed', async () => {
-      const mockOnPress = jest.fn();
-      mockDashboardActions.push({label: 'Test Action', onPress: mockOnPress});
+    it('calls the action navigate when an item is pressed', async () => {
+      const mockNavigate = jest.fn();
+      mockDashboardActions.push({label: 'Test Action', navigate: mockNavigate});
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
@@ -101,15 +101,16 @@ describe('DashboardScreen', () => {
       await act(async () => {
         pressables[0].props.onPress();
       });
-      expect(mockOnPress).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate).toHaveBeenCalledWith(navigation);
     });
 
     it('only calls the pressed action, not others', async () => {
       const mockFirst = jest.fn();
       const mockSecond = jest.fn();
       mockDashboardActions.push(
-        {label: 'First', onPress: mockFirst},
-        {label: 'Second', onPress: mockSecond},
+        {label: 'First', navigate: mockFirst},
+        {label: 'Second', navigate: mockSecond},
       );
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
@@ -138,8 +139,8 @@ describe('DashboardScreen', () => {
       expect(navigation.navigate).toHaveBeenCalledWith('QRScanner');
     });
 
-    it('does not navigate when an action item is pressed', async () => {
-      mockDashboardActions.push({label: 'Some Action', onPress: jest.fn()});
+    it('does not call navigation.navigate when an action item is pressed', async () => {
+      mockDashboardActions.push({label: 'Some Action', navigate: jest.fn()});
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',

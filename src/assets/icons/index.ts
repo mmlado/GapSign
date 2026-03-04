@@ -1,11 +1,19 @@
 import ScanIcon from './scan.svg';
 import KeycardIcon from './keycard.svg';
 import BackspaceIcon from './backspace.svg';
-import ChevronRight from './chevron-right.svg'
+import ChevronRight from './chevron-right.svg';
+import NfcDefault from './nfc/default.svg';
+import NfcSuccess from './nfc/success.svg';
+import NfcFailure from './nfc/failure.svg';
 
 export const Icons = {
   scan: ScanIcon,
   keycard: KeycardIcon,
   backspace: BackspaceIcon,
-  chevronRight: ChevronRight, 
+  chevronRight: ChevronRight,
+  nfc: {
+    default: NfcDefault,
+    success: NfcSuccess,
+    failure: NfcFailure,
+  },
 };

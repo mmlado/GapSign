@@ -1,5 +1,6 @@
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import type {ScanResult} from '../types';
+import { NavigationProp } from '@react-navigation/native';
 
 export type KeycardParams =
   | {
@@ -9,14 +10,19 @@ export type KeycardParams =
       chainId?: number;
       requestId?: string;
       dataType?: number;
+    }
+  | {
+      operation: 'export_key';
+      derivationPath: string;
     };
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
-export type SigningStackParamList = {
+export type RootStackParamList = {
   Dashboard: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
   Keycard: KeycardParams;
+  ExportKey: undefined;
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     label?: string;   // text shown below the QR, e.g. "Scan with MetaMask"
@@ -25,32 +31,37 @@ export type SigningStackParamList = {
 
 
 export type DashboardScreenProps = NativeStackScreenProps<
-  SigningStackParamList,
+  RootStackParamList,
   'Dashboard'
 >;
 
 export type QRScannerScreenProps = NativeStackScreenProps<
-  SigningStackParamList,
+  RootStackParamList,
   'QRScanner'
 >;
 
 export type TransactionDetailScreenProps = NativeStackScreenProps<
-  SigningStackParamList,
+  RootStackParamList,
   'TransactionDetail'
 >;
 
 export type KeycardScreenProps = NativeStackScreenProps<
-  SigningStackParamList,
+  RootStackParamList,
   'Keycard'
 >;
 
 export type QRResultScreenProps = NativeStackScreenProps<
-  SigningStackParamList,
+  RootStackParamList,
   'QRResult'
+>;
+
+export type ExportKeyScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'ExportKey'
 >;
 
 export type DashboardAction = {
   label: string;
-  onPress: () => void;
+  navigate: (navigation: NavigationProp<RootStackParamList>) => void;
 };
 

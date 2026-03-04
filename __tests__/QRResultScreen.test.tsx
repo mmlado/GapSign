@@ -78,12 +78,12 @@ describe('QRResultScreen', () => {
     expect(toJson(renderer)).toContain(SAMPLE_UR);
   });
 
-  it('renders the "Scan another transaction" button', async () => {
+  it('renders the "Done" button', async () => {
     const renderer = await renderScreen(SAMPLE_UR);
-    expect(toJson(renderer)).toContain('Scan another transaction');
+    expect(toJson(renderer)).toContain('Done');
   });
 
-  it('"Scan another transaction" resets navigation to QRScanner', async () => {
+  it('"Done" resets navigation to Dashboard', async () => {
     const reset = jest.fn();
     const renderer = await renderScreen(SAMPLE_UR, undefined, {reset});
 
@@ -97,7 +97,7 @@ describe('QRResultScreen', () => {
 
     expect(reset).toHaveBeenCalledWith({
       index: 0,
-      routes: [{name: 'QRScanner'}],
+      routes: [{name: 'Dashboard'}],
     });
   });
 });

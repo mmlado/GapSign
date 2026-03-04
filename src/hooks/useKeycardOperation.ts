@@ -5,15 +5,15 @@ import {loadPairing, savePairing} from '../storage/pairingStorage';
 
 // Production keycard-shell cards use this raw 32-byte PSK (pass as Uint8Array to autoPair,
 // which skips the PBKDF2 derivation used for string passwords).
-const PAIRING_PASSWORD = new Uint8Array([
-  0x67, 0x5d, 0xea, 0xbb, 0x0d, 0x7c, 0x72, 0x4b,
-  0x4a, 0x36, 0xca, 0xad, 0x0e, 0x28, 0x08, 0x26,
-  0x15, 0x9e, 0x89, 0x88, 0x6f, 0x70, 0x82, 0x53,
-  0x5d, 0x43, 0x1e, 0x92, 0x48, 0x48, 0xbc, 0xf1,
-]);
+// const PAIRING_PASSWORD = new Uint8Array([
+//   0x67, 0x5d, 0xea, 0xbb, 0x0d, 0x7c, 0x72, 0x4b,
+//   0x4a, 0x36, 0xca, 0xad, 0x0e, 0x28, 0x08, 0x26,
+//   0x15, 0x9e, 0x89, 0x88, 0x6f, 0x70, 0x82, 0x53,
+//   0x5d, 0x43, 0x1e, 0x92, 0x48, 0x48, 0xbc, 0xf1,
+// ]);
 
 // Test card pairing password (string → PBKDF2 inside autoPair):
-// const PAIRING_PASSWORD = 'KeycardTest';
+const PAIRING_PASSWORD = 'KeycardTest';
 
 function toHex(arr: Uint8Array): string {
   return Array.from(arr)
@@ -24,7 +24,7 @@ function toHex(arr: Uint8Array): string {
 export type Phase = 'idle' | 'pin_entry' | 'nfc' | 'done' | 'error';
 
 export type KeycardOperationFn<T> = (
-  cmdSet: Keycard.Commandset,
+  cmdSet: InstanceType<typeof Keycard.Commandset>,
 ) => Promise<T>;
 
 export interface ExecuteOptions {
@@ -46,7 +46,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [status, setStatus] = useState('');
   const [result, setResult] = useState<T | null>(null);
 
-  const cmdSetRef = useRef<Keycard.Commandset | null>(null);
+  const cmdSetRef = useRef<InstanceType<typeof Keycard.Commandset> | null>(null);
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
   const requiresPinRef = useRef(true);
