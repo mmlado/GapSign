@@ -8,111 +8,24 @@ on:
 
 jobs:
   build:
-    name: Bump version, build, release
+    name: Build Release APK
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Checkout main
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # -----------------------------------------------------------------------
-      # Resolve the version and build code from the tag (or latest tag for
-      # workflow_dispatch). versionCode = MAJOR*10000 + MINOR*100 + PATCH.
-      # -----------------------------------------------------------------------
-      - name: Extract version
+      - name: Resolve release tag
         id: ver
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
-            TAG="${{ github.ref_name }}"
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            TAG=$(git describe --tags --abbrev=0)
+            echo "tag=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
           fi
-          VERSION="${TAG#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          echo "tag=$TAG"               >> $GITHUB_OUTPUT
-          echo "version=$VERSION"       >> $GITHUB_OUTPUT
-          echo "code=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))" >> $GITHUB_OUTPUT
 
-      # -----------------------------------------------------------------------
-      # Bump version files (tag-triggered only; skip for workflow_dispatch).
-      # -----------------------------------------------------------------------
-      - name: Update package.json
-        if: github.event_name == 'push'
-        run: |
-          node -e "
-            const fs = require('fs');
-            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            p.version = '${{ steps.ver.outputs.version }}';
-            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
-          "
-
-      - name: Update android/app/build.gradle
-        if: github.event_name == 'push'
-        run: |
-          sed -i "s/versionCode [0-9]*/versionCode ${{ steps.ver.outputs.code }}/" android/app/build.gradle
-          sed -i 's/versionName "[^"]*"/versionName "${{ steps.ver.outputs.version }}"/' android/app/build.gradle
-
-      - name: Update ios/GapSign.xcodeproj/project.pbxproj
-        if: github.event_name == 'push'
-        run: |
-          sed -i "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = ${{ steps.ver.outputs.code }}/" ios/GapSign.xcodeproj/project.pbxproj
-          sed -i "s/MARKETING_VERSION = [^;]*/MARKETING_VERSION = ${{ steps.ver.outputs.version }}/" ios/GapSign.xcodeproj/project.pbxproj
-
-      - name: Update CHANGELOG.md
-        if: github.event_name == 'push'
-        run: |
-          node -e "
-            const fs = require('fs');
-            const version = '${{ steps.ver.outputs.version }}';
-            const date = new Date().toISOString().slice(0, 10);
-            const repo = 'https://github.com/mmlado/GapSign';
-            let text = fs.readFileSync('CHANGELOG.md', 'utf8');
-
-            // Find the previous latest released version
-            const prevMatch = text.match(/## \[(\d+\.\d+\.\d+)\]/);
-            const prev = prevMatch ? prevMatch[1] : null;
-
-            // Promote [Unreleased] content to a new versioned section
-            text = text.replace(
-              /^## \[Unreleased\]\n/m,
-              \`## [Unreleased]\n\n## [\${version}] - \${date}\n\`
-            );
-
-            // Update the compare links
-            if (prev) {
-              text = text.replace(
-                \`[Unreleased]: \${repo}/compare/v\${prev}...HEAD\`,
-                \`[Unreleased]: \${repo}/compare/v\${version}...HEAD\n[\${version}]: \${repo}/compare/v\${prev}...v\${version}\`
-              );
-            }
-
-            fs.writeFileSync('CHANGELOG.md', text);
-          "
-
-      - name: Commit version bump to main
-        if: github.event_name == 'push'
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add package.json android/app/build.gradle ios/GapSign.xcodeproj/project.pbxproj CHANGELOG.md
-          git commit -m "chore: bump version to ${{ steps.ver.outputs.version }}"
-          git push origin main
-
-      - name: Move tag to bump commit
-        if: github.event_name == 'push'
-        run: |
-          git tag -f "${{ steps.ver.outputs.tag }}"
-          git push origin "refs/tags/${{ steps.ver.outputs.tag }}" --force
-
-      # -----------------------------------------------------------------------
-      # Android build
-      # -----------------------------------------------------------------------
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

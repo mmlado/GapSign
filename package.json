@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
-    "postinstall": "npx react-native-asset"
+    "postinstall": "npx react-native-asset",
+    "bump": "node scripts/bump-version.js"
   },
   "dependencies": {
     "@ngraveio/bc-ur": "^1.1.13",
