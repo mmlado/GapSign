@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {keccak_256} from '@noble/hashes/sha3';
@@ -20,6 +20,7 @@ function prepareHash(signData: string, dataType: number | undefined): Uint8Array
 export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   const params = route.params;
   const insets = useSafeAreaInsets();
+  const [needsPin, setNeedsPin] = useState(false);
   const hashRef = useRef<Uint8Array | null>(null);
 
   const {phase, status, result, execute, submitPin, cancel} =
@@ -27,6 +28,7 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
 
   const handleSign = useCallback(() => {
     if (params.operation !== 'sign') { return; }
+    setNeedsPin(true);
     const hash = prepareHash(params.signData, params.dataType);
     hashRef.current = hash;
     execute(async cmdSet => {
@@ -44,6 +46,7 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExportKey = useCallback(() => {
+    setNeedsPin(true);
     execute(async cmdSet => {
       const resp = await cmdSet.exportExtendedKey(0, params.derivationPath, false);
       resp.checkOK();
@@ -100,12 +103,13 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
 
   const handleCancel = useCallback(() => {
     cancel();
+    setNeedsPin(false);
     navigation.goBack();
   }, [cancel, navigation]);
 
   return (
     <View style={[styles.container, {paddingBottom: insets.bottom + 16}]}>
-      {phase === 'pin_entry' && (
+      {needsPin && (
         <PinPad
           title="Enter Keycard PIN"
           onComplete={submitPin}
