@@ -1,11 +1,13 @@
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { Text } from "react-native-paper";
 import { Icons } from "../assets/icons";
 
 interface PinPadProps {
   title: string;
   onComplete: (pin: string) => void;
+  error?: string;
+  onType?: () => void;
 }
 
 const PIN_LENGTH = 6;
@@ -17,11 +19,16 @@ const PAD_KEYS = [
   ['', '0', '⌫'],
 ];
 
-export default function PinPad({title, onComplete}: PinPadProps) {
+export default function PinPad({title, onComplete, error, onType}: PinPadProps) {
   const [pin, setPin] = useState('');
+  const { width } = useWindowDimensions();
+  const scale = width / 360;
   
   const handleKey = useCallback(
     (key: string) => {
+      if (key !== '') {
+        onType?.();
+      }
       if (key === '') {
         return
       }
@@ -54,6 +61,9 @@ export default function PinPad({title, onComplete}: PinPadProps) {
               />
             ))}
           </View>
+          <Text style={[styles.error, {fontSize: 12 * scale, lineHeight: 16 * scale, height: 20 * scale}, !error && styles.errorHidden]}>
+            {error ?? ''}
+          </Text>
         </View>
       </View>
 
@@ -121,6 +131,19 @@ const styles = StyleSheet.create({
   },
   dotFilled: {
     backgroundColor: '#ffffff',
+  },
+  error: {
+    color: '#BA434D',
+    fontWeight: '400',
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+    height: 20,
+    paddingTop: 4,
+    paddingHorizontal: 16,
+  },
+  errorHidden: {
+    opacity: 0,
   },
   pad: {
     width: '100%',

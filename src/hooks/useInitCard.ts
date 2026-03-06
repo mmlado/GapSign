@@ -26,9 +26,13 @@ export function useInitCard(): UseInitCardOperation {
   const duressPinRef = useRef<string | null>(null);
 
   const handleCardConnected = useCallback(async (cmdSet: Commandset) => {
-      const puk = generatePUK();
-      await cmdSet.init(pinRef.current, puk, PAIRING_PASSWORD, duressPinRef.current || undefined)
-      setResult(puk);
+    if (cmdSet.applicationInfo?.initializedCard) {
+      throw new Error('This card is already set up. Use a blank card to initialize.');
+    }
+    
+    const puk = generatePUK();
+    await cmdSet.init(pinRef.current, puk, PAIRING_PASSWORD, duressPinRef.current || undefined)
+    setResult(puk);
   }, []);
 
   const handleCardDisconnected = useCallback(async () => {
