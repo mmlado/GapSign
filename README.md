@@ -1,6 +1,6 @@
 # GapSign
 
-[![CI](https://github.com/mmlado/GapSign/actions/workflows/ci.yml/badge.svg)](https://github.com/mmlado/GapSign/actions/workflows/ci.yml)
+[![CI](https://github.com/mmlado/GapSign/actions/workflows/ci.yml/badge.svg)](https://github.com/mmlado/GapSign/actions/workflows/ci.yml) [![Build & Release](https://github.com/mmlado/GapSign/actions/workflows/android-release.yml/badge.svg)](https://github.com/mmlado/GapSign/actions/workflows/android-release.yml) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Platform](https://img.shields.io/badge/platform-Android-green.svg)](https://developer.android.com) [![React Native](https://img.shields.io/badge/React%20Native-0.83-blue.svg)](https://reactnative.dev) [![GitHub release](https://img.shields.io/github/v/release/mmlado/GapSign)](https://github.com/mmlado/GapSign/releases/latest) ![Last commit](https://img.shields.io/github/last-commit/mmlado/GapSign.svg) ![Stars](https://img.shields.io/github/stars/mmlado/GapSign.svg?style=social)
 
 An air-gap Android wallet that uses [Status Keycard](https://keycard.tech) over NFC to sign Ethereum transactions without the private key ever touching an internet-connected device.
 

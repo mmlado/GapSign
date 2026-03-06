@@ -21,11 +21,20 @@ import TransactionDetailScreen from './screens/TransactionDetailScreen';
 import KeycardScreen from './screens/KeycardScreen';
 import QRResultScreen from './screens/QRResultScreen';
 import ExportKeyScreen from './screens/ExportKeyScreen';
+import InitCardScreen from './screens/InitCardScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const headerStyle = {backgroundColor: theme.colors.background};
 const headerTitleStyle = {fontWeight: '600' as const};
+const defaultHeaderOptions = {
+  headerShown: true,
+  title: '',
+  headerStyle,
+  headerTintColor: theme.colors.onSurface,
+  headerTitleStyle,
+  headerShadowVisible: false,
+};
 
 export default function App() {
   return (
@@ -39,27 +48,17 @@ export default function App() {
         <NavigationContainer>
           <Stack.Navigator screenOptions={{headerShown: false}}>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
-          <Stack.Screen name="ExportKey"
-            component={ExportKeyScreen}
-            options={{
-              headerShown: true,
-              title: '',
-              headerStyle,
-              headerTintColor: theme.colors.onSurface,
-              headerTitleStyle,
-              headerShadowVisible: false,
-            }}
-          />
+            <Stack.Screen name="InitCard"
+              component={InitCardScreen}
+              options={defaultHeaderOptions}
+            />
+            <Stack.Screen name="ExportKey"
+              component={ExportKeyScreen}
+              options={defaultHeaderOptions}
+            />            
             <Stack.Screen name="QRScanner"
               component={QRScannerScreen}
-              options={{
-                headerShown: true,
-                title: '',
-                headerStyle,
-                headerTintColor: theme.colors.onSurface,
-                headerTitleStyle,
-                headerShadowVisible: false,
-              }}
+              options={defaultHeaderOptions}
             />
             <Stack.Screen
               name="TransactionDetail"
@@ -76,14 +75,7 @@ export default function App() {
             <Stack.Screen
               name="Keycard"
               component={KeycardScreen}
-              options={{
-                headerShown: true,
-                title: '',
-                headerStyle,
-                headerTintColor: theme.colors.onSurface,
-                headerTitleStyle,
-                headerShadowVisible: false,
-              }}
+              options={defaultHeaderOptions}
             />
             <Stack.Screen
               name="QRResult"

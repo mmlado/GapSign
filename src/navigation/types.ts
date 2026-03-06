@@ -19,6 +19,7 @@ export type KeycardParams =
 
 export type RootStackParamList = {
   Dashboard: undefined;
+  InitCard: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
   Keycard: KeycardParams;
@@ -33,6 +34,11 @@ export type RootStackParamList = {
 export type DashboardScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'Dashboard'
+>;
+
+export type InitCardScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'InitCard'
 >;
 
 export type QRScannerScreenProps = NativeStackScreenProps<
