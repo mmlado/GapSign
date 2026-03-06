@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import useNFCSession from "./useNFCSession";
 import { PAIRING_PASSWORD } from "../constants/keycard";
 import { Commandset } from "keycard-sdk/dist/commandset";
@@ -49,18 +49,18 @@ export function useInitCard(): UseInitCardOperation {
     pinRef.current = pin;
     duressPinRef.current = duressPin || null;
     startNFC();
-  }, []);
+  }, [startNFC]);
 
   const cancel = useCallback(() => {
     nfcReset();
     pinRef.current = '';
-  }, []);
+  }, [nfcReset]);
 
   const reset = useCallback(() => {
     nfcReset();
     pinRef.current = '';
     setResult(null);
-  }, []);
+  }, [nfcReset]);
 
   return {phase, status, result, start, cancel, reset};
 }

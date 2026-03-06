@@ -42,8 +42,8 @@ export default function useNFCSession(
       console.log(`[Keycard] Error: ${e.message}`, e);
       setStatus(`Error: ${e.message}`);
       setPhase('error');
-    }    
-  }, []);
+    }
+  }, [onCardConnected]);
 
   const handleCardDisconnected = useCallback(() => {
     console.log('[Keycard] Card disconnected');
@@ -56,7 +56,7 @@ export default function useNFCSession(
       }
       return prev;
     });
-  }, []);
+  }, [onCardDisconnected]);
 
   useEffect(() => {
     const connectedSub =
@@ -79,7 +79,7 @@ export default function useNFCSession(
       timeoutSub.remove();
       RNKeycard.Core.stopNFC().catch(() => {});
     };
-  }, [onCardConnected, handleCardDisconnected]);
+  }, [handleCardConnected, handleCardDisconnected]);
 
   const startNFC = useCallback(() => {
     setStatus('Tap your Keycard');

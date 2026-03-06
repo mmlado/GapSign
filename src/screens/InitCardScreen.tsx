@@ -22,7 +22,7 @@ export default function InitCardScreen({navigation}: InitCardScreenProps) {
   const pinRef = useRef('');
   const duressRef  = useRef<string | null>(null);
 
-  const {phase, status, result, start, cancel, reset} =
+  const {phase, status, result, start, cancel} =
     useInitCard();
 
   useEffect(() => {
@@ -58,13 +58,13 @@ export default function InitCardScreen({navigation}: InitCardScreenProps) {
   }, []);
 
   const handleDuressConfirm = useCallback((pin: string) => {
-    if (pinRef.current !== pin) {
+    if (duressRef.current !== pin) {
       setError("PINs don't match")
       return;
     }
     setError(undefined);
     start(pinRef.current, duressRef.current);
-  }, []);
+  }, [start]);
 
   const handleDurresYes = useCallback(() => {
     setStep('duress_entry');
@@ -72,7 +72,7 @@ export default function InitCardScreen({navigation}: InitCardScreenProps) {
 
   const handleDurresNo = useCallback(() => {
     start(pinRef.current, duressRef.current)
-  }, []);
+  }, [start]);
 
   const goBack = useCallback(() => {
     const prev: Record<Step, Step | null> = {

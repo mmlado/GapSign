@@ -43,7 +43,7 @@ export default function PinPad({title, onComplete, error, onType}: PinPadProps) 
         }
       }
     },
-    [pin, onComplete],
+    [pin, onComplete, onType],
   );
 
   return (

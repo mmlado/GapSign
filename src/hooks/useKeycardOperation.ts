@@ -33,6 +33,7 @@ export interface UseKeycardOperation<T> {
 
 export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [result, setResult] = useState<T | null>(null);
+  const [waitingForPin, setWaitingForPin] = useState(false);
 
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
@@ -99,6 +100,11 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     }
   }, []);
 
+  const {phase: nfcPhase, status, startNFC, reset: resetNFC} = useNFCSession(handleCardConnected, handleCardDisconnected);
+
+  // Overlay pin_entry on top of the NFC session phases.
+  const phase: Phase = waitingForPin && nfcPhase === 'idle' ? 'pin_entry' : nfcPhase;
+
   const execute = useCallback(
     (op: KeycardOperationFn<T>, options: ExecuteOptions = {}) => {
       operationRef.current = op;
@@ -107,32 +113,35 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
 
       if (!requiresPinRef.current) {
         startNFC();
+      } else {
+        setWaitingForPin(true);
       }
     },
-    [],
+    [startNFC],
   );
-
-  const {phase, status, startNFC, reset: resetNFC} = useNFCSession(handleCardConnected, handleCardDisconnected);
 
   const submitPin = useCallback((pin: string) => {
     pinRef.current = pin;
+    setWaitingForPin(false);
     startNFC();
-  }, []);
+  }, [startNFC]);
 
   const cancel = useCallback(() => {
     resetNFC();
+    setWaitingForPin(false);
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
-  }, []);
+  }, [resetNFC]);
 
   const reset = useCallback(() => {
     resetNFC();
+    setWaitingForPin(false);
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
     setResult(null);
-  }, []);
+  }, [resetNFC]);
 
   return {phase, status, result, execute, submitPin, cancel, reset};
 }

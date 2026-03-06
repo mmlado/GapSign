@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Initialize Keycard flow
+
 ## [0.2.0] - 2026-03-04
 
 ### Added
