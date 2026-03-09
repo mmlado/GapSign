@@ -30,7 +30,7 @@ export default function InitCardScreen({navigation}: InitCardScreenProps) {
       return;
     }
 
-    navigation.reset({index: 0, routes: [{name: 'Dashboard'}]});
+    navigation.reset({index: 0, routes: [{name: 'Dashboard', params: {toast: 'Card initialized'}}]});
   }, [phase, result, navigation]);
 
   const handleCancel = useCallback(() => {

@@ -18,7 +18,7 @@ export type KeycardParams =
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
 export type RootStackParamList = {
-  Dashboard: undefined;
+  Dashboard: {toast?: string} | undefined;
   InitCard: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
