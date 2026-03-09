@@ -3,24 +3,32 @@ import {StyleSheet, View} from 'react-native';
 import {Text} from 'react-native-paper';
 import PrimaryButton from './PrimaryButton';
 
-interface DuressQuestionProps {
+interface ConfirmPromptProps {
+  title: string;
+  description: string;
+  yesLabel?: string; // default: 'Yes'
+  noLabel?: string; // default: 'No'
   onYes: () => void;
   onNo: () => void;
 }
 
-export default function DuressQuestion({onYes, onNo}: DuressQuestionProps) {
+export default function ConfirmPrompt({
+  title,
+  description,
+  yesLabel = 'Yes',
+  noLabel = 'No',
+  onYes,
+  onNo
+}: ConfirmPromptProps) {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Add a duress PIN?</Text>
-        <Text style={styles.description}>
-          A duress PIN unlocks the card but shows a decoy account. Use it if you
-          are ever forced to access your wallet under pressure.
-        </Text>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.description}>{description}</Text>
       </View>
       <View style={styles.buttons}>
-        <PrimaryButton label="Yes, add duress PIN" onPress={onYes} />
-        <PrimaryButton label="No, skip" onPress={onNo} />
+        <PrimaryButton label={yesLabel} onPress={onYes} />
+        <PrimaryButton label={noLabel} onPress={onNo} />
       </View>
     </View>
   );

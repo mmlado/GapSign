@@ -5,7 +5,7 @@ import PinPad from "../components/PinPad";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useInitCard } from "../hooks/useInitCard";
-import DuressQuestion from "../components/DuressQuestion";
+import ConfirmPrompt from "../components/ConfirmPropmpt";
 import { useFocusEffect } from "@react-navigation/native";
 
 export const dashboardEntry: DashboardAction = {
@@ -153,7 +153,14 @@ export default function InitCardScreen({navigation}: InitCardScreenProps) {
       )}
 
       {phase === 'idle' && step === 'duress_question' && (
-        <DuressQuestion onYes={handleDurresYes} onNo={handleDurresNo} />
+        <ConfirmPrompt
+          title="Add a duress PIN?"
+          description="A duress PIN unlocks the card but shows a decoy account. Use it if you are ever forced to access your wallet under pressure." 
+          yesLabel="Yes, add duress PIN"
+          noLabel="No, skip"
+          onYes={handleDurresYes}
+          onNo={handleDurresNo}
+        />
       )}
 
       <NFCBottomSheet

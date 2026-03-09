@@ -160,11 +160,11 @@ describe('InitCardScreen', () => {
   });
 
   // -------------------------------------------------------------------------
-  // DuressQuestion callbacks
+  // ConfirmPrompt callbacks
   // -------------------------------------------------------------------------
 
   describe('duress question', () => {
-    async function reachDuressQuestion() {
+    async function reachConfirmPrompt() {
       const renderer = await renderScreen();
       await enterPin(renderer, 0); // PIN: '111111'
       await enterPin(renderer, 0); // confirm: '111111'
@@ -172,8 +172,8 @@ describe('InitCardScreen', () => {
     }
 
     it('calls start with the PIN and null duress when No is pressed', async () => {
-      const renderer = await reachDuressQuestion();
-      // 'No, skip' is the second pressable in DuressQuestion
+      const renderer = await reachConfirmPrompt();
+      // 'No, skip' is the second pressable in ConfirmPrompt
       const pressables = getActivePressables(renderer);
       await act(async () => {
         pressables[pressables.length - 1].props.onPress(); // 'No, skip'
@@ -183,7 +183,7 @@ describe('InitCardScreen', () => {
     });
 
     it('moves to duress_entry when Yes is pressed', async () => {
-      const renderer = await reachDuressQuestion();
+      const renderer = await reachConfirmPrompt();
       const pressables = getActivePressables(renderer);
       await act(async () => {
         pressables[0].props.onPress(); // PrimaryButton(Yes) = index 0
