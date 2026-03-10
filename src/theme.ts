@@ -1,4 +1,4 @@
-import {MD3DarkTheme} from 'react-native-paper';
+import { MD3DarkTheme } from 'react-native-paper';
 
 const theme = {
   ...MD3DarkTheme,

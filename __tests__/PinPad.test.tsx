@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import PinPad from '../src/components/PinPad';
 
@@ -7,8 +7,8 @@ import PinPad from '../src/components/PinPad';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ beforeEach(() => {
   onType.mockClear();
 });
 
-async function renderPad(props?: {error?: string; onType?: () => void}) {
+async function renderPad(props?: { error?: string; onType?: () => void }) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -41,7 +41,7 @@ function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) =>
       typeof node.props.onPress === 'function' && !node.props.disabled,
-    {deep: true},
+    { deep: true },
   );
 }
 
@@ -122,7 +122,7 @@ describe('PinPad', () => {
 
   describe('onType callback', () => {
     it('calls onType when a digit is pressed', async () => {
-      const renderer = await renderPad({onType});
+      const renderer = await renderPad({ onType });
       const keys = getActivePressables(renderer);
       await act(async () => {
         keys[0].props.onPress(); // '1'
@@ -131,7 +131,7 @@ describe('PinPad', () => {
     });
 
     it('calls onType when backspace is pressed', async () => {
-      const renderer = await renderPad({onType});
+      const renderer = await renderPad({ onType });
       await act(async () => {
         getActivePressables(renderer)[0].props.onPress(); // enter '1' first
       });
@@ -156,7 +156,7 @@ describe('PinPad', () => {
 
   describe('error display', () => {
     it('shows the error text when the error prop is provided', async () => {
-      const renderer = await renderPad({error: "PINs don't match"});
+      const renderer = await renderPad({ error: "PINs don't match" });
       expect(toJson(renderer)).toContain("PINs don't match");
     });
 
@@ -169,9 +169,9 @@ describe('PinPad', () => {
       // The error element is always in the tree (opacity:0 hides it, not
       // conditional rendering). Verifies no layout shift occurs.
       function countNodes(r: ReactTestRenderer.ReactTestRenderer) {
-        return r.root.findAll(() => true, {deep: true}).length;
+        return r.root.findAll(() => true, { deep: true }).length;
       }
-      const withError = await renderPad({error: 'Something wrong'});
+      const withError = await renderPad({ error: 'Something wrong' });
       const withoutError = await renderPad();
       expect(countNodes(withError)).toBe(countNodes(withoutError));
     });

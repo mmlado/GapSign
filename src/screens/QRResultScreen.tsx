@@ -1,27 +1,28 @@
-import React, {useCallback} from 'react';
-import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
-import {Text} from 'react-native-paper';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import React, { useCallback } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import theme from '../theme';
-import type {QRResultScreenProps} from '../navigation/types';
+import type { QRResultScreenProps } from '../navigation/types';
 
 export default function QRResultScreen({
   route,
   navigation,
 }: QRResultScreenProps) {
   const insets = useSafeAreaInsets();
-  const {urString, label} = route.params;
+  const { urString, label } = route.params;
 
   const handleScanAnother = useCallback(() => {
-    navigation.reset({index: 0, routes: [{name: 'Dashboard'}]});
+    navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });
   }, [navigation]);
 
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.qrCard}>
           <View style={styles.qrWrapper}>
             <QRCode
@@ -48,11 +49,12 @@ export default function QRResultScreen({
         </View>
       </ScrollView>
 
-      <View style={[styles.actions, {paddingBottom: insets.bottom + 16}]}>
+      <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable
           style={styles.button}
-          android_ripple={{color: 'rgba(255,255,255,0.2)'}}
-          onPress={handleScanAnother}>
+          android_ripple={{ color: 'rgba(255,255,255,0.2)' }}
+          onPress={handleScanAnother}
+        >
           <Text variant="labelLarge" style={styles.buttonText}>
             Done
           </Text>

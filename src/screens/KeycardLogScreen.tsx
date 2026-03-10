@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,7 +7,7 @@ import {
   Button,
   ScrollView,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import RNKeycard from 'react-native-keycard';
 import Keycard from 'keycard-sdk';
 
@@ -32,7 +32,7 @@ export default function KeycardLogScreen() {
   const addLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`[Keycard] ${message}`);
-    setLogs(prev => [{timestamp, message}, ...prev]);
+    setLogs(prev => [{ timestamp, message }, ...prev]);
   }, []);
 
   const selectKeycardApplet = useCallback(async () => {
@@ -45,7 +45,9 @@ export default function KeycardLogScreen() {
       addLog(`SELECT response SW: 0x${resp.sw.toString(16).toUpperCase()}`);
 
       if (resp.sw !== 0x9000) {
-        addLog(`SELECT failed with status: 0x${resp.sw.toString(16).toUpperCase()}`);
+        addLog(
+          `SELECT failed with status: 0x${resp.sw.toString(16).toUpperCase()}`,
+        );
         return;
       }
 
@@ -57,16 +59,30 @@ export default function KeycardLogScreen() {
 
       addLog(`--- Card Info ---`);
       addLog(`Initialized: ${appInfo.initializedCard}`);
-      addLog(`Instance UID: ${appInfo.instanceUID ? toHex(appInfo.instanceUID) : 'N/A'}`);
+      addLog(
+        `Instance UID: ${
+          appInfo.instanceUID ? toHex(appInfo.instanceUID) : 'N/A'
+        }`,
+      );
       addLog(`App Version: ${appInfo.getAppVersionString()}`);
       addLog(`Free Pairing Slots: ${appInfo.freePairingSlots}`);
       addLog(`Has Master Key: ${appInfo.hasMasterKey()}`);
       addLog(`Key UID: ${appInfo.keyUID ? toHex(appInfo.keyUID) : 'N/A'}`);
-      addLog(`Secure Channel PubKey: ${appInfo.secureChannelPubKey ? toHex(appInfo.secureChannelPubKey) : 'N/A'}`);
-      addLog(`Capabilities: 0x${appInfo.capabilities.toString(16).padStart(2, '0')}`);
+      addLog(
+        `Secure Channel PubKey: ${
+          appInfo.secureChannelPubKey
+            ? toHex(appInfo.secureChannelPubKey)
+            : 'N/A'
+        }`,
+      );
+      addLog(
+        `Capabilities: 0x${appInfo.capabilities.toString(16).padStart(2, '0')}`,
+      );
       addLog(`  Secure Channel: ${appInfo.hasSecureChannelCapability()}`);
       addLog(`  Key Management: ${appInfo.hasKeyManagementCapability()}`);
-      addLog(`  Credentials Mgmt: ${appInfo.hasCredentialsManagementCapability()}`);
+      addLog(
+        `  Credentials Mgmt: ${appInfo.hasCredentialsManagementCapability()}`,
+      );
       addLog(`  NDEF: ${appInfo.hasNDEFCapability()}`);
       addLog(`--- End Card Info ---`);
     } catch (error: any) {
@@ -163,9 +179,10 @@ export default function KeycardLogScreen() {
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
         },
-      ]}>
-      <Text style={[styles.title, {color: textColor}]}>GapSign</Text>
-      <Text style={[styles.subtitle, {color: textColor}]}>
+      ]}
+    >
+      <Text style={[styles.title, { color: textColor }]}>GapSign</Text>
+      <Text style={[styles.subtitle, { color: textColor }]}>
         Keycard NFC Scanner
       </Text>
 
@@ -180,22 +197,20 @@ export default function KeycardLogScreen() {
           disabled={scanning || nfcSupported === false}
         />
         <View style={styles.buttonSpacer} />
-        <Button
-          title="Stop Scan"
-          onPress={stopScanning}
-          disabled={!scanning}
-        />
+        <Button title="Stop Scan" onPress={stopScanning} disabled={!scanning} />
       </View>
 
-      <Text style={[styles.logHeader, {color: textColor}]}>Event Log</Text>
-      <ScrollView style={[styles.logContainer, {backgroundColor: logBgColor}]}>
+      <Text style={[styles.logHeader, { color: textColor }]}>Event Log</Text>
+      <ScrollView
+        style={[styles.logContainer, { backgroundColor: logBgColor }]}
+      >
         {logs.length === 0 ? (
-          <Text style={[styles.logPlaceholder, {color: textColor}]}>
+          <Text style={[styles.logPlaceholder, { color: textColor }]}>
             No events yet. Start scanning and tap a Keycard.
           </Text>
         ) : (
           logs.map((entry, index) => (
-            <Text key={index} style={[styles.logEntry, {color: textColor}]}>
+            <Text key={index} style={[styles.logEntry, { color: textColor }]}>
               [{entry.timestamp}] {entry.message}
             </Text>
           ))

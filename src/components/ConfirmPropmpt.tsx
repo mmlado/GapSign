@@ -1,6 +1,6 @@
 import React from 'react';
-import {StyleSheet, View} from 'react-native';
-import {Text} from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 import PrimaryButton from './PrimaryButton';
 
 interface ConfirmPromptProps {
@@ -18,7 +18,7 @@ export default function ConfirmPrompt({
   yesLabel = 'Yes',
   noLabel = 'No',
   onYes,
-  onNo
+  onNo,
 }: ConfirmPromptProps) {
   return (
     <View style={styles.container}>

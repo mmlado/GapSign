@@ -1,15 +1,15 @@
-import React, {useCallback} from 'react';
-import {StyleSheet, ScrollView, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Text, Icon} from 'react-native-paper';
+import React, { useCallback } from 'react';
+import { StyleSheet, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, Icon } from 'react-native-paper';
 import theme from '../theme';
-import type {EthSignRequest} from '../types';
-import {DATA_TYPE_LABELS} from '../types';
-import type {TransactionDetailScreenProps} from '../navigation/types';
+import type { EthSignRequest } from '../types';
+import { DATA_TYPE_LABELS } from '../types';
+import type { TransactionDetailScreenProps } from '../navigation/types';
 import PrimaryButton from '../components/PrimaryButton';
 import { Icons } from '../assets/icons';
 
-function InfoRow({label, value}: {label: string; value: string}) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
       <Text variant="labelSmall" style={styles.infoLabel}>
@@ -22,7 +22,7 @@ function InfoRow({label, value}: {label: string; value: string}) {
   );
 }
 
-function EthSignRequestDetail({request}: {request: EthSignRequest}) {
+function EthSignRequestDetail({ request }: { request: EthSignRequest }) {
   const typeLabel =
     DATA_TYPE_LABELS[request.dataType] || `Unknown (${request.dataType})`;
 
@@ -75,7 +75,7 @@ export default function TransactionDetailScreen({
   navigation,
 }: TransactionDetailScreenProps) {
   const insets = useSafeAreaInsets();
-  const {result} = route.params;
+  const { result } = route.params;
 
   const handleSign = useCallback(() => {
     if (result.kind !== 'eth-sign-request') {
@@ -96,7 +96,8 @@ export default function TransactionDetailScreen({
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+      >
         {result.kind === 'eth-sign-request' && (
           <EthSignRequestDetail request={result.request} />
         )}
@@ -131,8 +132,12 @@ export default function TransactionDetailScreen({
       </ScrollView>
 
       {result.kind === 'eth-sign-request' && (
-        <View style={[styles.actions, {paddingBottom: insets.bottom + 16}]}>
-          <PrimaryButton label='Sign transaction' onPress={handleSign} icon={Icons.keycard} />
+        <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
+          <PrimaryButton
+            label="Sign transaction"
+            onPress={handleSign}
+            icon={Icons.keycard}
+          />
         </View>
       )}
     </View>

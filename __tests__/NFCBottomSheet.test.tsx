@@ -1,18 +1,18 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import NFCBottomSheet, {NFCVariant} from '../src/components/NFCBottomSheet';
+import NFCBottomSheet, { NFCVariant } from '../src/components/NFCBottomSheet';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 // ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
 function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) => typeof node.props.onPress === 'function',
-    {deep: true},
+    { deep: true },
   );
 }
 
@@ -63,7 +63,6 @@ function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 // ---------------------------------------------------------------------------
 
 describe('NFCBottomSheet', () => {
-
   describe('status text', () => {
     it('renders the status string', async () => {
       const renderer = await renderSheet('scanning', 'Waiting for card…');
@@ -119,7 +118,7 @@ describe('NFCBottomSheet', () => {
     it('renders more animated views when scanning than when success', async () => {
       // PulseRing adds 3 extra Animated.Views when variant=scanning; none otherwise.
       function countViews(r: ReactTestRenderer.ReactTestRenderer) {
-        return r.root.findAll(() => true, {deep: true}).length;
+        return r.root.findAll(() => true, { deep: true }).length;
       }
 
       const scanning = await renderSheet('scanning');
@@ -130,7 +129,7 @@ describe('NFCBottomSheet', () => {
 
     it('renders the same number of elements for success and error (no pulse rings)', async () => {
       function countViews(r: ReactTestRenderer.ReactTestRenderer) {
-        return r.root.findAll(() => true, {deep: true}).length;
+        return r.root.findAll(() => true, { deep: true }).length;
       }
 
       const success = await renderSheet('success');

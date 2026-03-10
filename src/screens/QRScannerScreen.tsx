@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -6,22 +6,17 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {
-  Text,
-  Button,
-  ActivityIndicator,
-  Icon,
-} from 'react-native-paper';
-import {Camera} from 'react-native-camera-kit';
-import type {OnReadCodeData} from 'react-native-camera-kit/src/CameraProps';
-import {URDecoder} from '@ngraveio/bc-ur';
-import {useFocusEffect} from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, Button, ActivityIndicator, Icon } from 'react-native-paper';
+import { Camera } from 'react-native-camera-kit';
+import type { OnReadCodeData } from 'react-native-camera-kit/src/CameraProps';
+import { URDecoder } from '@ngraveio/bc-ur';
+import { useFocusEffect } from '@react-navigation/native';
 import theme from '../theme';
-import {handleUR} from '../utils/ur';
-import type {QRScannerScreenProps} from '../navigation/types';
+import { handleUR } from '../utils/ur';
+import type { QRScannerScreenProps } from '../navigation/types';
 
-export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
+export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   const insets = useSafeAreaInsets();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
@@ -82,10 +77,10 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
         if (decoder.isSuccess()) {
           const ur = decoder.resultUR();
           const result = handleUR(ur.type, ur.cbor);
-          navigation.navigate('TransactionDetail', {result});
+          navigation.navigate('TransactionDetail', { result });
         } else {
           navigation.navigate('TransactionDetail', {
-            result: {kind: 'error', message: decoder.resultError()},
+            result: { kind: 'error', message: decoder.resultError() },
           });
         }
         decoderRef.current = null;
@@ -96,7 +91,7 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
 
   if (hasPermission === null) {
     return (
-      <View style={[styles.centered, {paddingTop: insets.top}]}>
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text variant="bodyLarge" style={styles.centeredText}>
           Requesting camera permission...
@@ -107,7 +102,7 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
 
   if (!hasPermission) {
     return (
-      <View style={[styles.centered, {paddingTop: insets.top}]}>
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
         <Icon
           source="camera-off"
           size={64}
@@ -122,7 +117,8 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
         <Button
           mode="contained"
           onPress={() => Linking.openSettings()}
-          style={styles.permissionButton}>
+          style={styles.permissionButton}
+        >
           Open Settings
         </Button>
       </View>
@@ -138,7 +134,7 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
         showFrame={false}
       />
 
-      <View style={[styles.topBar, {paddingTop: insets.top + 8}]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         <Text variant="headlineMedium" style={styles.topTitle}>
           Scan transaction QR
         </Text>
@@ -151,12 +147,13 @@ export default function QRScannerScreen({navigation}: QRScannerScreenProps) {
           <View style={[styles.corner, styles.cornerBL]} />
           <View style={[styles.corner, styles.cornerBR]} />
         </View>
-
       </View>
 
       {progress > 0 && (
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, {width: `${progress * 100}%`}]} />
+          <View
+            style={[styles.progressFill, { width: `${progress * 100}%` }]}
+          />
         </View>
       )}
     </View>

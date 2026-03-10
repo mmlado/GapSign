@@ -1,7 +1,7 @@
-import Keycard from "keycard-sdk";
-import { Commandset } from "keycard-sdk/dist/commandset";
-import { useCallback, useEffect, useState } from "react";
-import RNKeycard from "react-native-keycard";
+import Keycard from 'keycard-sdk';
+import { Commandset } from 'keycard-sdk/dist/commandset';
+import { useCallback, useEffect, useState } from 'react';
+import RNKeycard from 'react-native-keycard';
 
 export type Phase = 'idle' | 'nfc' | 'done' | 'error';
 
@@ -13,7 +13,10 @@ export interface UseNFCSessionOperation {
 }
 
 export default function useNFCSession(
-  onCardConnected: (cmdSet: Commandset, setStatus: (status: string) => void) => Promise<void>,
+  onCardConnected: (
+    cmdSet: Commandset,
+    setStatus: (status: string) => void,
+  ) => Promise<void>,
   onCardDisconnected: () => Promise<void>,
 ): UseNFCSessionOperation {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -59,10 +62,10 @@ export default function useNFCSession(
   }, [onCardDisconnected]);
 
   useEffect(() => {
-    const connectedSub =
-      RNKeycard.Core.onKeycardConnected(handleCardConnected);
-    const disconnectedSub = 
-      RNKeycard.Core.onKeycardDisconnected(handleCardDisconnected);
+    const connectedSub = RNKeycard.Core.onKeycardConnected(handleCardConnected);
+    const disconnectedSub = RNKeycard.Core.onKeycardDisconnected(
+      handleCardDisconnected,
+    );
     const cancelledSub = RNKeycard.Core.onNFCUserCancelled(() => {
       console.log('[Keycard] NFC cancelled by user');
       setPhase(prev => (prev === 'nfc' ? 'idle' : prev));
@@ -95,6 +98,6 @@ export default function useNFCSession(
     setPhase('idle');
     setStatus('');
   }, []);
-  
+
   return { phase, status, startNFC, reset };
 }

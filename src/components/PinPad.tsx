@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
-import { Text } from "react-native-paper";
-import { Icons } from "../assets/icons";
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Text } from 'react-native-paper';
+import { Icons } from '../assets/icons';
 
 interface PinPadProps {
   title: string;
@@ -19,18 +19,23 @@ const PAD_KEYS = [
   ['', '0', '⌫'],
 ];
 
-export default function PinPad({title, onComplete, error, onType}: PinPadProps) {
+export default function PinPad({
+  title,
+  onComplete,
+  error,
+  onType,
+}: PinPadProps) {
   const [pin, setPin] = useState('');
   const { width } = useWindowDimensions();
   const scale = width / 360;
-  
+
   const handleKey = useCallback(
     (key: string) => {
       if (key !== '') {
         onType?.();
       }
       if (key === '') {
-        return
+        return;
       }
       if (key === '⌫') {
         setPin(p => p.slice(0, -1));
@@ -49,19 +54,27 @@ export default function PinPad({title, onComplete, error, onType}: PinPadProps) 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {title}
-        </Text>
+        <Text style={styles.title}>{title}</Text>
         <View style={styles.dotsWrapper}>
           <View style={styles.dots}>
-            {Array.from({length: PIN_LENGTH}).map((_, i) => (
+            {Array.from({ length: PIN_LENGTH }).map((_, i) => (
               <View
                 key={i}
                 style={[styles.dot, i < pin.length && styles.dotFilled]}
               />
             ))}
           </View>
-          <Text style={[styles.error, {fontSize: 12 * scale, lineHeight: 16 * scale, height: 20 * scale}, !error && styles.errorHidden]}>
+          <Text
+            style={[
+              styles.error,
+              {
+                fontSize: 12 * scale,
+                lineHeight: 16 * scale,
+                height: 20 * scale,
+              },
+              !error && styles.errorHidden,
+            ]}
+          >
             {error ?? ''}
           </Text>
         </View>
@@ -73,13 +86,14 @@ export default function PinPad({title, onComplete, error, onType}: PinPadProps) 
             {row.map((key, ki) => (
               <Pressable
                 key={ki}
-                style={({pressed}) => [
+                style={({ pressed }) => [
                   styles.padKey,
                   key === '' && styles.padKeyEmpty,
                   pressed && key !== '' && styles.padKeyPressed,
                 ]}
                 onPress={() => handleKey(key)}
-                disabled={key === ''}>
+                disabled={key === ''}
+              >
                 {key === '⌫' ? (
                   <Icons.backspace width={24} height={24} />
                 ) : (

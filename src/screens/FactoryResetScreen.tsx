@@ -1,27 +1,32 @@
-import { StyleSheet, View } from "react-native";
-import { DashboardAction, FactoryResetSreenProps } from "../navigation/types";
-import NFCBottomSheet from "../components/NFCBottomSheet";
-import ConfirmPrompt from "../components/ConfirmPropmpt";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFactoryReset } from "../hooks/useFactoryReset";
-import { useCallback, useEffect } from "react";
+import { StyleSheet, View } from 'react-native';
+import { DashboardAction, FactoryResetSreenProps } from '../navigation/types';
+import NFCBottomSheet from '../components/NFCBottomSheet';
+import ConfirmPrompt from '../components/ConfirmPropmpt';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFactoryReset } from '../hooks/useFactoryReset';
+import { useCallback, useEffect } from 'react';
 
 export const dashboardEntry: DashboardAction = {
   label: 'Factory reset card',
-  navigate: (nav) => nav.navigate('FactoryReset'),
+  navigate: nav => nav.navigate('FactoryReset'),
 };
 
-export default function FactoryResetScreen({navigation}: FactoryResetSreenProps) {
+export default function FactoryResetScreen({
+  navigation,
+}: FactoryResetSreenProps) {
   const insets = useSafeAreaInsets();
-  
-  const {phase, status, start, cancel} = useFactoryReset();
+
+  const { phase, status, start, cancel } = useFactoryReset();
 
   useEffect(() => {
     if (phase !== 'done') {
       return;
     }
 
-    navigation.reset({index: 0, routes: [{name: 'Dashboard', params: {toast: 'Factory reset done'}}]});
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Dashboard', params: { toast: 'Factory reset done' } }],
+    });
   }, [phase, navigation]);
 
   const handleConfirmYes = useCallback(() => {
@@ -38,7 +43,7 @@ export default function FactoryResetScreen({navigation}: FactoryResetSreenProps)
   }, [cancel, navigation]);
 
   return (
-    <View style={[styles.container, {paddingBottom: insets.bottom + 16}]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {phase === 'idle' && (
         <ConfirmPrompt
           title="Factory reset card?"
@@ -53,12 +58,18 @@ export default function FactoryResetScreen({navigation}: FactoryResetSreenProps)
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
         status={status}
-        variant={phase === 'done' ? 'success' : phase === 'error' ? 'error' : 'scanning'}
+        variant={
+          phase === 'done'
+            ? 'success'
+            : phase === 'error'
+            ? 'error'
+            : 'scanning'
+        }
         onCancel={handleCancel}
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

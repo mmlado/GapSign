@@ -1,8 +1,8 @@
-import React, {useEffect, useRef} from 'react';
-import {Animated, Modal, Pressable, StyleSheet, View} from 'react-native';
-import {Text} from 'react-native-paper';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Icons} from '../assets/icons';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icons } from '../assets/icons';
 
 export type NFCVariant = 'scanning' | 'success' | 'error';
 
@@ -13,7 +13,7 @@ type Props = {
   variant?: NFCVariant;
 };
 
-function PulseRing({delay, size}: {delay: number; size: number}) {
+function PulseRing({ delay, size }: { delay: number; size: number }) {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -36,7 +36,7 @@ function PulseRing({delay, size}: {delay: number; size: number}) {
     return () => loop.stop();
   }, [anim, delay]);
 
-  const scale = anim.interpolate({inputRange: [0, 1], outputRange: [0.4, 1]});
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
   const opacity = anim.interpolate({
     inputRange: [0, 0.4, 1],
     outputRange: [0.7, 0.35, 0],
@@ -51,7 +51,7 @@ function PulseRing({delay, size}: {delay: number; size: number}) {
           height: size,
           borderRadius: size / 2,
           opacity,
-          transform: [{scale}],
+          transform: [{ scale }],
         },
       ]}
     />
@@ -89,16 +89,18 @@ export default function NFCBottomSheet({
       transparent
       statusBarTranslucent
       animationType="fade"
-      onRequestClose={onCancel}>
+      onRequestClose={onCancel}
+    >
       <View style={styles.overlay}>
         <Animated.View
           style={[
             styles.sheet,
             {
               paddingBottom: Math.max(insets.bottom, 16) + 8,
-              transform: [{translateY: slideAnim}],
+              transform: [{ translateY: slideAnim }],
             },
-          ]}>
+          ]}
+        >
           {/* drag handle */}
           <View style={styles.handle} />
 
@@ -124,8 +126,9 @@ export default function NFCBottomSheet({
           {variant !== 'success' && (
             <Pressable
               style={styles.cancelButton}
-              android_ripple={{color: 'rgba(187,134,252,0.15)'}}
-              onPress={onCancel}>
+              android_ripple={{ color: 'rgba(187,134,252,0.15)' }}
+              onPress={onCancel}
+            >
               <Text variant="labelLarge" style={styles.cancelText}>
                 Cancel
               </Text>

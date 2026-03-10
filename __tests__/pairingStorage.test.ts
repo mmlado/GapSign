@@ -1,4 +1,8 @@
-import {loadPairing, savePairing, deletePairing} from '../src/storage/pairingStorage';
+import {
+  loadPairing,
+  savePairing,
+  deletePairing,
+} from '../src/storage/pairingStorage';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -55,7 +59,7 @@ describe('pairingStorage', () => {
     });
 
     it('returns the parsed Pairing when an entry exists', async () => {
-      const fakePairing = {pairingIndex: 0};
+      const fakePairing = { pairingIndex: 0 };
       mockGetItem.mockResolvedValue('base64data');
       mockFromString.mockReturnValue(fakePairing);
       const result = await loadPairing('abc123');
@@ -81,7 +85,7 @@ describe('pairingStorage', () => {
     it('stores the pairing base64 under the correct key', async () => {
       mockSetItem.mockResolvedValue(undefined);
       mockToBase64.mockReturnValue('encoded==');
-      const fakePairing = {toBase64: mockToBase64} as any;
+      const fakePairing = { toBase64: mockToBase64 } as any;
       await savePairing('abc123', fakePairing);
       expect(mockSetItem).toHaveBeenCalledWith('pairing_abc123', 'encoded==');
     });
