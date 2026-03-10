@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import QRScannerScreen from '../src/screens/QRScannerScreen';
 
@@ -7,17 +7,17 @@ import QRScannerScreen from '../src/screens/QRScannerScreen';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  const {createElement} = require('react');
+  const { Text } = require('react-native');
+  const { createElement } = require('react');
   return {
-    MD3DarkTheme: {colors: {}},
+    MD3DarkTheme: { colors: {} },
     Text,
-    Button: ({children, onPress}: any) =>
-      createElement(Text, {onPress}, children),
+    Button: ({ children, onPress }: any) =>
+      createElement(Text, { onPress }, children),
     ActivityIndicator: () => null,
     Icon: () => null,
   };
@@ -68,10 +68,10 @@ jest.mock('../src/utils/ur', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = {navigate: jest.fn()} as any;
+const navigation = { navigate: jest.fn() } as any;
 
 function scan(value: string) {
-  capturedOnReadCode?.({nativeEvent: {codeStringValue: value}});
+  capturedOnReadCode?.({ nativeEvent: { codeStringValue: value } });
 }
 
 async function renderScreen() {
@@ -139,7 +139,9 @@ describe('QRScannerScreen', () => {
       await act(async () => {
         scan('ur:eth-sign-request/somedata');
       });
-      expect(mockReceivedPart).toHaveBeenCalledWith('ur:eth-sign-request/somedata');
+      expect(mockReceivedPart).toHaveBeenCalledWith(
+        'ur:eth-sign-request/somedata',
+      );
     });
   });
 
@@ -157,8 +159,8 @@ describe('QRScannerScreen', () => {
 
   describe('onCodeScanned — complete UR', () => {
     it('navigates to TransactionDetail with parsed result on success', async () => {
-      const fakeUR = {type: 'eth-sign-request', cbor: Buffer.alloc(0)};
-      const fakeResult = {kind: 'eth-sign-request', request: {}};
+      const fakeUR = { type: 'eth-sign-request', cbor: Buffer.alloc(0) };
+      const fakeResult = { kind: 'eth-sign-request', request: {} };
       mockIsComplete.mockReturnValue(true);
       mockIsSuccess.mockReturnValue(true);
       mockResultUR.mockReturnValue(fakeUR);
@@ -186,15 +188,18 @@ describe('QRScannerScreen', () => {
       });
 
       expect(navigation.navigate).toHaveBeenCalledWith('TransactionDetail', {
-        result: {kind: 'error', message: 'bad checksum'},
+        result: { kind: 'error', message: 'bad checksum' },
       });
     });
 
     it('ignores subsequent scan events after a complete scan', async () => {
       mockIsComplete.mockReturnValue(true);
       mockIsSuccess.mockReturnValue(true);
-      mockResultUR.mockReturnValue({type: 'eth-sign-request', cbor: Buffer.alloc(0)});
-      mockHandleUR.mockReturnValue({kind: 'eth-sign-request', request: {}});
+      mockResultUR.mockReturnValue({
+        type: 'eth-sign-request',
+        cbor: Buffer.alloc(0),
+      });
+      mockHandleUR.mockReturnValue({ kind: 'eth-sign-request', request: {} });
 
       await renderScreen();
       await act(async () => {

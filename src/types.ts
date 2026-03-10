@@ -9,9 +9,9 @@ export type EthSignRequest = {
 };
 
 export type ScanResult =
-  | {kind: 'eth-sign-request'; request: EthSignRequest}
-  | {kind: 'unsupported'; type: string}
-  | {kind: 'error'; message: string};
+  | { kind: 'eth-sign-request'; request: EthSignRequest }
+  | { kind: 'unsupported'; type: string }
+  | { kind: 'error'; message: string };
 
 // ERC-4527 eth-sign-request data types
 export const DATA_TYPE_LABELS: Record<number, string> = {

@@ -1,7 +1,7 @@
-import { useCallback, useState } from "react";
-import { Commandset } from "keycard-sdk/dist/commandset";
-import useNFCSession from "./useNFCSession";
-import { Phase } from "./useNFCSession";
+import { useCallback, useState } from 'react';
+import { Commandset } from 'keycard-sdk/dist/commandset';
+import useNFCSession from './useNFCSession';
+import { Phase } from './useNFCSession';
 
 export type { Phase };
 
@@ -19,17 +19,22 @@ export function useNFCOperation<T>(
 ): UseNFCOperation<T> {
   const [result, setResult] = useState<T | null>(null);
 
-  const handleCardConnected = useCallback(async (cmdSet: Commandset) => {
-    const value = await onConnected(cmdSet);
-    setResult(value);
-  }, [onConnected]);
+  const handleCardConnected = useCallback(
+    async (cmdSet: Commandset) => {
+      const value = await onConnected(cmdSet);
+      setResult(value);
+    },
+    [onConnected],
+  );
 
   const handleCardDisconnected = useCallback(async () => {}, []);
 
-  const { phase, status, startNFC, reset: nfcReset } = useNFCSession(
-    handleCardConnected,
-    handleCardDisconnected,
-  );
+  const {
+    phase,
+    status,
+    startNFC,
+    reset: nfcReset,
+  } = useNFCSession(handleCardConnected, handleCardDisconnected);
 
   const cancel = useCallback(() => {
     nfcReset();

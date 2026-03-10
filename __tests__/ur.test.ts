@@ -1,7 +1,7 @@
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer';
 import CBOR from 'cbor-sync';
-import {handleUR} from '../src/utils/ur';
-import {DATA_TYPE_LABELS} from '../src/types';
+import { handleUR } from '../src/utils/ur';
+import { DATA_TYPE_LABELS } from '../src/types';
 
 // ---------------------------------------------------------------------------
 // handleUR
@@ -10,7 +10,7 @@ import {DATA_TYPE_LABELS} from '../src/types';
 describe('handleUR', () => {
   it('returns unsupported for an unrecognised UR type', () => {
     const result = handleUR('some-unknown-type', Buffer.alloc(0));
-    expect(result).toEqual({kind: 'unsupported', type: 'some-unknown-type'});
+    expect(result).toEqual({ kind: 'unsupported', type: 'some-unknown-type' });
   });
 
   it('returns error when CBOR.decode throws', () => {
@@ -31,12 +31,12 @@ describe('handleUR', () => {
   });
 
   it('parses a minimal eth-sign-request (signData + dataType only)', () => {
-    const encoded = CBOR.encode({2: Buffer.from('deadbeef', 'hex'), 3: 1});
+    const encoded = CBOR.encode({ 2: Buffer.from('deadbeef', 'hex'), 3: 1 });
     const result = handleUR('eth-sign-request', encoded);
 
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
-      const {request} = result;
+      const { request } = result;
       expect(request.signData).toBe('deadbeef');
       expect(request.dataType).toBe(1);
       expect(request.requestId).toBeUndefined();
@@ -49,24 +49,26 @@ describe('handleUR', () => {
 
   it('parses a full eth-sign-request with all optional fields', () => {
     const encoded = CBOR.encode({
-      1: Buffer.from('01020304', 'hex'),                                        // requestId
-      2: Buffer.from('aabbccdd', 'hex'),                                        // signData
-      3: 4,                                                                     // dataType: EIP-1559
-      4: 1,                                                                     // chainId: mainnet
-      5: {1: [44, true, 60, true, 0, true, 0, false]},                         // derivation path
-      6: Buffer.from('abcdef1234567890abcdef1234567890abcdef12', 'hex'),        // address
-      7: 'MetaMask',                                                            // origin
+      1: Buffer.from('01020304', 'hex'), // requestId
+      2: Buffer.from('aabbccdd', 'hex'), // signData
+      3: 4, // dataType: EIP-1559
+      4: 1, // chainId: mainnet
+      5: { 1: [44, true, 60, true, 0, true, 0, false] }, // derivation path
+      6: Buffer.from('abcdef1234567890abcdef1234567890abcdef12', 'hex'), // address
+      7: 'MetaMask', // origin
     });
     const result = handleUR('eth-sign-request', encoded);
 
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
-      const {request} = result;
+      const { request } = result;
       expect(request.signData).toBe('aabbccdd');
       expect(request.dataType).toBe(4);
       expect(request.chainId).toBe(1);
       expect(request.requestId).toBe('01020304');
-      expect(request.address).toBe('0xabcdef1234567890abcdef1234567890abcdef12');
+      expect(request.address).toBe(
+        '0xabcdef1234567890abcdef1234567890abcdef12',
+      );
       expect(request.origin).toBe('MetaMask');
       expect(request.derivationPath).toBe("m/44'/60'/0'/0");
     }
@@ -79,11 +81,18 @@ describe('handleUR', () => {
 
 describe('parseEthSignRequest – derivation paths', () => {
   function encodeWithComponents(components: any[]): Buffer {
-    return CBOR.encode({2: Buffer.from('00', 'hex'), 3: 1, 5: {1: components}});
+    return CBOR.encode({
+      2: Buffer.from('00', 'hex'),
+      3: 1,
+      5: { 1: components },
+    });
   }
 
   it('formats hardened components with apostrophes', () => {
-    const result = handleUR('eth-sign-request', encodeWithComponents([44, true, 60, true, 0, true]));
+    const result = handleUR(
+      'eth-sign-request',
+      encodeWithComponents([44, true, 60, true, 0, true]),
+    );
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       expect(result.request.derivationPath).toBe("m/44'/60'/0'");
@@ -91,7 +100,10 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('formats non-hardened components without apostrophes', () => {
-    const result = handleUR('eth-sign-request', encodeWithComponents([0, false, 1, false]));
+    const result = handleUR(
+      'eth-sign-request',
+      encodeWithComponents([0, false, 1, false]),
+    );
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       expect(result.request.derivationPath).toBe('m/0/1');
@@ -110,7 +122,7 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('returns "unknown" when the derivation path field is absent', () => {
-    const encoded = CBOR.encode({2: Buffer.from('00', 'hex'), 3: 1});
+    const encoded = CBOR.encode({ 2: Buffer.from('00', 'hex'), 3: 1 });
     const result = handleUR('eth-sign-request', encoded);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
@@ -119,7 +131,11 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('returns "unknown" for an invalid path structure', () => {
-    const encoded = CBOR.encode({2: Buffer.from('00', 'hex'), 3: 1, 5: 'not-a-map'});
+    const encoded = CBOR.encode({
+      2: Buffer.from('00', 'hex'),
+      3: 1,
+      5: 'not-a-map',
+    });
     const result = handleUR('eth-sign-request', encoded);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {

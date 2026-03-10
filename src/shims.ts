@@ -1,2 +1,2 @@
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer';
 global.Buffer = global.Buffer || Buffer;

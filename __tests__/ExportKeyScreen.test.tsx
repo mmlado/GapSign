@@ -1,30 +1,32 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import ExportKeyScreen, {dashboardEntry} from '../src/screens/ExportKeyScreen';
+import ExportKeyScreen, {
+  dashboardEntry,
+} from '../src/screens/ExportKeyScreen';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 // ExportKeyScreen imports dashboardActions for border-style calculation.
 jest.mock('../src/navigation/dashboardActions', () => ({
-  dashboardActions: [{label: 'Connect software wallet', navigate: jest.fn()}],
+  dashboardActions: [{ label: 'Connect software wallet', navigate: jest.fn() }],
 }));
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = {navigate: jest.fn()} as any;
+const navigation = { navigate: jest.fn() } as any;
 
 async function renderScreen() {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
@@ -32,7 +34,7 @@ async function renderScreen() {
     renderer = ReactTestRenderer.create(
       <ExportKeyScreen
         navigation={navigation}
-        route={{key: 'ExportKey', name: 'ExportKey'} as any}
+        route={{ key: 'ExportKey', name: 'ExportKey' } as any}
       />,
     );
   });
@@ -85,7 +87,7 @@ describe('ExportKeyScreen', () => {
     });
 
     it('calls navigation.navigate("ExportKey") when invoked', () => {
-      const nav = {navigate: jest.fn()} as any;
+      const nav = { navigate: jest.fn() } as any;
       dashboardEntry.navigate(nav);
       expect(nav.navigate).toHaveBeenCalledWith('ExportKey');
     });

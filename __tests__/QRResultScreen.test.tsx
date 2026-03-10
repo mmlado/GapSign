@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import QRResultScreen from '../src/screens/QRResultScreen';
 
@@ -7,13 +7,13 @@ import QRResultScreen from '../src/screens/QRResultScreen';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
+  const { Text } = require('react-native');
   return {
-    MD3DarkTheme: {colors: {}},
+    MD3DarkTheme: { colors: {} },
     Text,
   };
 });
@@ -38,12 +38,12 @@ async function renderScreen(
       <QRResultScreen
         route={
           {
-            params: {urString, label},
+            params: { urString, label },
             key: 'QRResult',
             name: 'QRResult',
           } as any
         }
-        navigation={(navigation ?? {reset: jest.fn()}) as any}
+        navigation={(navigation ?? { reset: jest.fn() }) as any}
       />,
     );
   });
@@ -60,7 +60,9 @@ function toJson(renderer: ReactTestRenderer.ReactTestRenderer): string {
 
 describe('QRResultScreen', () => {
   it('renders without crashing', async () => {
-    await expect(renderScreen(SAMPLE_UR, 'Scan with MetaMask')).resolves.toBeDefined();
+    await expect(
+      renderScreen(SAMPLE_UR, 'Scan with MetaMask'),
+    ).resolves.toBeDefined();
   });
 
   it('displays the label when provided', async () => {
@@ -85,7 +87,7 @@ describe('QRResultScreen', () => {
 
   it('"Done" resets navigation to Dashboard', async () => {
     const reset = jest.fn();
-    const renderer = await renderScreen(SAMPLE_UR, undefined, {reset});
+    const renderer = await renderScreen(SAMPLE_UR, undefined, { reset });
 
     // Find the Pressable — the only touchable node with an onPress handler.
     const pressable = renderer.root.find(
@@ -97,7 +99,7 @@ describe('QRResultScreen', () => {
 
     expect(reset).toHaveBeenCalledWith({
       index: 0,
-      routes: [{name: 'Dashboard'}],
+      routes: [{ name: 'Dashboard' }],
     });
   });
 });

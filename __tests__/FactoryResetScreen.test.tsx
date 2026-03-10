@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import FactoryResetScreen, {
   dashboardEntry,
@@ -10,12 +10,12 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 jest.mock('../src/components/NFCBottomSheet', () => jest.fn(() => null));
@@ -41,7 +41,7 @@ const navigation = {
   reset: jest.fn(),
 } as any;
 
-const route = {key: 'FactoryReset', name: 'FactoryReset'} as any;
+const route = { key: 'FactoryReset', name: 'FactoryReset' } as any;
 
 function hookMock(phase: string) {
   return {
@@ -73,7 +73,7 @@ function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) =>
       typeof node.props.onPress === 'function' && !node.props.disabled,
-    {deep: true},
+    { deep: true },
   );
 }
 
@@ -190,7 +190,9 @@ describe('FactoryResetScreen', () => {
       await renderScreen('done');
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
-        routes: [{name: 'Dashboard', params: {toast: 'Factory reset done'}}],
+        routes: [
+          { name: 'Dashboard', params: { toast: 'Factory reset done' } },
+        ],
       });
     });
 
@@ -210,7 +212,7 @@ describe('FactoryResetScreen', () => {
     });
 
     it('navigates to FactoryReset when invoked', () => {
-      const nav = {navigate: jest.fn()} as any;
+      const nav = { navigate: jest.fn() } as any;
       dashboardEntry.navigate(nav);
       expect(nav.navigate).toHaveBeenCalledWith('FactoryReset');
     });

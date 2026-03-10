@@ -1,10 +1,5 @@
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  Pressable,
-} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DashboardAction, ExportKeyScreenProps } from '../navigation/types';
 import theme from '../theme';
 import { Icons } from '../assets/icons';
@@ -13,33 +8,43 @@ import { Text } from 'react-native-paper';
 
 export const dashboardEntry: DashboardAction = {
   label: 'Connect software wallet',
-  navigate: (nav) => nav.navigate('ExportKey'),
+  navigate: nav => nav.navigate('ExportKey'),
 };
 
 const KEY_EXPORT_OPTIONS = [
-  {label: 'Ethereum', derivationPath: "m/44'/60'/0'"},
+  { label: 'Ethereum', derivationPath: "m/44'/60'/0'" },
 ];
 
-export default function ExportKeyScreen({navigation}: ExportKeyScreenProps) {
+export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+      ]}
+    >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.list}>
           {KEY_EXPORT_OPTIONS.map((action, i) => (
             <Pressable
-              style={[styles.item, i < dashboardActions.length - 1 && styles.itemBorder]}
+              style={[
+                styles.item,
+                i < dashboardActions.length - 1 && styles.itemBorder,
+              ]}
               key={i}
-              onPress={() => navigation.navigate('Keycard', {
-                operation: 'export_key',
-                derivationPath: action.derivationPath
-              })}>
-              <Text style={styles.itemLabel}>
-                {action.label}
-              </Text>
+              onPress={() =>
+                navigation.navigate('Keycard', {
+                  operation: 'export_key',
+                  derivationPath: action.derivationPath,
+                })
+              }
+            >
+              <Text style={styles.itemLabel}>{action.label}</Text>
               <Icons.chevronRight width={24} height={24} />
             </Pressable>
           ))}

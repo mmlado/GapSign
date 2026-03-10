@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import ConfirmPrompt from '../src/components/ConfirmPropmpt';
 
@@ -7,8 +7,8 @@ import ConfirmPrompt from '../src/components/ConfirmPropmpt';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
 function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) => typeof node.props.onPress === 'function',
-    {deep: true},
+    { deep: true },
   );
 }
 
@@ -77,7 +77,6 @@ describe('ConfirmPrompt', () => {
       const renderer = await renderComponent();
       expect(toJson(renderer)).toContain('No, skip');
     });
-
   });
 
   describe('callbacks', () => {

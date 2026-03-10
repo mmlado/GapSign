@@ -1,6 +1,6 @@
-import {URDecoder} from '@ngraveio/bc-ur';
+import { URDecoder } from '@ngraveio/bc-ur';
 import CBOR from 'cbor-sync';
-import {buildCryptoHdKeyUR} from '../src/utils/cryptoHdKey';
+import { buildCryptoHdKeyUR } from '../src/utils/cryptoHdKey';
 
 // ---------------------------------------------------------------------------
 // TLV builder helpers (mirrors the Keycard card response format)
@@ -38,7 +38,10 @@ function concat(...parts: Uint8Array[]): Uint8Array {
  *     0x82  chainCode (32 bytes)
  *   }
  */
-function buildExportKeyTLV(pubKey: Uint8Array, chainCode: Uint8Array): Uint8Array {
+function buildExportKeyTLV(
+  pubKey: Uint8Array,
+  chainCode: Uint8Array,
+): Uint8Array {
   const inner = concat(tlvEncode(0x80, pubKey), tlvEncode(0x82, chainCode));
   return tlvEncode(0xa1, inner);
 }

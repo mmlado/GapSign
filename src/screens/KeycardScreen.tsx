@@ -1,15 +1,18 @@
-import React, {useCallback, useEffect, useRef} from 'react';
-import {StyleSheet, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {keccak_256} from '@noble/hashes/sha3';
-import type {KeycardScreenProps} from '../navigation/types';
-import {useKeycardOperation} from '../hooks/useKeycardOperation';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { keccak_256 } from '@noble/hashes/sha3';
+import type { KeycardScreenProps } from '../navigation/types';
+import { useKeycardOperation } from '../hooks/useKeycardOperation';
 import NFCBottomSheet from '../components/NFCBottomSheet';
-import {buildEthSignatureUR} from '../utils/ethSignature';
-import {buildCryptoHdKeyUR} from '../utils/cryptoHdKey';
+import { buildEthSignatureUR } from '../utils/ethSignature';
+import { buildCryptoHdKeyUR } from '../utils/cryptoHdKey';
 import PinPad from '../components/PinPad';
 
-function prepareHash(signData: string, dataType: number | undefined): Uint8Array {
+function prepareHash(
+  signData: string,
+  dataType: number | undefined,
+): Uint8Array {
   const raw = new Uint8Array(Buffer.from(signData, 'hex'));
   if (dataType === 1 || dataType === 4) {
     return keccak_256(raw);
@@ -17,16 +20,21 @@ function prepareHash(signData: string, dataType: number | undefined): Uint8Array
   return raw;
 }
 
-export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
+export default function KeycardScreen({
+  route,
+  navigation,
+}: KeycardScreenProps) {
   const params = route.params;
   const insets = useSafeAreaInsets();
   const hashRef = useRef<Uint8Array | null>(null);
 
-  const {phase, status, result, execute, submitPin, cancel} =
+  const { phase, status, result, execute, submitPin, cancel } =
     useKeycardOperation<Uint8Array>();
 
   const handleSign = useCallback(() => {
-    if (params.operation !== 'sign') { return; }
+    if (params.operation !== 'sign') {
+      return;
+    }
     const hash = prepareHash(params.signData, params.dataType);
     hashRef.current = hash;
     execute(async cmdSet => {
@@ -44,11 +52,18 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleExportKey = useCallback(() => {
-    execute(async cmdSet => {
-      const resp = await cmdSet.exportExtendedKey(0, params.derivationPath, false);
-      resp.checkOK();
-      return resp.data;
-    }, {requiresPin: true});
+    execute(
+      async cmdSet => {
+        const resp = await cmdSet.exportExtendedKey(
+          0,
+          params.derivationPath,
+          false,
+        );
+        resp.checkOK();
+        return resp.data;
+      },
+      { requiresPin: true },
+    );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -77,10 +92,10 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
           navigation.reset({
             index: 1,
             routes: [
-              {name: 'QRScanner'},
+              { name: 'QRScanner' },
               {
                 name: 'QRResult',
-                params: {urString, label: 'Scan with MetaMask'},
+                params: { urString, label: 'Scan with MetaMask' },
               },
             ],
           });
@@ -88,7 +103,10 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
         }
         if (params.operation === 'export_key') {
           const urString = buildCryptoHdKeyUR(result, params.derivationPath);
-          navigation.navigate('QRResult', {urString, label: 'Scan QR with your software wallet'});
+          navigation.navigate('QRResult', {
+            urString,
+            label: 'Scan QR with your software wallet',
+          });
         }
       } catch (e: any) {
         console.error('[KeycardScreen] Failed to build UR:', e.message);
@@ -104,18 +122,21 @@ export default function KeycardScreen({route, navigation}: KeycardScreenProps) {
   }, [cancel, navigation]);
 
   return (
-    <View style={[styles.container, {paddingBottom: insets.bottom + 16}]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {phase === 'pin_entry' && (
-        <PinPad
-          title="Enter Keycard PIN"
-          onComplete={submitPin}
-        />
+        <PinPad title="Enter Keycard PIN" onComplete={submitPin} />
       )}
 
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
         status={status}
-        variant={phase === 'done' ? 'success' : phase === 'error' ? 'error' : 'scanning'}
+        variant={
+          phase === 'done'
+            ? 'success'
+            : phase === 'error'
+            ? 'error'
+            : 'scanning'
+        }
         onCancel={handleCancel}
       />
     </View>

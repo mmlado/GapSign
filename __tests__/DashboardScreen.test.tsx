@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import DashboardScreen from '../src/screens/DashboardScreen';
 
@@ -7,15 +7,15 @@ import DashboardScreen from '../src/screens/DashboardScreen';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
+  const { Text } = require('react-native');
   return {
-    MD3DarkTheme: {colors: {}},
+    MD3DarkTheme: { colors: {} },
     Text,
-    Snackbar: ({visible, children}: any) =>
+    Snackbar: ({ visible, children }: any) =>
       visible ? require('react').createElement(Text, null, children) : null,
   };
 });
@@ -28,7 +28,8 @@ jest.mock('@react-navigation/native', () => ({
   },
 }));
 
-const mockDashboardActions: {label: string; navigate: (nav: any) => void}[] = [];
+const mockDashboardActions: { label: string; navigate: (nav: any) => void }[] =
+  [];
 
 jest.mock('../src/navigation/dashboardActions', () => ({
   get dashboardActions() {
@@ -45,10 +46,10 @@ const navigation = {
   setParams: jest.fn(),
 } as any;
 
-async function renderScreen(routeParams?: {toast?: string}) {
+async function renderScreen(routeParams?: { toast?: string }) {
   focusCallback = null;
   let renderer!: ReactTestRenderer.ReactTestRenderer;
-  const route = routeParams ? {params: routeParams} : ({} as any);
+  const route = routeParams ? { params: routeParams } : ({} as any);
   await act(async () => {
     renderer = ReactTestRenderer.create(
       <DashboardScreen navigation={navigation} route={route as any} />,
@@ -80,18 +81,18 @@ describe('DashboardScreen', () => {
     });
 
     it('renders one fewer pressable when action list is empty', async () => {
-      mockDashboardActions.push({label: 'Sentinel', navigate: jest.fn()});
+      mockDashboardActions.push({ label: 'Sentinel', navigate: jest.fn() });
       const withOne = await renderScreen();
       const countWithOne = withOne.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       ).length;
 
       mockDashboardActions.length = 0;
       const withNone = await renderScreen();
       const countWithNone = withNone.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       ).length;
 
       expect(countWithNone).toBe(countWithOne - 1);
@@ -101,8 +102,8 @@ describe('DashboardScreen', () => {
   describe('action list', () => {
     it('renders items with their labels', async () => {
       mockDashboardActions.push(
-        {label: 'Action One', navigate: jest.fn()},
-        {label: 'Action Two', navigate: jest.fn()},
+        { label: 'Action One', navigate: jest.fn() },
+        { label: 'Action Two', navigate: jest.fn() },
       );
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Action One');
@@ -111,11 +112,14 @@ describe('DashboardScreen', () => {
 
     it('calls the action navigate when an item is pressed', async () => {
       const mockNavigate = jest.fn();
-      mockDashboardActions.push({label: 'Test Action', navigate: mockNavigate});
+      mockDashboardActions.push({
+        label: 'Test Action',
+        navigate: mockNavigate,
+      });
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       );
       // Action item pressables come before the PrimaryButton
       await act(async () => {
@@ -129,13 +133,13 @@ describe('DashboardScreen', () => {
       const mockFirst = jest.fn();
       const mockSecond = jest.fn();
       mockDashboardActions.push(
-        {label: 'First', navigate: mockFirst},
-        {label: 'Second', navigate: mockSecond},
+        { label: 'First', navigate: mockFirst },
+        { label: 'Second', navigate: mockSecond },
       );
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       );
       await act(async () => {
         pressables[1].props.onPress();
@@ -150,7 +154,7 @@ describe('DashboardScreen', () => {
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       );
       // With no actions, the only pressable is the PrimaryButton
       await act(async () => {
@@ -160,11 +164,11 @@ describe('DashboardScreen', () => {
     });
 
     it('does not call navigation.navigate when an action item is pressed', async () => {
-      mockDashboardActions.push({label: 'Some Action', navigate: jest.fn()});
+      mockDashboardActions.push({ label: 'Some Action', navigate: jest.fn() });
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
-        {deep: true},
+        { deep: true },
       );
       await act(async () => {
         pressables[0].props.onPress();
@@ -175,7 +179,7 @@ describe('DashboardScreen', () => {
 
   describe('toast / snackbar', () => {
     it('shows the snackbar with the toast message when the screen is focused', async () => {
-      const renderer = await renderScreen({toast: 'Card initialized'});
+      const renderer = await renderScreen({ toast: 'Card initialized' });
       await act(async () => {
         focusCallback?.();
       });
@@ -183,11 +187,11 @@ describe('DashboardScreen', () => {
     });
 
     it('clears the toast param after showing the snackbar', async () => {
-      await renderScreen({toast: 'Card initialized'});
+      await renderScreen({ toast: 'Card initialized' });
       await act(async () => {
         focusCallback?.();
       });
-      expect(navigation.setParams).toHaveBeenCalledWith({toast: undefined});
+      expect(navigation.setParams).toHaveBeenCalledWith({ toast: undefined });
     });
 
     it('does not show the snackbar when there is no toast param', async () => {

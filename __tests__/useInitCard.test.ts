@@ -1,7 +1,7 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import {useInitCard} from '../src/hooks/useInitCard';
-import type {UseInitCardOperation} from '../src/hooks/useInitCard';
+import { useInitCard } from '../src/hooks/useInitCard';
+import type { UseInitCardOperation } from '../src/hooks/useInitCard';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
@@ -18,18 +18,18 @@ jest.mock('react-native-keycard', () => ({
   __esModule: true,
   default: {
     Core: {
-      onKeycardConnected: (_cb: () => Promise<void>) => ({remove: jest.fn()}),
+      onKeycardConnected: (_cb: () => Promise<void>) => ({ remove: jest.fn() }),
       onKeycardDisconnected: (cb: () => void) => {
         capturedOnDisconnected = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       onNFCUserCancelled: (cb: () => void) => {
         capturedOnCancelled = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       onNFCTimeout: (cb: () => void) => {
         capturedOnTimeout = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       startNFC: (msg: string) => mockStartNFC(msg),
       stopNFC: () => mockStopNFC(),
@@ -40,7 +40,7 @@ jest.mock('react-native-keycard', () => ({
 
 jest.mock('keycard-sdk', () => ({
   __esModule: true,
-  default: {Commandset: class {}},
+  default: { Commandset: class {} },
 }));
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-import {useCallback, useRef, useState} from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Keycard from 'keycard-sdk';
-import {loadPairing, savePairing} from '../storage/pairingStorage';
+import { loadPairing, savePairing } from '../storage/pairingStorage';
 import useNFCSession from './useNFCSession';
 import { Commandset } from 'keycard-sdk/dist/commandset';
 import { PAIRING_PASSWORD } from '../constants/keycard';
@@ -40,70 +40,80 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const requiresPinRef = useRef(true);
   const operationRunningRef = useRef(false);
 
-  const handleCardDisconnected = useCallback(async () => {
-  }, []);
+  const handleCardDisconnected = useCallback(async () => {}, []);
 
-  const handleCardConnected = useCallback(async (cmdSet: Commandset, setStatus: (status: string) => void) => {
-    const appInfo = cmdSet.applicationInfo;
-    if (!appInfo) {
-      throw new Error('No application info in SELECT response');
-    }
+  const handleCardConnected = useCallback(
+    async (cmdSet: Commandset, setStatus: (status: string) => void) => {
+      const appInfo = cmdSet.applicationInfo;
+      if (!appInfo) {
+        throw new Error('No application info in SELECT response');
+      }
 
-    const uid = toHex(appInfo.instanceUID);
-    console.log(
-      `[Keycard] SELECT OK — UID: ${uid}, initialized: ${appInfo.initializedCard}, ` +
-        `freePairingSlots: ${appInfo.freePairingSlots}, hasMasterKey: ${appInfo.hasMasterKey()}`,
-    );
-
-    const existingPairing = await loadPairing(uid);
-    if (existingPairing) {
+      const uid = toHex(appInfo.instanceUID);
       console.log(
-        `[Keycard] Pairing found in storage (index: ${existingPairing.pairingIndex})`,
+        `[Keycard] SELECT OK — UID: ${uid}, initialized: ${appInfo.initializedCard}, ` +
+          `freePairingSlots: ${
+            appInfo.freePairingSlots
+          }, hasMasterKey: ${appInfo.hasMasterKey()}`,
       );
-      cmdSet.setPairing(existingPairing);
-      setStatus('Opening secure channel...');
-    } else {
-      console.log('[Keycard] No pairing found — running autoPair');
-      setStatus('Pairing with card...');
-      await cmdSet.autoPair(PAIRING_PASSWORD);
-      const pairing = cmdSet.getPairing();
-      console.log(
-        `[Keycard] autoPair OK (index: ${pairing.pairingIndex}) — saving to storage`,
-      );
-      await savePairing(uid, pairing);
-      setStatus('Opening secure channel...');
-    }
 
-    await cmdSet.autoOpenSecureChannel();
-    console.log('[Keycard] Secure channel open');
+      const existingPairing = await loadPairing(uid);
+      if (existingPairing) {
+        console.log(
+          `[Keycard] Pairing found in storage (index: ${existingPairing.pairingIndex})`,
+        );
+        cmdSet.setPairing(existingPairing);
+        setStatus('Opening secure channel...');
+      } else {
+        console.log('[Keycard] No pairing found — running autoPair');
+        setStatus('Pairing with card...');
+        await cmdSet.autoPair(PAIRING_PASSWORD);
+        const pairing = cmdSet.getPairing();
+        console.log(
+          `[Keycard] autoPair OK (index: ${pairing.pairingIndex}) — saving to storage`,
+        );
+        await savePairing(uid, pairing);
+        setStatus('Opening secure channel...');
+      }
 
-    if (requiresPinRef.current) {
-      setStatus('Verifying PIN...');
-      const pinResp = await cmdSet.verifyPIN(pinRef.current);
-      console.log(
-        `[Keycard] verifyPIN SW: 0x${pinResp.sw.toString(16).toUpperCase()}`,
-      );
-      pinResp.checkAuthOK();
-      pinRef.current = ''; // clear from memory
-    }
+      await cmdSet.autoOpenSecureChannel();
+      console.log('[Keycard] Secure channel open');
 
-    if (operationRunningRef.current || !operationRef.current) {
-      return;
-    }
-    operationRunningRef.current = true;
-    setStatus('Processing...');
-    try {
-      const opResult = await operationRef.current(cmdSet);
-      setResult(opResult);
-    } finally {
-      operationRunningRef.current = false;
-    }
-  }, []);
+      if (requiresPinRef.current) {
+        setStatus('Verifying PIN...');
+        const pinResp = await cmdSet.verifyPIN(pinRef.current);
+        console.log(
+          `[Keycard] verifyPIN SW: 0x${pinResp.sw.toString(16).toUpperCase()}`,
+        );
+        pinResp.checkAuthOK();
+        pinRef.current = ''; // clear from memory
+      }
 
-  const {phase: nfcPhase, status, startNFC, reset: resetNFC} = useNFCSession(handleCardConnected, handleCardDisconnected);
+      if (operationRunningRef.current || !operationRef.current) {
+        return;
+      }
+      operationRunningRef.current = true;
+      setStatus('Processing...');
+      try {
+        const opResult = await operationRef.current(cmdSet);
+        setResult(opResult);
+      } finally {
+        operationRunningRef.current = false;
+      }
+    },
+    [],
+  );
+
+  const {
+    phase: nfcPhase,
+    status,
+    startNFC,
+    reset: resetNFC,
+  } = useNFCSession(handleCardConnected, handleCardDisconnected);
 
   // Overlay pin_entry on top of the NFC session phases.
-  const phase: Phase = waitingForPin && nfcPhase === 'idle' ? 'pin_entry' : nfcPhase;
+  const phase: Phase =
+    waitingForPin && nfcPhase === 'idle' ? 'pin_entry' : nfcPhase;
 
   const execute = useCallback(
     (op: KeycardOperationFn<T>, options: ExecuteOptions = {}) => {
@@ -120,11 +130,14 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     [startNFC],
   );
 
-  const submitPin = useCallback((pin: string) => {
-    pinRef.current = pin;
-    setWaitingForPin(false);
-    startNFC();
-  }, [startNFC]);
+  const submitPin = useCallback(
+    (pin: string) => {
+      pinRef.current = pin;
+      setWaitingForPin(false);
+      startNFC();
+    },
+    [startNFC],
+  );
 
   const cancel = useCallback(() => {
     resetNFC();
@@ -143,5 +156,5 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     setResult(null);
   }, [resetNFC]);
 
-  return {phase, status, result, execute, submitPin, cancel, reset};
+  return { phase, status, result, execute, submitPin, cancel, reset };
 }

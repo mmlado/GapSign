@@ -1,8 +1,8 @@
 /* eslint-disable no-bitwise */
 import * as secp from '@noble/secp256k1';
-import {URDecoder} from '@ngraveio/bc-ur';
+import { URDecoder } from '@ngraveio/bc-ur';
 import CBOR from 'cbor-sync';
-import {buildEthSignatureUR} from '../src/utils/ethSignature';
+import { buildEthSignatureUR } from '../src/utils/ethSignature';
 
 // ── TLV builder helpers ──────────────────────────────────────────────────────
 
@@ -130,7 +130,13 @@ describe('buildEthSignatureUR', () => {
     });
 
     it('undefined dataType falls back to v = 27 + recId', () => {
-      const ur = buildEthSignatureUR(tlvHex, HASH, undefined, undefined, undefined);
+      const ur = buildEthSignatureUR(
+        tlvHex,
+        HASH,
+        undefined,
+        undefined,
+        undefined,
+      );
       const sig: Buffer = decodeUR(ur)[2];
       expect(sig[sig.length - 1]).toBe(27 + recId);
     });

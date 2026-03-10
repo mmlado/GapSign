@@ -1,6 +1,6 @@
-import {Buffer} from 'buffer';
+import { Buffer } from 'buffer';
 import CBOR from 'cbor-sync';
-import type {EthSignRequest, ScanResult} from '../types';
+import type { EthSignRequest, ScanResult } from '../types';
 
 function parseDerivationPath(tagged: any): string {
   // The derivation path is CBOR tagged (304) containing a map
@@ -62,7 +62,7 @@ export function parseEthSignRequest(cborBytes: Buffer): EthSignRequest {
 export function handleUR(type: string, cbor: Buffer): ScanResult {
   if (type === 'eth-sign-request') {
     try {
-      return {kind: 'eth-sign-request', request: parseEthSignRequest(cbor)};
+      return { kind: 'eth-sign-request', request: parseEthSignRequest(cbor) };
     } catch (e: any) {
       return {
         kind: 'error',
@@ -70,5 +70,5 @@ export function handleUR(type: string, cbor: Buffer): ScanResult {
       };
     }
   }
-  return {kind: 'unsupported', type};
+  return { kind: 'unsupported', type };
 }

@@ -1,6 +1,6 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import InitCardScreen, {dashboardEntry} from '../src/screens/InitCardScreen';
+import InitCardScreen, { dashboardEntry } from '../src/screens/InitCardScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 
 // ---------------------------------------------------------------------------
@@ -8,12 +8,12 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 jest.mock('../src/components/NFCBottomSheet', () => jest.fn(() => null));
@@ -46,7 +46,7 @@ const navigation = {
   addListener: jest.fn(() => jest.fn()),
 } as any;
 
-const route = {key: 'InitCard', name: 'InitCard'} as any;
+const route = { key: 'InitCard', name: 'InitCard' } as any;
 
 function hookMock(phase: string) {
   return {
@@ -78,7 +78,7 @@ function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) =>
       typeof node.props.onPress === 'function' && !node.props.disabled,
-    {deep: true},
+    { deep: true },
   );
 }
 
@@ -282,7 +282,7 @@ describe('InitCardScreen', () => {
       });
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
-        routes: [{name: 'Dashboard', params: {toast: 'Card initialized'}}],
+        routes: [{ name: 'Dashboard', params: { toast: 'Card initialized' } }],
       });
     });
 
@@ -302,7 +302,7 @@ describe('InitCardScreen', () => {
     });
 
     it('navigates to InitCard when invoked', () => {
-      const nav = {navigate: jest.fn()} as any;
+      const nav = { navigate: jest.fn() } as any;
       dashboardEntry.navigate(nav);
       expect(nav.navigate).toHaveBeenCalledWith('InitCard');
     });

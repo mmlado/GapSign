@@ -1,5 +1,5 @@
-import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import type {ScanResult} from '../types';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { ScanResult } from '../types';
 import { NavigationProp } from '@react-navigation/native';
 
 export type KeycardParams =
@@ -18,19 +18,18 @@ export type KeycardParams =
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
 export type RootStackParamList = {
-  Dashboard: {toast?: string} | undefined;
+  Dashboard: { toast?: string } | undefined;
   InitCard: undefined;
   QRScanner: undefined;
-  TransactionDetail: {result: ScanResult};
+  TransactionDetail: { result: ScanResult };
   Keycard: KeycardParams;
   ExportKey: undefined;
   FactoryReset: undefined;
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
-    label?: string;   // text shown below the QR, e.g. "Scan with MetaMask"
+    label?: string; // text shown below the QR, e.g. "Scan with MetaMask"
   };
 };
-
 
 export type DashboardScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -76,4 +75,3 @@ export type DashboardAction = {
   label: string;
   navigate: (navigation: NavigationProp<RootStackParamList>) => void;
 };
-

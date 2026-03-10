@@ -8,13 +8,13 @@ import 'react-native-get-random-values';
 import './shims';
 
 import React from 'react';
-import {StatusBar} from 'react-native';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {PaperProvider} from 'react-native-paper';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PaperProvider } from 'react-native-paper';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import theme from './theme';
-import type {RootStackParamList} from './navigation/types';
+import type { RootStackParamList } from './navigation/types';
 import DashboardScreen from './screens/DashboardScreen';
 import QRScannerScreen from './screens/QRScannerScreen';
 import TransactionDetailScreen from './screens/TransactionDetailScreen';
@@ -26,8 +26,8 @@ import FactoryResetScreen from './screens/FactoryResetScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const headerStyle = {backgroundColor: theme.colors.background};
-const headerTitleStyle = {fontWeight: '600' as const};
+const headerStyle = { backgroundColor: theme.colors.background };
+const headerTitleStyle = { fontWeight: '600' as const };
 const defaultHeaderOptions = {
   headerShown: true,
   title: '',
@@ -47,21 +47,25 @@ export default function App() {
           translucent
         />
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{headerShown: false}}>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen name="InitCard"
+            <Stack.Screen
+              name="InitCard"
               component={InitCardScreen}
               options={defaultHeaderOptions}
             />
-            <Stack.Screen name="ExportKey"
+            <Stack.Screen
+              name="ExportKey"
               component={ExportKeyScreen}
               options={defaultHeaderOptions}
-            />  
-            <Stack.Screen name="FactoryReset"
+            />
+            <Stack.Screen
+              name="FactoryReset"
               component={FactoryResetScreen}
               options={defaultHeaderOptions}
-            />          
-            <Stack.Screen name="QRScanner"
+            />
+            <Stack.Screen
+              name="QRScanner"
               component={QRScannerScreen}
               options={defaultHeaderOptions}
             />

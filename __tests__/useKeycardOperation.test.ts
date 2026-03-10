@@ -1,7 +1,7 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import {useKeycardOperation} from '../src/hooks/useKeycardOperation';
-import type {UseKeycardOperation} from '../src/hooks/useKeycardOperation';
+import { useKeycardOperation } from '../src/hooks/useKeycardOperation';
+import type { UseKeycardOperation } from '../src/hooks/useKeycardOperation';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
@@ -18,18 +18,18 @@ jest.mock('react-native-keycard', () => ({
   __esModule: true,
   default: {
     Core: {
-      onKeycardConnected: (_cb: () => Promise<void>) => ({remove: jest.fn()}),
+      onKeycardConnected: (_cb: () => Promise<void>) => ({ remove: jest.fn() }),
       onKeycardDisconnected: (cb: () => void) => {
         capturedOnDisconnected = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       onNFCUserCancelled: (cb: () => void) => {
         capturedOnCancelled = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       onNFCTimeout: (cb: () => void) => {
         capturedOnTimeout = cb;
-        return {remove: jest.fn()};
+        return { remove: jest.fn() };
       },
       startNFC: (msg: string) => mockStartNFC(msg),
       stopNFC: () => mockStopNFC(),
@@ -40,7 +40,7 @@ jest.mock('react-native-keycard', () => ({
 
 jest.mock('keycard-sdk', () => ({
   __esModule: true,
-  default: {Commandset: class {}},
+  default: { Commandset: class {} },
 }));
 
 jest.mock('../src/storage/pairingStorage', () => ({
@@ -95,7 +95,7 @@ describe('useKeycardOperation', () => {
     it('transitions to pin_entry when requiresPin is true', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: true});
+        latestHook.execute(jest.fn(), { requiresPin: true });
       });
       expect(latestHook.phase).toBe('pin_entry');
     });
@@ -103,7 +103,7 @@ describe('useKeycardOperation', () => {
     it('transitions to nfc and calls startNFC when requiresPin is false', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: false});
+        latestHook.execute(jest.fn(), { requiresPin: false });
       });
       expect(latestHook.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
@@ -134,7 +134,7 @@ describe('useKeycardOperation', () => {
     it('returns to idle, clears status, and stops NFC', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: true});
+        latestHook.execute(jest.fn(), { requiresPin: true });
       });
       await act(async () => {
         latestHook.cancel();
@@ -162,7 +162,7 @@ describe('useKeycardOperation', () => {
     it('user-cancelled resets to idle when in nfc phase', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: false});
+        latestHook.execute(jest.fn(), { requiresPin: false });
       });
       expect(latestHook.phase).toBe('nfc');
 
@@ -175,7 +175,7 @@ describe('useKeycardOperation', () => {
     it('user-cancelled does not change phase when not in nfc', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: true});
+        latestHook.execute(jest.fn(), { requiresPin: true });
       });
       expect(latestHook.phase).toBe('pin_entry');
 
@@ -196,7 +196,7 @@ describe('useKeycardOperation', () => {
     it('card disconnected during nfc updates status and stays in nfc', async () => {
       await mountHook();
       await act(async () => {
-        latestHook.execute(jest.fn(), {requiresPin: false});
+        latestHook.execute(jest.fn(), { requiresPin: false });
       });
       await act(async () => {
         capturedOnDisconnected?.();

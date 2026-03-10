@@ -1,4 +1,4 @@
-import React, {act} from 'react';
+import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import KeycardScreen from '../src/screens/KeycardScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
@@ -8,12 +8,12 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // ---------------------------------------------------------------------------
 
 jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
 jest.mock('react-native-paper', () => {
-  const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  const { Text } = require('react-native');
+  return { MD3DarkTheme: { colors: {} }, Text };
 });
 
 jest.mock('../src/components/NFCBottomSheet', () => jest.fn(() => null));
@@ -38,7 +38,7 @@ jest.mock('../src/hooks/useKeycardOperation', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = {goBack: jest.fn(), reset: jest.fn()} as any;
+const navigation = { goBack: jest.fn(), reset: jest.fn() } as any;
 
 const signRoute = {
   params: {
@@ -164,8 +164,9 @@ describe('KeycardScreen', () => {
     });
 
     it('navigates after the 800ms timer fires', async () => {
-      const {buildEthSignatureUR} =
-        require('../src/utils/ethSignature') as {buildEthSignatureUR: jest.Mock};
+      const { buildEthSignatureUR } = require('../src/utils/ethSignature') as {
+        buildEthSignatureUR: jest.Mock;
+      };
       buildEthSignatureUR.mockReturnValue('UR:ETH-SIGN/...');
 
       mockUseKeycardOperation.mockReturnValue({
@@ -186,11 +187,13 @@ describe('KeycardScreen', () => {
   });
 
   describe('PIN pad input', () => {
-    function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
+    function getActivePressables(
+      renderer: ReactTestRenderer.ReactTestRenderer,
+    ) {
       return renderer.root.findAll(
         (node: any) =>
           typeof node.props.onPress === 'function' && !node.props.disabled,
-        {deep: true},
+        { deep: true },
       );
     }
 
