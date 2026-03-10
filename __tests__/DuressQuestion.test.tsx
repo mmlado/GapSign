@@ -27,11 +27,16 @@ async function renderComponent() {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <ConfirmPrompt 
-        onYes={onYes} 
-        onNo={onNo} 
-        title={'Add a duress PIN?'} 
-        description={'A duress PIN unlocks the card but shows a decoy account. Use it if you are ever forced to access your wallet under pressure.'} />,
+      <ConfirmPrompt
+        onYes={onYes}
+        onNo={onNo}
+        title={'Add a duress PIN?'}
+        description={
+          'A duress PIN unlocks the card but shows a decoy account. Use it if you are ever forced to access your wallet under pressure.'
+        }
+        yesLabel="Yes, add duress PIN"
+        noLabel="No, skip"
+      />,
     );
   });
   return renderer;

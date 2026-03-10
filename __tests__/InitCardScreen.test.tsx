@@ -282,7 +282,7 @@ describe('InitCardScreen', () => {
       });
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
-        routes: [{name: 'Dashboard'}],
+        routes: [{name: 'Dashboard', params: {toast: 'Card initialized'}}],
       });
     });
 
