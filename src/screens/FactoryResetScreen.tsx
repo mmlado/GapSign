@@ -26,7 +26,7 @@ export default function FactoryResetScreen({navigation}: FactoryResetSreenProps)
 
   const handleConfirmYes = useCallback(() => {
     start();
-  }, [navigation]);
+  }, [start]);
 
   const handleConfirmNo = useCallback(() => {
     navigation.goBack();
