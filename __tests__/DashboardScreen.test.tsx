@@ -12,8 +12,21 @@ jest.mock('react-native-safe-area-context', () => ({
 
 jest.mock('react-native-paper', () => {
   const {Text} = require('react-native');
-  return {MD3DarkTheme: {colors: {}}, Text};
+  return {
+    MD3DarkTheme: {colors: {}},
+    Text,
+    Snackbar: ({visible, children}: any) =>
+      visible ? require('react').createElement(Text, null, children) : null,
+  };
 });
+
+// Capture the useFocusEffect callback so tests can fire focus events.
+let focusCallback: (() => void) | null = null;
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (cb: () => void) => {
+    focusCallback = cb;
+  },
+}));
 
 const mockDashboardActions: {label: string; navigate: (nav: any) => void}[] = [];
 
@@ -27,13 +40,18 @@ jest.mock('../src/navigation/dashboardActions', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = {navigate: jest.fn()} as any;
+const navigation = {
+  navigate: jest.fn(),
+  setParams: jest.fn(),
+} as any;
 
-async function renderScreen() {
+async function renderScreen(routeParams?: {toast?: string}) {
+  focusCallback = null;
   let renderer!: ReactTestRenderer.ReactTestRenderer;
+  const route = routeParams ? {params: routeParams} : ({} as any);
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <DashboardScreen navigation={navigation} route={{} as any} />,
+      <DashboardScreen navigation={navigation} route={route as any} />,
     );
   });
   return renderer;
@@ -50,7 +68,9 @@ function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
 describe('DashboardScreen', () => {
   beforeEach(() => {
     navigation.navigate.mockClear();
+    navigation.setParams.mockClear();
     mockDashboardActions.length = 0;
+    focusCallback = null;
   });
 
   describe('static layout', () => {
@@ -150,6 +170,34 @@ describe('DashboardScreen', () => {
         pressables[0].props.onPress();
       });
       expect(navigation.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toast / snackbar', () => {
+    it('shows the snackbar with the toast message when the screen is focused', async () => {
+      const renderer = await renderScreen({toast: 'Card initialized'});
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(toJson(renderer)).toContain('Card initialized');
+    });
+
+    it('clears the toast param after showing the snackbar', async () => {
+      await renderScreen({toast: 'Card initialized'});
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(navigation.setParams).toHaveBeenCalledWith({toast: undefined});
+    });
+
+    it('does not show the snackbar when there is no toast param', async () => {
+      const renderer = await renderScreen();
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(navigation.setParams).not.toHaveBeenCalled();
+      // Snackbar renders null when not visible — message not in output
+      expect(toJson(renderer)).not.toContain('Card initialized');
     });
   });
 });

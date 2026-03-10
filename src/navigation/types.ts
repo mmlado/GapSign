@@ -18,12 +18,13 @@ export type KeycardParams =
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
 export type RootStackParamList = {
-  Dashboard: undefined;
+  Dashboard: {toast?: string} | undefined;
   InitCard: undefined;
   QRScanner: undefined;
   TransactionDetail: {result: ScanResult};
   Keycard: KeycardParams;
   ExportKey: undefined;
+  FactoryReset: undefined;
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     label?: string;   // text shown below the QR, e.g. "Scan with MetaMask"
@@ -64,6 +65,11 @@ export type QRResultScreenProps = NativeStackScreenProps<
 export type ExportKeyScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'ExportKey'
+>;
+
+export type FactoryResetSreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'FactoryReset'
 >;
 
 export type DashboardAction = {

@@ -22,6 +22,7 @@ import KeycardScreen from './screens/KeycardScreen';
 import QRResultScreen from './screens/QRResultScreen';
 import ExportKeyScreen from './screens/ExportKeyScreen';
 import InitCardScreen from './screens/InitCardScreen';
+import FactoryResetScreen from './screens/FactoryResetScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -55,7 +56,11 @@ export default function App() {
             <Stack.Screen name="ExportKey"
               component={ExportKeyScreen}
               options={defaultHeaderOptions}
-            />            
+            />  
+            <Stack.Screen name="FactoryReset"
+              component={FactoryResetScreen}
+              options={defaultHeaderOptions}
+            />          
             <Stack.Screen name="QRScanner"
               component={QRScannerScreen}
               options={defaultHeaderOptions}

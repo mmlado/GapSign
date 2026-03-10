@@ -1,6 +1,6 @@
 import React, {act} from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import DuressQuestion from '../src/components/DuressQuestion';
+import ConfirmPrompt from '../src/components/ConfirmPropmpt';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -27,7 +27,16 @@ async function renderComponent() {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <DuressQuestion onYes={onYes} onNo={onNo} />,
+      <ConfirmPrompt
+        onYes={onYes}
+        onNo={onNo}
+        title={'Add a duress PIN?'}
+        description={
+          'A duress PIN unlocks the card but shows a decoy account. Use it if you are ever forced to access your wallet under pressure.'
+        }
+        yesLabel="Yes, add duress PIN"
+        noLabel="No, skip"
+      />,
     );
   });
   return renderer;
@@ -48,7 +57,7 @@ function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('DuressQuestion', () => {
+describe('ConfirmPrompt', () => {
   describe('layout', () => {
     it('renders without crashing', async () => {
       await expect(renderComponent()).resolves.toBeDefined();

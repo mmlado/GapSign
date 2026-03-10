@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   StyleSheet,
   View,
@@ -6,15 +6,27 @@ import {
   Pressable,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import { DashboardScreenProps } from '../navigation/types';
 import theme from '../theme';
 import PrimaryButton from '../components/PrimaryButton';
 import { Icons } from '../assets/icons';
 import { dashboardActions } from '../navigation/dashboardActions';
-import { Text } from 'react-native-paper';
+import { Snackbar, Text } from 'react-native-paper';
 
-export default function DashboardScreen({navigation}: DashboardScreenProps) {
+export default function DashboardScreen({navigation, route}: DashboardScreenProps) {
   const insets = useSafeAreaInsets();
+  const [snackVisible, setSnackVisible] = useState(false);
+  const [snackMessage, setSnackMessage] = useState('');
+
+  useFocusEffect(useCallback(() => {
+    const toast = route.params?.toast;
+    if (toast) {
+      setSnackMessage(toast);
+      setSnackVisible(true);
+      navigation.setParams({toast: undefined});
+    }
+  }, [route.params?.toast, navigation]));
 
   const handleSign = useCallback(() => {
     navigation.navigate('QRScanner');
@@ -43,6 +55,13 @@ export default function DashboardScreen({navigation}: DashboardScreenProps) {
       <View style={styles.actions}>
         <PrimaryButton label='Scan transaction' onPress={handleSign} icon={Icons.scan} />
       </View>
+
+      <Snackbar
+        visible={snackVisible}
+        onDismiss={() => setSnackVisible(false)}
+        duration={3000}>
+        {snackMessage}
+      </Snackbar>
     </View>
   );
 }

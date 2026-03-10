@@ -1,8 +1,8 @@
-import { useCallback, useRef, useState } from "react";
-import useNFCSession from "./useNFCSession";
-import { PAIRING_PASSWORD } from "../constants/keycard";
+import { useCallback, useRef } from "react";
 import { Commandset } from "keycard-sdk/dist/commandset";
-import { Phase } from "./useKeycardOperation";
+import { PAIRING_PASSWORD } from "../constants/keycard";
+import { useNFCOperation } from "./useNFCOperation";
+import { Phase } from "./useNFCSession";
 
 export interface UseInitCardOperation {
   phase: Phase;
@@ -20,30 +20,21 @@ function generatePUK(): string {
 }
 
 export function useInitCard(): UseInitCardOperation {
-  const [result, setResult] = useState<string | null>(null);
-
   const pinRef = useRef('');
   const duressPinRef = useRef<string | null>(null);
 
-  const handleCardConnected = useCallback(async (cmdSet: Commandset) => {
-    if (cmdSet.applicationInfo?.initializedCard) {
-      throw new Error('This card is already set up. Use a blank card to initialize.');
-    }
-    
-    const puk = generatePUK();
-    await cmdSet.init(pinRef.current, puk, PAIRING_PASSWORD, duressPinRef.current || undefined)
-    setResult(puk);
-  }, []);
-
-  const handleCardDisconnected = useCallback(async () => {
-    pinRef.current = '';
-    duressPinRef.current = null;
-  }, []);
-
-  const { phase, status, startNFC, reset: nfcReset} = useNFCSession(
-    handleCardConnected,
-    handleCardDisconnected)
-  ;
+  const { phase, status, result, start: startNFC, cancel, reset } = useNFCOperation(
+    useCallback(async (cmdSet: Commandset) => {
+      if (cmdSet.applicationInfo?.initializedCard) {
+        throw new Error('This card is already set up. Use a blank card to initialize.');
+      }
+      const puk = generatePUK();
+      await cmdSet.init(pinRef.current, puk, PAIRING_PASSWORD, duressPinRef.current || undefined);
+      pinRef.current = '';
+      duressPinRef.current = null;
+      return puk;
+    }, [])
+  );
 
   const start = useCallback((pin: string, duressPin?: string | null) => {
     pinRef.current = pin;
@@ -51,16 +42,5 @@ export function useInitCard(): UseInitCardOperation {
     startNFC();
   }, [startNFC]);
 
-  const cancel = useCallback(() => {
-    nfcReset();
-    pinRef.current = '';
-  }, [nfcReset]);
-
-  const reset = useCallback(() => {
-    nfcReset();
-    pinRef.current = '';
-    setResult(null);
-  }, [nfcReset]);
-
-  return {phase, status, result, start, cancel, reset};
+  return { phase, status, result, start, cancel, reset };
 }
