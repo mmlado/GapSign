@@ -24,6 +24,10 @@ export type RootStackParamList = {
   TransactionDetail: { result: ScanResult };
   Keycard: KeycardParams;
   ExportKey: undefined;
+  KeyPairMenu: undefined;
+  KeySize: undefined;
+  GenerateKey: { size: 12 | 24 };
+  ConfirmKey: { words: string[] };
   FactoryReset: undefined;
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
@@ -69,6 +73,26 @@ export type ExportKeyScreenProps = NativeStackScreenProps<
 export type FactoryResetSreenProps = NativeStackScreenProps<
   RootStackParamList,
   'FactoryReset'
+>;
+
+export type KeyPairMenuScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'KeyPairMenu'
+>;
+
+export type KeySizeScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'KeySize'
+>;
+
+export type ConfirmKeySreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'ConfirmKey'
+>;
+
+export type GenerateKeyScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'GenerateKey'
 >;
 
 export type DashboardAction = {
