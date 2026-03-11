@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { DashboardScreenProps } from '../navigation/types';
@@ -7,7 +7,8 @@ import theme from '../theme';
 import PrimaryButton from '../components/PrimaryButton';
 import { Icons } from '../assets/icons';
 import { dashboardActions } from '../navigation/dashboardActions';
-import { Snackbar, Text } from 'react-native-paper';
+import { Snackbar } from 'react-native-paper';
+import Menu from '../components/Menu';
 
 export default function DashboardScreen({
   navigation,
@@ -32,6 +33,11 @@ export default function DashboardScreen({
     navigation.navigate('QRScanner');
   }, [navigation]);
 
+  const entries = dashboardActions.map(action => ({
+    label: action.label,
+    onPress: () => action.navigate(navigation),
+  }));
+
   return (
     <View
       style={[
@@ -39,26 +45,7 @@ export default function DashboardScreen({
         { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.list}>
-          {dashboardActions.map((action, i) => (
-            <Pressable
-              style={[
-                styles.item,
-                i < dashboardActions.length - 1 && styles.itemBorder,
-              ]}
-              key={i}
-              onPress={() => action.navigate(navigation)}
-            >
-              <Text style={styles.itemLabel}>{action.label}</Text>
-              <Icons.chevronRight width={24} height={24} />
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+      <Menu entries={entries} />
 
       <View style={styles.actions}>
         <PrimaryButton
@@ -84,44 +71,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  scrollView: {
-    flex: 1,
-    marginHorizontal: '3%',
-  },
-  scrollContent: {
-    padding: 16,
-    gap: 12,
-    alignItems: 'center',
-  },
-  list: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF0D',
-    width: '100%',
-  },
   actions: {
     paddingHorizontal: 16,
     paddingTop: 12,
     backgroundColor: theme.colors.background,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    padding: 12,
-    paddingLeft: 16,
-  },
-  itemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.surface,
-  },
-  itemLabel: {
-    fontFamily: 'Inter_18pt-Medium',
-    fontWeight: '500',
-    fontSize: 15,
-    lineHeight: 15 * 1.45,
-    letterSpacing: -0.135,
-    color: '#ffffff',
   },
 });
