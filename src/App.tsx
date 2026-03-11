@@ -8,34 +8,16 @@ import 'react-native-get-random-values';
 import './shims';
 
 import React from 'react';
-import { StatusBar } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { PaperProvider } from 'react-native-paper';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {StatusBar} from 'react-native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {PaperProvider} from 'react-native-paper';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import theme from './theme';
-import type { RootStackParamList } from './navigation/types';
-import DashboardScreen from './screens/DashboardScreen';
-import QRScannerScreen from './screens/QRScannerScreen';
-import TransactionDetailScreen from './screens/TransactionDetailScreen';
-import KeycardScreen from './screens/KeycardScreen';
-import QRResultScreen from './screens/QRResultScreen';
-import ExportKeyScreen from './screens/ExportKeyScreen';
-import InitCardScreen from './screens/InitCardScreen';
-import FactoryResetScreen from './screens/FactoryResetScreen';
+import type {RootStackParamList} from './navigation/types';
+import {routes} from './navigation/routes';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-const headerStyle = { backgroundColor: theme.colors.background };
-const headerTitleStyle = { fontWeight: '600' as const };
-const defaultHeaderOptions = {
-  headerShown: true,
-  title: '',
-  headerStyle,
-  headerTintColor: theme.colors.onSurface,
-  headerTitleStyle,
-  headerShadowVisible: false,
-};
 
 export default function App() {
   return (
@@ -47,57 +29,15 @@ export default function App() {
           translucent
         />
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            <Stack.Screen
-              name="InitCard"
-              component={InitCardScreen}
-              options={defaultHeaderOptions}
-            />
-            <Stack.Screen
-              name="ExportKey"
-              component={ExportKeyScreen}
-              options={defaultHeaderOptions}
-            />
-            <Stack.Screen
-              name="FactoryReset"
-              component={FactoryResetScreen}
-              options={defaultHeaderOptions}
-            />
-            <Stack.Screen
-              name="QRScanner"
-              component={QRScannerScreen}
-              options={defaultHeaderOptions}
-            />
-            <Stack.Screen
-              name="TransactionDetail"
-              component={TransactionDetailScreen}
-              options={{
-                headerShown: true,
-                title: 'Review transaction',
-                headerStyle,
-                headerTintColor: theme.colors.onSurface,
-                headerTitleStyle,
-                headerShadowVisible: false,
-              }}
-            />
-            <Stack.Screen
-              name="Keycard"
-              component={KeycardScreen}
-              options={defaultHeaderOptions}
-            />
-            <Stack.Screen
-              name="QRResult"
-              component={QRResultScreen}
-              options={{
-                headerShown: true,
-                title: 'Signature',
-                headerStyle,
-                headerTintColor: theme.colors.onSurface,
-                headerTitleStyle,
-                headerShadowVisible: false,
-              }}
-            />
+          <Stack.Navigator screenOptions={{headerShown: false}}>
+            {routes.map(r => (
+              <Stack.Screen
+                key={r.name}
+                name={r.name}
+                component={r.component}
+                options={r.options}
+              />
+            ))}
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
