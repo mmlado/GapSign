@@ -1,5 +1,5 @@
 import React from 'react';
-import type {NativeStackNavigationOptions} from '@react-navigation/native-stack';
+import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import DashboardScreen from '../screens/DashboardScreen';
 import InitCardScreen from '../screens/InitCardScreen';
 import ExportKeyScreen from '../screens/ExportKeyScreen';
@@ -9,10 +9,14 @@ import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import KeycardScreen from '../screens/KeycardScreen';
 import QRResultScreen from '../screens/QRResultScreen';
 import theme from '../theme';
-import type {RootStackParamList} from './types';
+import type { RootStackParamList } from './types';
+import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
+import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
+import KeySizeScreen from '../screens/keypair/KeySizeScreen';
+import ConfirmKeyScreen from '../screens/keypair/ConfirmKeyScreen';
 
-const headerStyle = {backgroundColor: theme.colors.background};
-const headerTitleStyle = {fontWeight: '600' as const};
+const headerStyle = { backgroundColor: theme.colors.background };
+const headerTitleStyle = { fontWeight: '600' as const };
 const defaultHeaderOptions: NativeStackNavigationOptions = {
   headerShown: true,
   title: '',
@@ -29,20 +33,52 @@ type Route = {
 };
 
 export const routes: Route[] = [
-  {name: 'Dashboard', component: DashboardScreen},
-  {name: 'InitCard', component: InitCardScreen, options: defaultHeaderOptions},
-  {name: 'ExportKey', component: ExportKeyScreen, options: defaultHeaderOptions},
-  {name: 'FactoryReset', component: FactoryResetScreen, options: defaultHeaderOptions},
-  {name: 'QRScanner', component: QRScannerScreen, options: defaultHeaderOptions},
+  { name: 'Dashboard', component: DashboardScreen },
+  {
+    name: 'InitCard',
+    component: InitCardScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'ExportKey',
+    component: ExportKeyScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'KeyPairMenu',
+    component: KeyPairMenuScreen,
+    options: defaultHeaderOptions,
+  },
+  { name: 'KeySize', component: KeySizeScreen, options: defaultHeaderOptions },
+  {
+    name: 'GenerateKey',
+    component: GenerateKeyScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'ConfirmKey',
+    component: ConfirmKeyScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'FactoryReset',
+    component: FactoryResetScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'QRScanner',
+    component: QRScannerScreen,
+    options: defaultHeaderOptions,
+  },
   {
     name: 'TransactionDetail',
     component: TransactionDetailScreen,
-    options: {...defaultHeaderOptions, title: 'Review transaction'},
+    options: { ...defaultHeaderOptions, title: 'Review transaction' },
   },
-  {name: 'Keycard', component: KeycardScreen, options: defaultHeaderOptions},
+  { name: 'Keycard', component: KeycardScreen, options: defaultHeaderOptions },
   {
     name: 'QRResult',
     component: QRResultScreen,
-    options: {...defaultHeaderOptions, title: 'Signature'},
+    options: { ...defaultHeaderOptions, title: 'Signature' },
   },
 ];

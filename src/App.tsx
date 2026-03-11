@@ -8,14 +8,14 @@ import 'react-native-get-random-values';
 import './shims';
 
 import React from 'react';
-import {StatusBar} from 'react-native';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {PaperProvider} from 'react-native-paper';
-import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { StatusBar } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { PaperProvider } from 'react-native-paper';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import theme from './theme';
-import type {RootStackParamList} from './navigation/types';
-import {routes} from './navigation/routes';
+import type { RootStackParamList } from './navigation/types';
+import { routes } from './navigation/routes';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -29,7 +29,7 @@ export default function App() {
           translucent
         />
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{headerShown: false}}>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
             {routes.map(r => (
               <Stack.Screen
                 key={r.name}

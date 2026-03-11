@@ -1,19 +1,17 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import theme from "../theme";
-import { Icons } from "../assets/icons";
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import theme from '../theme';
+import { Icons } from '../assets/icons';
 
 type Entry = {
-  label: string,
+  label: string;
   onPress: () => void;
-}
+};
 
 type Props = {
   entries: Entry[];
-}
+};
 
-export default function Menu({
-  entries
-}: Props) {
+export default function Menu({ entries }: Props) {
   return (
     <ScrollView
       style={styles.scrollView}
@@ -22,10 +20,7 @@ export default function Menu({
       <View style={styles.list}>
         {entries.map((action, i) => (
           <Pressable
-            style={[
-              styles.item,
-              i < entries.length - 1 && styles.itemBorder,
-            ]}
+            style={[styles.item, i < entries.length - 1 && styles.itemBorder]}
             key={i}
             onPress={action.onPress}
           >

@@ -1,28 +1,28 @@
 import { StyleSheet, View } from 'react-native';
+import { KeySizeScreenProps } from '../../navigation/types';
+import Menu from '../../components/Menu';
+import theme from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { DashboardAction, ExportKeyScreenProps } from '../navigation/types';
-import theme from '../theme';
-import Menu from '../components/Menu';
 
-export const dashboardEntry: DashboardAction = {
-  label: 'Connect software wallet',
-  navigate: nav => nav.navigate('ExportKey'),
-};
-
-export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
+export default function KeySizeScreen({ navigation }: KeySizeScreenProps) {
   const insets = useSafeAreaInsets();
 
   const entries = [
     {
-      label: 'Ethereum',
+      label: '12 word',
       onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/44'/60'/0'",
+        navigation.navigate('GenerateKey', {
+          size: 12,
+        }),
+    },
+    {
+      label: '24 word',
+      onPress: () =>
+        navigation.navigate('GenerateKey', {
+          size: 24,
         }),
     },
   ];
-
   return (
     <View
       style={[
