@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { keccak_256 } from '@noble/hashes/sha3';
+import { keccak_256 } from '@noble/hashes/sha3.js';
 import type { KeycardScreenProps } from '../navigation/types';
-import { useKeycardOperation } from '../hooks/useKeycardOperation';
+import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import { buildEthSignatureUR } from '../utils/ethSignature';
 import { buildCryptoHdKeyUR } from '../utils/cryptoHdKey';

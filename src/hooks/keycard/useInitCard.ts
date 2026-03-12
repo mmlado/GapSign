@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import { PAIRING_PASSWORD } from '../constants/keycard';
+import { PAIRING_PASSWORD } from '../../constants/keycard';
 import { useNFCOperation } from './useNFCOperation';
 import { Phase } from './useNFCSession';
 

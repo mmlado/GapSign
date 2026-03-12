@@ -1,6 +1,6 @@
 import Keycard from 'keycard-sdk';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import RNKeycard from 'react-native-keycard';
 
 export type Phase = 'idle' | 'nfc' | 'done' | 'error';
@@ -21,8 +21,16 @@ export default function useNFCSession(
 ): UseNFCSessionOperation {
   const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState('');
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
 
   const handleCardConnected = useCallback(async () => {
+    if (phaseRef.current !== 'nfc') {
+      console.log(
+        `[Keycard] Card connected (ignored — phase is '${phaseRef.current}')`,
+      );
+      return;
+    }
     console.log('[Keycard] Card connected');
     try {
       setStatus('Selecting applet...');

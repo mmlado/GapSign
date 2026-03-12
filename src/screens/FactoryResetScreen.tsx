@@ -3,7 +3,7 @@ import { DashboardAction, FactoryResetSreenProps } from '../navigation/types';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import ConfirmPrompt from '../components/ConfirmPropmpt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFactoryReset } from '../hooks/useFactoryReset';
+import { useFactoryReset } from '../hooks/keycard/useFactoryReset';
 import { useCallback, useEffect } from 'react';
 
 export const dashboardEntry: DashboardAction = {

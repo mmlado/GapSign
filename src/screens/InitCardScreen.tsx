@@ -4,7 +4,7 @@ import NFCBottomSheet from '../components/NFCBottomSheet';
 import PinPad from '../components/PinPad';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useInitCard } from '../hooks/useInitCard';
+import { useInitCard } from '../hooks/keycard/useInitCard';
 import ConfirmPrompt from '../components/ConfirmPropmpt';
 import { useFocusEffect } from '@react-navigation/native';
 

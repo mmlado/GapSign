@@ -1,7 +1,7 @@
 import React, { act, useCallback } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { useNFCOperation } from '../src/hooks/useNFCOperation';
-import type { UseNFCOperation } from '../src/hooks/useNFCOperation';
+import { useNFCOperation } from '../src/hooks/keycard/useNFCOperation';
+import type { UseNFCOperation } from '../src/hooks/keycard/useNFCOperation';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them

@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
 import { GenerateKeyScreenProps } from '../../navigation/types';
-import { useGenerateKey } from '../../hooks/useGenerateKey';
+import { useGenerateKey } from '../../hooks/keycard/useGenerateKey';
 import theme from '../../theme';
 
 export default function GenerateKeyScreen({
@@ -38,7 +38,7 @@ export default function GenerateKeyScreen({
       setRevealed(true);
       return;
     }
-    navigation.navigate('ConfirmKey', { words: result ?? [] });
+    navigation.replace('ConfirmKey', { words: result ?? [] });
   }, [revealed, navigation, result]);
 
   const words = result ?? [];
