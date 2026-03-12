@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-03-12
+
 ## [0.3.0] - 2026-03-11
 
 ### Added
@@ -25,7 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/GapSign/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mmlado/GapSign/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/mmlado/GapSign/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/mmlado/GapSign/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mmlado/GapSign/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mmlado/GapSign/compare/294c1212cfd8d1738b5eb90bbb33aa02adee139c...v0.1.0
