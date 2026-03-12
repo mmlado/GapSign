@@ -32,7 +32,7 @@ const mockCancel = jest.fn();
 const mockReset = jest.fn();
 const mockUseInitCard = jest.fn();
 
-jest.mock('../src/hooks/useInitCard', () => ({
+jest.mock('../src/hooks/keycard/useInitCard', () => ({
   useInitCard: () => mockUseInitCard(),
 }));
 

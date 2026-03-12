@@ -104,7 +104,9 @@ describe('useNFCSession', () => {
   describe('startNFC', () => {
     it('transitions to nfc and calls startNFC', async () => {
       await mountHook();
-      await act(async () => { latestHook.startNFC(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
       expect(latestHook.phase).toBe('nfc');
       expect(latestHook.status).toBe('Tap your Keycard');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
@@ -114,8 +116,12 @@ describe('useNFCSession', () => {
   describe('reset', () => {
     it('returns to idle and stops NFC', async () => {
       await mountHook();
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { latestHook.reset(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        latestHook.reset();
+      });
       expect(latestHook.phase).toBe('idle');
       expect(latestHook.status).toBe('');
       expect(mockStopNFC).toHaveBeenCalled();
@@ -126,7 +132,9 @@ describe('useNFCSession', () => {
     it('ignores card connected when phase is idle', async () => {
       await mountHook();
       expect(latestHook.phase).toBe('idle');
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(mockOnCardConnected).not.toHaveBeenCalled();
       expect(latestHook.phase).toBe('idle');
     });
@@ -135,32 +143,48 @@ describe('useNFCSession', () => {
       await mountHook();
       // Drive to done by going through nfc phase and completing
       mockOnCardConnected.mockResolvedValue(undefined);
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(latestHook.phase).toBe('done');
 
       mockOnCardConnected.mockClear();
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(mockOnCardConnected).not.toHaveBeenCalled();
     });
 
     it('ignores card connected when phase is error', async () => {
       await mountHook();
       mockOnCardConnected.mockRejectedValue(new Error('fail'));
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(latestHook.phase).toBe('error');
 
       mockOnCardConnected.mockClear();
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(mockOnCardConnected).not.toHaveBeenCalled();
     });
 
     it('handles card connected when phase is nfc', async () => {
       await mountHook();
-      await act(async () => { latestHook.startNFC(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
       expect(latestHook.phase).toBe('nfc');
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(mockOnCardConnected).toHaveBeenCalledTimes(1);
       expect(latestHook.phase).toBe('done');
     });
@@ -168,8 +192,12 @@ describe('useNFCSession', () => {
     it('sets error phase when onCardConnected throws', async () => {
       await mountHook();
       mockOnCardConnected.mockRejectedValue(new Error('bad mac'));
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { await capturedOnConnected?.(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
       expect(latestHook.phase).toBe('error');
       expect(latestHook.status).toBe('Error: bad mac');
     });
@@ -178,34 +206,48 @@ describe('useNFCSession', () => {
   describe('NFC events', () => {
     it('user-cancelled resets to idle when in nfc phase', async () => {
       await mountHook();
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { capturedOnCancelled?.(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        capturedOnCancelled?.();
+      });
       expect(latestHook.phase).toBe('idle');
     });
 
     it('user-cancelled does not change phase when idle', async () => {
       await mountHook();
-      await act(async () => { capturedOnCancelled?.(); });
+      await act(async () => {
+        capturedOnCancelled?.();
+      });
       expect(latestHook.phase).toBe('idle');
     });
 
     it('timeout updates status message', async () => {
       await mountHook();
-      await act(async () => { capturedOnTimeout?.(); });
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
       expect(latestHook.status).toBe('Timed out — tap again');
     });
 
     it('card disconnected during nfc updates status and stays in nfc', async () => {
       await mountHook();
-      await act(async () => { latestHook.startNFC(); });
-      await act(async () => { capturedOnDisconnected?.(); });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        capturedOnDisconnected?.();
+      });
       expect(latestHook.phase).toBe('nfc');
       expect(latestHook.status).toBe('Card removed — tap again');
     });
 
     it('card disconnected outside nfc does not change status', async () => {
       await mountHook();
-      await act(async () => { capturedOnDisconnected?.(); });
+      await act(async () => {
+        capturedOnDisconnected?.();
+      });
       expect(latestHook.phase).toBe('idle');
       expect(latestHook.status).toBe('');
     });

@@ -28,7 +28,7 @@ const mockCancel = jest.fn();
 const mockReset = jest.fn();
 const mockUseFactoryReset = jest.fn();
 
-jest.mock('../src/hooks/useFactoryReset', () => ({
+jest.mock('../src/hooks/keycard/useFactoryReset', () => ({
   useFactoryReset: () => mockUseFactoryReset(),
 }));
 

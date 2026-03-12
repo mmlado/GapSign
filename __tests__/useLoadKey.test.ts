@@ -11,10 +11,12 @@ type OperationFn = (cmdSet: any) => Promise<void>;
 let capturedOperation: OperationFn | null = null;
 let capturedOptions: { requiresPin?: boolean } | null = null;
 
-const mockExecute = jest.fn((fn: OperationFn, opts: { requiresPin?: boolean }) => {
-  capturedOperation = fn;
-  capturedOptions = opts;
-});
+const mockExecute = jest.fn(
+  (fn: OperationFn, opts: { requiresPin?: boolean }) => {
+    capturedOperation = fn;
+    capturedOptions = opts;
+  },
+);
 const mockCancel = jest.fn();
 const mockReset = jest.fn();
 const mockSubmitPin = jest.fn();
@@ -40,15 +42,29 @@ jest.mock('keycard-sdk/dist/mnemonic', () => ({
 }));
 
 jest.mock('keycard-sdk/dist/bip32key', () => ({
-  BIP32KeyPair: { fromBinarySeed: (...args: any[]) => mockFromBinarySeed(...args) },
+  BIP32KeyPair: {
+    fromBinarySeed: (...args: any[]) => mockFromBinarySeed(...args),
+  },
 }));
 
 // ---------------------------------------------------------------------------
 // Test wrapper
 // ---------------------------------------------------------------------------
 
-const WORDS = ['word1', 'word2', 'word3', 'word4', 'word5', 'word6',
-               'word7', 'word8', 'word9', 'word10', 'word11', 'word12'];
+const WORDS = [
+  'word1',
+  'word2',
+  'word3',
+  'word4',
+  'word5',
+  'word6',
+  'word7',
+  'word8',
+  'word9',
+  'word10',
+  'word11',
+  'word12',
+];
 
 let hookStart: () => void;
 
@@ -82,7 +98,9 @@ describe('useLoadKey', () => {
   describe('start', () => {
     it('calls execute with requiresPin: true', async () => {
       await mountHook();
-      await act(async () => { hookStart(); });
+      await act(async () => {
+        hookStart();
+      });
       expect(mockExecute).toHaveBeenCalledTimes(1);
       expect(capturedOptions).toEqual({ requiresPin: true });
     });
@@ -91,13 +109,17 @@ describe('useLoadKey', () => {
   describe('operation callback', () => {
     async function runOperation(cmdSet: any) {
       await mountHook();
-      await act(async () => { hookStart(); });
+      await act(async () => {
+        hookStart();
+      });
       await capturedOperation!(cmdSet);
     }
 
     it('derives seed from words and loads keypair onto card', async () => {
       const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest.fn().mockResolvedValue({ checkOK: mockCheckOK });
+      const mockLoadBIP32KeyPair = jest
+        .fn()
+        .mockResolvedValue({ checkOK: mockCheckOK });
       const cmdSet = {
         applicationInfo: { hasMasterKey: () => false },
         loadBIP32KeyPair: mockLoadBIP32KeyPair,
@@ -118,7 +140,9 @@ describe('useLoadKey', () => {
       };
 
       await mountHook();
-      await act(async () => { hookStart(); });
+      await act(async () => {
+        hookStart();
+      });
 
       await expect(capturedOperation!(cmdSet)).rejects.toThrow(
         'Card already has a key. Factory reset required.',
@@ -128,7 +152,9 @@ describe('useLoadKey', () => {
 
     it('handles missing applicationInfo without throwing', async () => {
       const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest.fn().mockResolvedValue({ checkOK: mockCheckOK });
+      const mockLoadBIP32KeyPair = jest
+        .fn()
+        .mockResolvedValue({ checkOK: mockCheckOK });
       const cmdSet = {
         applicationInfo: null,
         loadBIP32KeyPair: mockLoadBIP32KeyPair,
@@ -151,9 +177,13 @@ describe('useLoadKey', () => {
       };
 
       await mountHook();
-      await act(async () => { hookStart(); });
+      await act(async () => {
+        hookStart();
+      });
 
-      await expect(capturedOperation!(cmdSet)).rejects.toThrow('LOAD_KEY failed: 0x6982');
+      await expect(capturedOperation!(cmdSet)).rejects.toThrow(
+        'LOAD_KEY failed: 0x6982',
+      );
     });
   });
 });
