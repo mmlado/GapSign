@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { useFactoryReset } from '../src/hooks/useFactoryReset';
-import type { UseFactoryResetOperation } from '../src/hooks/useFactoryReset';
+import { useFactoryReset } from '../src/hooks/keycard/useFactoryReset';
+import type { UseFactoryResetOperation } from '../src/hooks/keycard/useFactoryReset';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them

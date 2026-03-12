@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import Keycard from 'keycard-sdk';
-import { loadPairing, savePairing } from '../storage/pairingStorage';
+import { loadPairing, savePairing } from '../../storage/pairingStorage';
 import useNFCSession from './useNFCSession';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import { PAIRING_PASSWORD } from '../constants/keycard';
+import { PAIRING_PASSWORD } from '../../constants/keycard';
 
 function toHex(arr: Uint8Array): string {
   return Array.from(arr)

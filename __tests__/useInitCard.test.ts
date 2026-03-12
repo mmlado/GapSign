@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { useInitCard } from '../src/hooks/useInitCard';
-import type { UseInitCardOperation } from '../src/hooks/useInitCard';
+import { useInitCard } from '../src/hooks/keycard/useInitCard';
+import type { UseInitCardOperation } from '../src/hooks/keycard/useInitCard';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
