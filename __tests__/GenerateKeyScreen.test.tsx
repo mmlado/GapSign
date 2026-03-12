@@ -37,8 +37,20 @@ jest.mock('../src/hooks/keycard/useGenerateKey', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const WORDS = ['apple', 'banana', 'cherry', 'date', 'elder', 'fig',
-               'grape', 'honey', 'iris', 'jade', 'kiwi', 'lemon'];
+const WORDS = [
+  'apple',
+  'banana',
+  'cherry',
+  'date',
+  'elder',
+  'fig',
+  'grape',
+  'honey',
+  'iris',
+  'jade',
+  'kiwi',
+  'lemon',
+];
 
 const navigation = {
   goBack: jest.fn(),

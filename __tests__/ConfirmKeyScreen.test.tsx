@@ -39,8 +39,20 @@ jest.mock('../src/hooks/keycard/useLoadKey', () => ({
 // ---------------------------------------------------------------------------
 
 // 12 words used as the seed phrase for all tests.
-const WORDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot',
-               'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima'];
+const WORDS = [
+  'alpha',
+  'bravo',
+  'charlie',
+  'delta',
+  'echo',
+  'foxtrot',
+  'golf',
+  'hotel',
+  'india',
+  'juliet',
+  'kilo',
+  'lima',
+];
 
 // With Math.random fixed to 0, Fisher-Yates shuffle of [0..11] produces
 // [1,2,3,4,5,6,7,8,9,10,11,0]. After .slice(0,4).sort() → [1,2,3,4].
@@ -120,7 +132,9 @@ async function pressChoice(
 }
 
 /** Complete all N_CHALLENGE correct answers. */
-async function completeChallenge(renderer: ReactTestRenderer.ReactTestRenderer) {
+async function completeChallenge(
+  renderer: ReactTestRenderer.ReactTestRenderer,
+) {
   for (const word of CORRECT_WORDS) {
     await pressChoice(renderer, word);
   }

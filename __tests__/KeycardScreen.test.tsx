@@ -30,7 +30,7 @@ const mockCancel = jest.fn();
 const mockExecute = jest.fn();
 const mockUseKeycardOperation = jest.fn();
 
-jest.mock('../src/hooks/useKeycardOperation', () => ({
+jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   useKeycardOperation: () => mockUseKeycardOperation(),
 }));
 
