@@ -34,7 +34,6 @@ export type RootStackParamList = {
   AddressDetail: { address: string; index: number };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
-    label?: string; // text shown below the QR, e.g. "Scan with MetaMask"
   };
 };
 

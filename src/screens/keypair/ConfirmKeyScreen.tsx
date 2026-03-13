@@ -3,7 +3,7 @@ import theme from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmKeySreenProps } from '../../navigation/types';
 import { useLoadKey } from '../../hooks/keycard/useLoadKey';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import { Text } from 'react-native-paper';
 import PinPad from '../../components/PinPad';
@@ -90,6 +90,12 @@ export default function ConfirmKeyScreen({
 
   const allDone = currentIndex >= N_CHALLENGE;
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: phase === 'pin_entry' ? 'Enter Keycard PIN' : 'Check your backup',
+    });
+  }, [navigation, phase]);
+
   return (
     <View
       style={[
@@ -97,9 +103,6 @@ export default function ConfirmKeyScreen({
         { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
-      <Text variant="headlineMedium" style={styles.title}>
-        Check your backup
-      </Text>
       <Text style={styles.description}>
         Confirm words positions in your recovery phrase.
       </Text>
@@ -142,7 +145,7 @@ export default function ConfirmKeyScreen({
       )}
 
       {phase === 'pin_entry' && (
-        <PinPad title="Enter Keycard PIN" onComplete={submitPin} />
+        <PinPad onComplete={submitPin} />
       )}
 
       <NFCBottomSheet
@@ -159,10 +162,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  title: {
-    color: '#ffffff',
-    marginBottom: 12,
   },
   description: {
     color: 'rgba(255,255,255,0.7)',
