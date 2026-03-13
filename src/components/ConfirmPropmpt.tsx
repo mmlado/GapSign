@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import PrimaryButton from './PrimaryButton';
 
 interface ConfirmPromptProps {
-  title: string;
+  title?: string;
   description: string;
   yesLabel?: string; // default: 'Yes'
   noLabel?: string; // default: 'No'
@@ -23,7 +23,7 @@ export default function ConfirmPrompt({
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
+        {title ? <Text style={styles.title}>{title}</Text> : null}
         <Text style={styles.description}>{description}</Text>
       </View>
       <View style={styles.buttons}>
