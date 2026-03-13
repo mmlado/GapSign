@@ -126,9 +126,7 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', e => {
       if (phase === 'nfc') {
-        e.preventDefault();
         cancel();
-        navigation.goBack();
         return;
       }
       const prev: Record<Step, Step | null> = {

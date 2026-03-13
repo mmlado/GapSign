@@ -46,7 +46,7 @@ export const routes: Route[] = [
   {
     name: 'ExportKey',
     component: ExportKeyScreen,
-    options: defaultHeaderOptions,
+    options: { ...defaultHeaderOptions, title: 'Chain selection' },
   },
   {
     name: 'KeyPairMenu',

@@ -24,12 +24,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
   ];
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <Menu entries={entries} />
     </View>
   );

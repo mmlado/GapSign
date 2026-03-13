@@ -7,6 +7,7 @@ import CopyIcon from './copy.svg';
 import NfcDefault from './nfc/default.svg';
 import NfcSuccess from './nfc/success.svg';
 import NfcFailure from './nfc/failure.svg';
+import NfcActivate from './nfc_activate.svg';
 
 export const Icons = {
   scan: ScanIcon,
@@ -15,6 +16,7 @@ export const Icons = {
   chevronRight: ChevronRight,
   qr: QrIcon,
   copy: CopyIcon,
+  nfcActivate: NfcActivate,
   nfc: {
     default: NfcDefault,
     success: NfcSuccess,
