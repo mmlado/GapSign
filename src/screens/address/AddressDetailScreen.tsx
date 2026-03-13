@@ -1,0 +1,75 @@
+import { useCallback, useLayoutEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import QRCode from 'react-native-qrcode-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icons } from '../../assets/icons';
+import PrimaryButton from '../../components/PrimaryButton';
+import theme from '../../theme';
+import type { AddressDetailScreenProps } from '../../navigation/types';
+
+export default function AddressDetailScreen({
+  route,
+  navigation,
+}: AddressDetailScreenProps) {
+  const { address, index } = route.params;
+  const insets = useSafeAreaInsets();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: String(index) });
+  }, [navigation, index]);
+
+  const handleCopy = useCallback(() => {
+    Clipboard.setString(address);
+  }, [address]);
+
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={styles.qrContainer}>
+        <View style={styles.qrWrapper}>
+          <QRCode
+            value={address}
+            size={280}
+            color="#000000"
+            backgroundColor="#ffffff"
+          />
+        </View>
+        <Text selectable style={styles.address}>
+          {address}
+        </Text>
+      </View>
+      <PrimaryButton
+        label="Copy Address"
+        onPress={handleCopy}
+        icon={Icons.copy}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    gap: 24,
+  },
+  qrContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  qrWrapper: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+  },
+  address: {
+    color: theme.colors.onSurface,
+    fontFamily: 'monospace',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+  },
+});
