@@ -29,6 +29,9 @@ export type RootStackParamList = {
   GenerateKey: { size: 12 | 24 };
   ConfirmKey: { words: string[] };
   FactoryReset: undefined;
+  AddressMenu: undefined;
+  AddressList: { coin: 'btc' | 'eth' };
+  AddressDetail: { address: string; index: number };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     label?: string; // text shown below the QR, e.g. "Scan with MetaMask"
@@ -93,6 +96,21 @@ export type ConfirmKeySreenProps = NativeStackScreenProps<
 export type GenerateKeyScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'GenerateKey'
+>;
+
+export type AddressMenuScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'AddressMenu'
+>;
+
+export type AddressListScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'AddressList'
+>;
+
+export type AddressDetailScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'AddressDetail'
 >;
 
 export type DashboardAction = {

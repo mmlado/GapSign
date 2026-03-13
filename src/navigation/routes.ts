@@ -14,6 +14,9 @@ import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
 import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
 import KeySizeScreen from '../screens/keypair/KeySizeScreen';
 import ConfirmKeyScreen from '../screens/keypair/ConfirmKeyScreen';
+import AddressesMenuScreen from '../screens/address/AddressMenuScreen';
+import AddressListScreen from '../screens/address/AddressListScreen';
+import AddressDetailScreen from '../screens/address/AddressDetailScreen';
 
 const headerStyle = { backgroundColor: theme.colors.background };
 const headerTitleStyle = { fontWeight: '600' as const };
@@ -23,6 +26,7 @@ const defaultHeaderOptions: NativeStackNavigationOptions = {
   headerStyle,
   headerTintColor: theme.colors.onSurface,
   headerTitleStyle,
+  headerTitleAlign: 'center',
   headerShadowVisible: false,
 };
 
@@ -53,6 +57,21 @@ export const routes: Route[] = [
   {
     name: 'GenerateKey',
     component: GenerateKeyScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'AddressMenu',
+    component: AddressesMenuScreen,
+    options: { ...defaultHeaderOptions, title: 'Addresses' },
+  },
+  {
+    name: 'AddressList',
+    component: AddressListScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'AddressDetail',
+    component: AddressDetailScreen,
     options: defaultHeaderOptions,
   },
   {
