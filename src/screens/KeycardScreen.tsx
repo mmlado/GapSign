@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { keccak_256 } from '@noble/hashes/sha3.js';
@@ -95,7 +95,7 @@ export default function KeycardScreen({
               { name: 'QRScanner' },
               {
                 name: 'QRResult',
-                params: { urString, label: 'Scan with MetaMask' },
+                params: { urString },
               },
             ],
           });
@@ -103,9 +103,13 @@ export default function KeycardScreen({
         }
         if (params.operation === 'export_key') {
           const urString = buildCryptoHdKeyUR(result, params.derivationPath);
-          navigation.navigate('QRResult', {
-            urString,
-            label: 'Scan QR with your software wallet',
+          navigation.reset({
+            index: 2,
+            routes: [
+              { name: 'Dashboard' },
+              { name: 'ExportKey' },
+              { name: 'QRResult', params: { urString } },
+            ],
           });
         }
       } catch (e: any) {
@@ -116,6 +120,10 @@ export default function KeycardScreen({
     return () => clearTimeout(timer);
   }, [phase, result, params, navigation]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: 'Enter Keycard PIN' });
+  }, [navigation]);
+
   const handleCancel = useCallback(() => {
     cancel();
     navigation.goBack();
@@ -124,7 +132,7 @@ export default function KeycardScreen({
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {phase === 'pin_entry' && (
-        <PinPad title="Enter Keycard PIN" onComplete={submitPin} />
+        <PinPad onComplete={submitPin} />
       )}
 
       <NFCBottomSheet

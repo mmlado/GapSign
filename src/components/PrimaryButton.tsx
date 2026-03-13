@@ -21,10 +21,10 @@ export default function PrimaryButton({ label, onPress, icon: Icon }: Props) {
       onPress={handlePress}
     >
       <View style={styles.content}>
+        {Icon && <Icon width={24} height={24} />}
         <Text variant="labelLarge" style={styles.text}>
           {label}
         </Text>
-        {Icon && <Icon width={24} height={24} />}
       </View>
     </Pressable>
   );

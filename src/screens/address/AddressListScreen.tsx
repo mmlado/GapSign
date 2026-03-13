@@ -49,9 +49,13 @@ export default function AddressListScreen({
   const nextIndexRef = useRef(0);
 
   useLayoutEffect(() => {
-    const label = coin === 'eth' ? 'Ethereum' : 'Bitcoin';
-    navigation.setOptions({ title: `${label} Addresses` });
-  }, [navigation, coin]);
+    if (phase === 'pin_entry') {
+      navigation.setOptions({ title: 'Enter Keycard PIN' });
+    } else {
+      const label = coin === 'eth' ? 'Ethereum' : 'Bitcoin';
+      navigation.setOptions({ title: `${label} Addresses` });
+    }
+  }, [navigation, coin, phase]);
 
   useEffect(() => {
     start();
@@ -115,7 +119,7 @@ export default function AddressListScreen({
 
       {phase === 'pin_entry' && (
         <View style={styles.pinOverlay}>
-          <PinPad title="Enter Keycard PIN" onComplete={submitPin} />
+          <PinPad onComplete={submitPin} />
         </View>
       )}
 

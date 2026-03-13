@@ -1,10 +1,39 @@
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { Text } from 'react-native-paper';
 import { Icons } from '../assets/icons';
 
+function Caret() {
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return <Animated.View style={[styles.caret, { opacity }]} />;
+}
+
 interface PinPadProps {
-  title: string;
   onComplete: (pin: string) => void;
   error?: string;
   onType?: () => void;
@@ -19,15 +48,8 @@ const PAD_KEYS = [
   ['', '0', '⌫'],
 ];
 
-export default function PinPad({
-  title,
-  onComplete,
-  error,
-  onType,
-}: PinPadProps) {
+export default function PinPad({ onComplete, error, onType }: PinPadProps) {
   const [pin, setPin] = useState('');
-  const { width } = useWindowDimensions();
-  const scale = width / 360;
 
   const handleKey = useCallback(
     (key: string) => {
@@ -54,27 +76,15 @@ export default function PinPad({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.dotsWrapper}>
-          <View style={styles.dots}>
-            {Array.from({ length: PIN_LENGTH }).map((_, i) => (
-              <View
-                key={i}
-                style={[styles.dot, i < pin.length && styles.dotFilled]}
-              />
-            ))}
+        <View style={styles.fieldWrapper}>
+          <View style={styles.pinField}>
+            <Text style={styles.pinFieldLabel}>6 digits</Text>
+            <View style={styles.pinFieldRow}>
+              <Text style={styles.pinFieldText}>{'•'.repeat(pin.length)}</Text>
+              <Caret />
+            </View>
           </View>
-          <Text
-            style={[
-              styles.error,
-              {
-                fontSize: 12 * scale,
-                lineHeight: 16 * scale,
-                height: 20 * scale,
-              },
-              !error && styles.errorHidden,
-            ]}
-          >
+          <Text style={[styles.error, !error && styles.errorHidden]}>
             {error ?? ''}
           </Text>
         </View>
@@ -120,31 +130,45 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingHorizontal: 24,
   },
-  title: {
-    color: '#ffffff',
-    fontFamily: 'Inter_18pt-SemiBold',
-    fontSize: 27,
-    lineHeight: 32,
-    letterSpacing: -0.567, // -2.1% of 27px
-    marginBottom: 8,
-  },
-  dotsWrapper: {
+  fieldWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dots: {
+  pinField: {
+    width: '66%',
+    backgroundColor: '#2d2d2d',
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    borderBottomWidth: 3,
+    borderBottomColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 4,
+    gap: 4,
+  },
+  pinFieldLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '400',
+    letterSpacing: 0.4,
+  },
+  pinFieldRow: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
+    height: 24,
   },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  pinFieldText: {
+    color: '#ffffff',
+    fontSize: 16,
+    letterSpacing: 4,
   },
-  dotFilled: {
+  caret: {
+    width: 1,
+    height: 18,
     backgroundColor: '#ffffff',
+    marginLeft: 1,
   },
   error: {
     color: '#BA434D',
@@ -154,7 +178,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     height: 20,
     paddingTop: 4,
-    paddingHorizontal: 16,
   },
   errorHidden: {
     opacity: 0,
@@ -163,27 +186,33 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 4,
   },
-  backspaceIcon: {
-    width: 32,
-    height: 32,
-    tintColor: '#ffffff',
-  },
   padRow: {
     flexDirection: 'row',
+    gap: 10,
   },
   padKey: {
     flex: 1,
-    height: 76,
+    height: 43,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 4,
+    borderRadius: 6,
+    backgroundColor: '#2A2A2A',
+    boxShadow: '0px 1px 0px 0px rgba(0, 0, 0, 0.27)',
   },
-  padKeyEmpty: {},
+  padKeyEmpty: {
+    backgroundColor: 'transparent',
+    boxShadow: 'none',
+  },
   padKeyPressed: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 48,
+    opacity: 0.6,
   },
   padKeyText: {
     color: '#ffffff',
-    fontWeight: '300',
+    fontFamily: 'Roboto',
+    fontWeight: '400',
+    fontSize: 30,
+    lineHeight: 30,
+    textAlign: 'center',
   },
 });

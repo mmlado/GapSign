@@ -2,7 +2,13 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import { DashboardAction, InitCardScreenProps } from '../navigation/types';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import PinPad from '../components/PinPad';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useInitCard } from '../hooks/keycard/useInitCard';
 import ConfirmPrompt from '../components/ConfirmPropmpt';
@@ -142,27 +148,32 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
     return unsubscribe;
   }, [navigation, phase, step, cancel]);
 
-  const pinPadProps: Record<
-    string,
-    { title: string; onComplete: (pin: string) => void }
-  > = {
-    pin_entry: { title: 'Create a PIN', onComplete: handlePin },
-    pin_confirm: { title: 'Confirm your PIN', onComplete: handlePinConfirm },
-    duress_entry: { title: 'Create a duress PIN', onComplete: handleDuress },
-    duress_confirm: {
-      title: 'Confirm duress PIN',
-      onComplete: handleDuressConfirm,
-    },
+  const stepTitles: Record<Step, string> = {
+    pin_entry: 'Create a PIN',
+    pin_confirm: 'Confirm your PIN',
+    duress_question: 'Initialize Card',
+    duress_entry: 'Create a duress PIN',
+    duress_confirm: 'Confirm duress PIN',
+  };
+
+  const pinPadProps: Record<string, { onComplete: (pin: string) => void }> = {
+    pin_entry: { onComplete: handlePin },
+    pin_confirm: { onComplete: handlePinConfirm },
+    duress_entry: { onComplete: handleDuress },
+    duress_confirm: { onComplete: handleDuressConfirm },
   };
 
   const currentPinPad = pinPadProps[step];
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: stepTitles[step] });
+  }, [navigation, step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       {phase === 'idle' && currentPinPad && (
         <PinPad
           key={step}
-          title={currentPinPad.title}
           onComplete={currentPinPad.onComplete}
           error={error}
           onType={() => setError(undefined)}
