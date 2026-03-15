@@ -68,6 +68,7 @@ const WRONG_WORD_FOR_SLOT_0 = 'charlie';
 const navigation = {
   goBack: jest.fn(),
   navigate: jest.fn(),
+  setOptions: jest.fn(),
 } as any;
 
 const route = {
@@ -154,6 +155,7 @@ describe('ConfirmKeyScreen', () => {
     MockPinPad.mockClear();
     navigation.goBack.mockClear();
     navigation.navigate.mockClear();
+    navigation.setOptions.mockClear();
   });
 
   afterEach(() => {
@@ -165,9 +167,11 @@ describe('ConfirmKeyScreen', () => {
   // -------------------------------------------------------------------------
 
   describe('initial layout', () => {
-    it('shows the "Check your backup" title', async () => {
-      const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Check your backup');
+    it('sets header title to "Check your backup" when idle', async () => {
+      await renderScreen();
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Check your backup',
+      });
     });
 
     it('shows unfilled slots at start', async () => {

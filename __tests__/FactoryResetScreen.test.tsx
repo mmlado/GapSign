@@ -23,6 +23,10 @@ const MockNFCBottomSheet = NFCBottomSheet as jest.MockedFunction<
   typeof NFCBottomSheet
 >;
 
+jest.mock('../src/assets/icons', () => ({
+  Icons: { nfcActivate: () => null },
+}));
+
 const mockStart = jest.fn();
 const mockCancel = jest.fn();
 const mockReset = jest.fn();
@@ -39,6 +43,7 @@ jest.mock('../src/hooks/keycard/useFactoryReset', () => ({
 const navigation = {
   goBack: jest.fn(),
   reset: jest.fn(),
+  setOptions: jest.fn(),
 } as any;
 
 const route = { key: 'FactoryReset', name: 'FactoryReset' } as any;
@@ -89,61 +94,90 @@ describe('FactoryResetScreen', () => {
     MockNFCBottomSheet.mockClear();
     navigation.goBack.mockClear();
     navigation.reset.mockClear();
+    navigation.setOptions.mockClear();
   });
 
   // -------------------------------------------------------------------------
-  // Confirm prompt content
+  // Content when idle
   // -------------------------------------------------------------------------
 
-  describe('confirm prompt', () => {
-    it('shows the "Factory reset card?" title when idle', async () => {
-      const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('Factory reset card?');
+  describe('idle content', () => {
+    it('sets the header title to "Factory reset"', async () => {
+      await renderScreen('idle');
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Factory reset',
+      });
     });
 
     it('shows the warning description', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('This cannot be undone');
+      expect(toJson(renderer)).toContain(
+        'Factory reset permanently erases key pair',
+      );
     });
 
-    it('shows the "Yes, erase card" button', async () => {
+    it('shows the backup checkbox label', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('Yes, erase card');
+      expect(toJson(renderer)).toContain('I have a backup');
     });
 
-    it('shows the "Cancel" button', async () => {
+    it('shows the "Factory reset Keycard" button', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('Cancel');
+      expect(toJson(renderer)).toContain('Factory reset Keycard');
     });
 
-    it('does not show the confirm prompt when not idle', async () => {
+    it('does not show the idle content when not idle', async () => {
       const renderer = await renderScreen('nfc');
-      expect(toJson(renderer)).not.toContain('Factory reset card?');
+      expect(toJson(renderer)).not.toContain('Factory reset Keycard');
     });
   });
 
   // -------------------------------------------------------------------------
-  // Button callbacks
+  // Button state
   // -------------------------------------------------------------------------
 
-  describe('button callbacks', () => {
-    it('calls start() when Yes is pressed', async () => {
+  describe('button state', () => {
+    it('the reset button is disabled initially', async () => {
       const renderer = await renderScreen('idle');
-      const pressables = getActivePressables(renderer);
-      await act(async () => {
-        pressables[0].props.onPress(); // PrimaryButton(Yes) = index 0
-      });
-      expect(mockStart).toHaveBeenCalledTimes(1);
+      const button = renderer.root.find(
+        (node: any) =>
+          typeof node.props.onPress === 'function' &&
+          node.props.disabled === true,
+      );
+      expect(button).toBeDefined();
     });
 
-    it('calls navigation.goBack() when Cancel is pressed', async () => {
+    it('the reset button becomes active after checking the checkbox', async () => {
       const renderer = await renderScreen('idle');
-      const pressables = getActivePressables(renderer);
+
+      // Before checking: only the checkbox is active
+      expect(getActivePressables(renderer)).toHaveLength(1);
+
+      const checkbox = getActivePressables(renderer)[0];
       await act(async () => {
-        pressables[2].props.onPress(); // PrimaryButton(Cancel) = index 2
+        checkbox.props.onPress();
       });
-      expect(navigation.goBack).toHaveBeenCalledTimes(1);
-      expect(mockStart).not.toHaveBeenCalled();
+
+      // After checking: more pressables active than before (reset button unlocked)
+      expect(getActivePressables(renderer).length).toBeGreaterThan(1);
+    });
+
+    it('calls start() when reset button is pressed after checking checkbox', async () => {
+      const renderer = await renderScreen('idle');
+
+      const checkbox = getActivePressables(renderer)[0];
+      await act(async () => {
+        checkbox.props.onPress();
+      });
+
+      const activePressables = getActivePressables(renderer);
+      // Last pressable is the reset button
+      const resetButton = activePressables[activePressables.length - 1];
+      await act(async () => {
+        resetButton.props.onPress();
+      });
+
+      expect(mockStart).toHaveBeenCalledTimes(1);
     });
   });
 
