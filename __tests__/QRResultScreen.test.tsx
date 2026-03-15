@@ -27,23 +27,24 @@ jest.mock('react-native-qrcode-svg', () => () => null);
 const SAMPLE_UR =
   'ur:eth-signature/oyadtpdagdndcawmgtfrkigrpmndutdnbtmkestlrfamjljkjkisdljzjljedrfgwzrd';
 
-async function renderScreen(
-  urString: string,
-  label?: string,
-  navigation?: object,
-) {
+async function renderScreen(urString: string, navigation?: object) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
       <QRResultScreen
         route={
           {
-            params: { urString, label },
+            params: { urString },
             key: 'QRResult',
             name: 'QRResult',
           } as any
         }
-        navigation={(navigation ?? { reset: jest.fn() }) as any}
+        navigation={
+          (navigation ?? {
+            reset: jest.fn(),
+            setOptions: jest.fn(),
+          }) as any
+        }
       />,
     );
   });
@@ -60,24 +61,7 @@ function toJson(renderer: ReactTestRenderer.ReactTestRenderer): string {
 
 describe('QRResultScreen', () => {
   it('renders without crashing', async () => {
-    await expect(
-      renderScreen(SAMPLE_UR, 'Scan with MetaMask'),
-    ).resolves.toBeDefined();
-  });
-
-  it('displays the label when provided', async () => {
-    const renderer = await renderScreen(SAMPLE_UR, 'Scan with MetaMask');
-    expect(toJson(renderer)).toContain('Scan with MetaMask');
-  });
-
-  it('does not render the label when absent', async () => {
-    const renderer = await renderScreen(SAMPLE_UR);
-    expect(toJson(renderer)).not.toContain('Scan with MetaMask');
-  });
-
-  it('displays the UR string', async () => {
-    const renderer = await renderScreen(SAMPLE_UR);
-    expect(toJson(renderer)).toContain(SAMPLE_UR);
+    await expect(renderScreen(SAMPLE_UR)).resolves.toBeDefined();
   });
 
   it('renders the "Done" button', async () => {
@@ -87,9 +71,11 @@ describe('QRResultScreen', () => {
 
   it('"Done" resets navigation to Dashboard', async () => {
     const reset = jest.fn();
-    const renderer = await renderScreen(SAMPLE_UR, undefined, { reset });
+    const renderer = await renderScreen(SAMPLE_UR, {
+      reset,
+      setOptions: jest.fn(),
+    });
 
-    // Find the Pressable — the only touchable node with an onPress handler.
     const pressable = renderer.root.find(
       (node: any) => typeof node.props.onPress === 'function',
     );

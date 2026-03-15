@@ -38,7 +38,11 @@ jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = { goBack: jest.fn(), reset: jest.fn() } as any;
+const navigation = {
+  goBack: jest.fn(),
+  reset: jest.fn(),
+  setOptions: jest.fn(),
+} as any;
 
 const signRoute = {
   params: {
@@ -90,22 +94,30 @@ describe('KeycardScreen', () => {
     mockSubmitPin.mockClear();
     mockCancel.mockClear();
     MockNFCBottomSheet.mockClear();
+    navigation.setOptions.mockClear();
   });
 
   describe('phase-based rendering', () => {
-    it('shows PIN pad title when phase is pin_entry', async () => {
+    it('sets header title to "Enter Keycard PIN"', async () => {
+      await renderScreen('pin_entry');
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Enter Keycard PIN',
+      });
+    });
+
+    it('shows the PIN pad when phase is pin_entry', async () => {
       const renderer = await renderScreen('pin_entry');
-      expect(toJson(renderer)).toContain('Enter Keycard PIN');
+      expect(toJson(renderer)).toContain('6 digits');
     });
 
     it('hides PIN pad when phase is nfc', async () => {
       const renderer = await renderScreen('nfc');
-      expect(toJson(renderer)).not.toContain('Enter Keycard PIN');
+      expect(toJson(renderer)).not.toContain('6 digits');
     });
 
     it('hides PIN pad when phase is idle', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).not.toContain('Enter Keycard PIN');
+      expect(toJson(renderer)).not.toContain('6 digits');
     });
   });
 
@@ -147,8 +159,6 @@ describe('KeycardScreen', () => {
   });
 
   describe('navigation delay after done', () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
 
     it('does not navigate immediately when phase becomes done', async () => {
       mockUseKeycardOperation.mockReturnValue({

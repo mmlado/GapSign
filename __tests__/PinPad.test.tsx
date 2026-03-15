@@ -27,7 +27,7 @@ async function renderPad(props?: { error?: string; onType?: () => void }) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <PinPad title="Enter PIN" onComplete={onComplete} {...props} />,
+      <PinPad onComplete={onComplete} {...props} />,
     );
   });
   return renderer;
@@ -50,10 +50,10 @@ function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 // ---------------------------------------------------------------------------
 
 describe('PinPad', () => {
-  describe('title', () => {
-    it('renders the provided title', async () => {
+  describe('field label', () => {
+    it('renders the "6 digits" field label', async () => {
       const renderer = await renderPad();
-      expect(toJson(renderer)).toContain('Enter PIN');
+      expect(toJson(renderer)).toContain('6 digits');
     });
   });
 
