@@ -3,10 +3,17 @@ import theme from '../../theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ConfirmKeySreenProps } from '../../navigation/types';
 import { useLoadKey } from '../../hooks/keycard/useLoadKey';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import { Text } from 'react-native-paper';
 import PinPad from '../../components/PinPad';
+import { Icons } from '../../assets/icons';
 
 const N_CHALLENGE = 4;
 const N_CHOICES = 4;
@@ -49,6 +56,7 @@ export default function ConfirmKeyScreen({
   );
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [wrongIndex, setWrongIndex] = useState<number | null>(null);
 
   const choices = useMemo(() => {
     if (currentIndex >= N_CHALLENGE) return [];
@@ -62,7 +70,11 @@ export default function ConfirmKeyScreen({
   const handleChoice = useCallback(
     (word: string) => {
       const correct = words[challengePositions[currentIndex]];
-      if (word !== correct) return;
+      if (word !== correct) {
+        setWrongIndex(currentIndex);
+        return;
+      }
+      setWrongIndex(null);
       const next = currentIndex + 1;
       setAnswers(prev => {
         const updated = [...prev];
@@ -111,21 +123,45 @@ export default function ConfirmKeyScreen({
         {challengePositions.map((wordIdx, i) => {
           const filled = answers[i] !== null;
           const active = i === currentIndex;
+          const wrong = wrongIndex === i;
           return (
             <View
               key={i}
               style={[
                 styles.slot,
                 active && styles.slotActive,
+                wrong && styles.slotWrong,
                 filled && styles.slotFilled,
               ]}
             >
-              <Text style={styles.slotLabel}>{wordIdx + 1}.</Text>
-              <Text style={styles.slotWord}>{answers[i] ?? '____'}</Text>
+              <Text
+                style={[
+                  styles.slotLabel,
+                  filled && styles.slotFilledText,
+                  wrong && styles.slotWrongText,
+                ]}
+              >
+                {wordIdx + 1}.
+              </Text>
+              <Text
+                style={[
+                  styles.slotWord,
+                  filled && styles.slotFilledText,
+                  wrong && styles.slotWrongText,
+                ]}
+              >
+                {answers[i] ?? '____'}
+              </Text>
+              <View style={styles.slotIcon}>
+                {filled && <Icons.checkmark width={24} height={20} />}
+                {wrong && <Icons.exclamation width={40} height={40} />}
+              </View>
             </View>
           );
         })}
       </View>
+
+      <View style={styles.spacer} />
 
       {!allDone && (
         <View style={styles.choices}>
@@ -144,9 +180,7 @@ export default function ConfirmKeyScreen({
         </View>
       )}
 
-      {phase === 'pin_entry' && (
-        <PinPad onComplete={submitPin} />
-      )}
+      {phase === 'pin_entry' && <PinPad onComplete={submitPin} />}
 
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error'}
@@ -170,54 +204,79 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   slots: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
     marginBottom: 40,
   },
+  spacer: {
+    flex: 1,
+  },
   slot: {
-    width: '45%',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
   },
   slotActive: {
-    borderColor: theme.colors.primary,
+    borderWidth: 3,
+    borderColor: '#C6C6C6',
   },
-  slotFilled: {
-    borderColor: 'rgba(255,255,255,0.4)',
+  slotFilled: {},
+  slotIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotFilledText: {
+    color: '#1C8A80',
+  },
+  slotWrong: {
+    borderWidth: 3,
+    borderColor: '#E95460',
+  },
+  slotWrongText: {
+    color: '#BA434D',
   },
   slotLabel: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
-    marginBottom: 4,
-  },
-  slotWord: {
-    color: '#ffffff',
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 15,
     fontWeight: '500',
+    lineHeight: 15 * 1.45,
+    letterSpacing: -0.135,
+  },
+  slotWord: {
+    flex: 1,
+    color: '#ffffff',
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 15,
+    lineHeight: 15 * 1.45,
+    letterSpacing: -0.135,
   },
   choices: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   choiceBtn: {
-    flex: 1,
-    minWidth: '45%',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#4A4459',
+    height: 52,
+    justifyContent: 'center',
   },
   choiceBtnPressed: {
     opacity: 0.6,
   },
   choiceText: {
     color: '#ffffff',
-    fontSize: 15,
+    fontFamily: 'Inter',
     fontWeight: '500',
+    fontSize: 15,
+    lineHeight: 15 * 1.45,
+    letterSpacing: -0.135,
   },
 });

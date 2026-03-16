@@ -51,13 +51,17 @@ export const routes: Route[] = [
   {
     name: 'KeyPairMenu',
     component: KeyPairMenuScreen,
-    options: defaultHeaderOptions,
+    options: { ...defaultHeaderOptions, title: 'Add keypair' },
   },
-  { name: 'KeySize', component: KeySizeScreen, options: defaultHeaderOptions },
+  {
+    name: 'KeySize',
+    component: KeySizeScreen,
+    options: { ...defaultHeaderOptions, title: 'Generate new key pair' },
+  },
   {
     name: 'GenerateKey',
     component: GenerateKeyScreen,
-    options: defaultHeaderOptions,
+    options: { ...defaultHeaderOptions, title: 'Backup recovery phrase' },
   },
   {
     name: 'AddressMenu',
@@ -94,10 +98,14 @@ export const routes: Route[] = [
     component: TransactionDetailScreen,
     options: { ...defaultHeaderOptions, title: 'Review transaction' },
   },
-  { name: 'Keycard', component: KeycardScreen, options: defaultHeaderOptions },
+  {
+    name: 'Keycard',
+    component: KeycardScreen,
+    options: defaultHeaderOptions,
+  },
   {
     name: 'QRResult',
     component: QRResultScreen,
-    options: { ...defaultHeaderOptions, title: 'Signature' },
+    options: { ...defaultHeaderOptions, title: 'Show signature to the wallet' },
   },
 ];

@@ -12,6 +12,7 @@
     "bump": "node scripts/bump-version.js"
   },
   "dependencies": {
+    "@ethereumjs/rlp": "^10.1.1",
     "@ngraveio/bc-ur": "^1.1.13",
     "@noble/hashes": "^2.0.1",
     "@noble/secp256k1": "^3.0.0",

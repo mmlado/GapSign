@@ -8,6 +8,8 @@ import NfcDefault from './nfc/default.svg';
 import NfcSuccess from './nfc/success.svg';
 import NfcFailure from './nfc/failure.svg';
 import NfcActivate from './nfc_activate.svg';
+import Checkmark from './checkmark.svg';
+import Exclamation from './exclamation.svg';
 
 export const Icons = {
   scan: ScanIcon,
@@ -17,6 +19,8 @@ export const Icons = {
   qr: QrIcon,
   copy: CopyIcon,
   nfcActivate: NfcActivate,
+  checkmark: Checkmark,
+  exclamation: Exclamation,
   nfc: {
     default: NfcDefault,
     success: NfcSuccess,

@@ -10,7 +10,12 @@ type Props = {
   disabled?: boolean;
 };
 
-export default function PrimaryButton({ label, onPress, icon: Icon, disabled = false }: Props) {
+export default function PrimaryButton({
+  label,
+  onPress,
+  icon: Icon,
+  disabled = false,
+}: Props) {
   const handlePress = useCallback(() => {
     onPress();
   }, [onPress]);
@@ -26,7 +31,10 @@ export default function PrimaryButton({ label, onPress, icon: Icon, disabled = f
     >
       <View style={styles.content}>
         {Icon && <Icon width={24} height={24} color={contentColor} />}
-        <Text variant="labelLarge" style={[styles.text, { color: contentColor }]}>
+        <Text
+          variant="labelLarge"
+          style={[styles.text, { color: contentColor }]}
+        >
           {label}
         </Text>
       </View>

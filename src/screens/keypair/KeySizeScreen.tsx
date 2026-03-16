@@ -2,11 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { KeySizeScreenProps } from '../../navigation/types';
 import Menu from '../../components/Menu';
 import theme from '../../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 export default function KeySizeScreen({ navigation }: KeySizeScreenProps) {
-  const insets = useSafeAreaInsets();
-
   const entries = [
     {
       label: '12 word',
@@ -24,12 +20,7 @@ export default function KeySizeScreen({ navigation }: KeySizeScreenProps) {
     },
   ];
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={styles.container}>
       <Menu entries={entries} />
     </View>
   );

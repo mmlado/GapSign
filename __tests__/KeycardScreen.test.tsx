@@ -159,7 +159,6 @@ describe('KeycardScreen', () => {
   });
 
   describe('navigation delay after done', () => {
-
     it('does not navigate immediately when phase becomes done', async () => {
       mockUseKeycardOperation.mockReturnValue({
         ...hookMock('done'),

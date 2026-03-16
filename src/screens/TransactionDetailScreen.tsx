@@ -8,11 +8,12 @@ import { DATA_TYPE_LABELS } from '../types';
 import type { TransactionDetailScreenProps } from '../navigation/types';
 import PrimaryButton from '../components/PrimaryButton';
 import { Icons } from '../assets/icons';
+import { parseTx } from '../utils/txParser';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
-      <Text variant="labelSmall" style={styles.infoLabel}>
+      <Text variant="bodySmall" style={styles.infoLabel}>
         {label}
       </Text>
       <Text variant="bodyMedium" style={styles.infoValue} selectable>
@@ -22,9 +23,33 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+const CHAIN_NAMES: Record<number, string> = {
+  1: 'Ethereum Mainnet',
+  10: 'Optimism',
+  56: 'BNB Smart Chain',
+  100: 'Gnosis',
+  137: 'Polygon',
+  250: 'Fantom',
+  324: 'zkSync Era',
+  8453: 'Base',
+  42161: 'Arbitrum One',
+  43114: 'Avalanche C-Chain',
+  59144: 'Linea',
+  534352: 'Scroll',
+  11155111: 'Sepolia',
+  80002: 'Polygon Amoy',
+  84532: 'Base Sepolia',
+  421614: 'Arbitrum Sepolia',
+};
+
+function chainLabel(chainId: number): string {
+  return CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;
+}
+
 function EthSignRequestDetail({ request }: { request: EthSignRequest }) {
   const typeLabel =
     DATA_TYPE_LABELS[request.dataType] || `Unknown (${request.dataType})`;
+  const tx = parseTx(request.signData, request.dataType);
 
   return (
     <>
@@ -35,37 +60,67 @@ function EthSignRequestDetail({ request }: { request: EthSignRequest }) {
         </Text>
       </View>
 
-      {request.chainId !== undefined && (
-        <View style={styles.card}>
-          <InfoRow label="CHAIN ID" value={String(request.chainId)} />
-        </View>
-      )}
-
-      {request.address && (
-        <View style={styles.card}>
-          <InfoRow label="ADDRESS" value={request.address} />
-        </View>
-      )}
-
-      <View style={styles.card}>
-        <InfoRow label="DERIVATION PATH" value={request.derivationPath} />
+      <View style={styles.row}>
+        <InfoRow
+          label="Signer"
+          value={request.address ?? request.derivationPath}
+        />
       </View>
 
-      {request.origin && (
-        <View style={styles.card}>
-          <InfoRow label="ORIGIN" value={request.origin} />
+      {request.address && (
+        <View style={styles.row}>
+          <InfoRow label="Path" value={request.derivationPath} />
         </View>
       )}
 
       {request.requestId && (
-        <View style={styles.card}>
-          <InfoRow label="REQUEST ID" value={request.requestId} />
+        <View style={styles.row}>
+          <InfoRow label="Request ID" value={request.requestId} />
         </View>
       )}
 
-      <View style={styles.card}>
-        <InfoRow label="SIGN DATA" value={request.signData} />
+      {tx?.to && (
+        <View style={styles.row}>
+          <InfoRow label="To" value={tx.to} />
+        </View>
+      )}
+
+      {request.chainId !== undefined && (
+        <View style={styles.row}>
+          <InfoRow label="Chain" value={chainLabel(request.chainId)} />
+        </View>
+      )}
+
+      {tx?.value !== undefined && (
+        <View style={styles.row}>
+          <InfoRow label="Amount" value={tx.value} />
+        </View>
+      )}
+
+      {tx?.fees.kind === 'legacy' && (
+        <View style={styles.row}>
+          <InfoRow label="Gas price" value={tx.fees.gasPrice} />
+          <InfoRow label="Gas limit" value={tx.fees.gasLimit} />
+        </View>
+      )}
+
+      {tx?.fees.kind === 'eip1559' && (
+        <View style={styles.row}>
+          <InfoRow label="Max fee" value={tx.fees.maxFeePerGas} />
+          <InfoRow label="Priority fee" value={tx.fees.maxPriorityFeePerGas} />
+          <InfoRow label="Gas limit" value={tx.fees.gasLimit} />
+        </View>
+      )}
+
+      <View style={styles.row}>
+        <InfoRow label="Data" value={tx?.data ?? request.signData} />
       </View>
+
+      {request.origin && (
+        <View style={styles.row}>
+          <InfoRow label="Origin" value={request.origin} />
+        </View>
+      )}
     </>
   );
 }
@@ -136,7 +191,7 @@ export default function TransactionDetailScreen({
           <PrimaryButton
             label="Sign transaction"
             onPress={handleSign}
-            icon={Icons.keycard}
+            icon={Icons.nfcActivate}
           />
         </View>
       )}
@@ -170,17 +225,14 @@ const styles = StyleSheet.create({
   typeChipText: {
     color: theme.colors.primary,
   },
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
+  row: {
+    paddingVertical: 8,
   },
   infoRow: {
     gap: 4,
   },
   infoLabel: {
     color: theme.colors.onSurfaceVariant,
-    letterSpacing: 1,
   },
   infoValue: {
     color: theme.colors.onSurface,

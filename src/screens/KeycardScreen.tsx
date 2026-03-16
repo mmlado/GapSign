@@ -131,9 +131,7 @@ export default function KeycardScreen({
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
-      {phase === 'pin_entry' && (
-        <PinPad onComplete={submitPin} />
-      )}
+      {phase === 'pin_entry' && <PinPad onComplete={submitPin} />}
 
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error' || phase === 'done'}

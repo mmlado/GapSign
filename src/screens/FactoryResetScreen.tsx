@@ -61,7 +61,9 @@ export default function FactoryResetScreen({
               style={styles.checkboxRow}
               onPress={() => setChecked(v => !v)}
             >
-              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+              <View
+                style={[styles.checkbox, checked && styles.checkboxChecked]}
+              >
                 {checked && <View style={styles.checkboxInner} />}
               </View>
               <Text style={styles.checkboxLabel}>

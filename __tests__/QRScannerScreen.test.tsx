@@ -68,7 +68,7 @@ jest.mock('../src/utils/ur', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-const navigation = { navigate: jest.fn() } as any;
+const navigation = { navigate: jest.fn(), setOptions: jest.fn() } as any;
 
 function scan(value: string) {
   capturedOnReadCode?.({ nativeEvent: { codeStringValue: value } });
@@ -103,12 +103,15 @@ describe('QRScannerScreen', () => {
     mockResultError.mockReturnValue('decode error');
     mockHandleUR.mockReset();
     navigation.navigate.mockClear();
+    navigation.setOptions.mockClear();
   });
 
   describe('camera view', () => {
     it('renders the scanner title', async () => {
-      const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Scan transaction QR');
+      await renderScreen();
+      expect(navigation.setOptions).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Scan transaction QR' }),
+      );
     });
 
     it('registers onReadCode on the Camera', async () => {
