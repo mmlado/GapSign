@@ -113,12 +113,10 @@ describe('useAddresses', () => {
     it('calls resp.checkOK()', async () => {
       const mockCheckOK = jest.fn();
       await runEthOperation({
-        exportExtendedKey: jest
-          .fn()
-          .mockResolvedValue({
-            checkOK: mockCheckOK,
-            data: new Uint8Array(10),
-          }),
+        exportExtendedKey: jest.fn().mockResolvedValue({
+          checkOK: mockCheckOK,
+          data: new Uint8Array(10),
+        }),
       });
       expect(mockCheckOK).toHaveBeenCalled();
     });

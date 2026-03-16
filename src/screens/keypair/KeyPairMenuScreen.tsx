@@ -5,8 +5,6 @@ import {
 } from '../../navigation/types';
 import Menu from '../../components/Menu';
 import theme from '../../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 export const dashboardEntry: DashboardAction = {
   label: 'Add Keypair',
   navigate: nav => nav.navigate('KeyPairMenu'),
@@ -15,21 +13,14 @@ export const dashboardEntry: DashboardAction = {
 export default function KeyPairMenuScreen({
   navigation,
 }: KeyPairMenuScreenProps) {
-  const insets = useSafeAreaInsets();
-
   const entries = [
     {
-      label: 'Generate new keypair',
+      label: 'Generate new key pair',
       onPress: () => navigation.navigate('KeySize'),
     },
   ];
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={styles.container}>
       <Menu entries={entries} />
     </View>
   );

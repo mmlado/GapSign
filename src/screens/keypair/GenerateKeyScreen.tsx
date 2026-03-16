@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import { Text } from 'react-native-paper';
@@ -19,10 +19,6 @@ export default function GenerateKeyScreen({
   const { phase, status, result, start, cancel } = useGenerateKey(
     route.params.size,
   );
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: '' });
-  }, [navigation]);
 
   useEffect(() => {
     start();
@@ -50,9 +46,6 @@ export default function GenerateKeyScreen({
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        <Text variant="headlineMedium" style={styles.title}>
-          Backup recovery phrase
-        </Text>
         <Text style={styles.description}>
           Write down your recovery phrase and store it in a secure location.
           Never share your recovery phrase with anyone. It gives access to your

@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Address list
 
+### Changed
+
+- Unified UI design across all screens
+
 ## [0.4.0] - 2026-03-12
 
 ### Added

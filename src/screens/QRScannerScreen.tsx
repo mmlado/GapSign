@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   StyleSheet,
   View,
@@ -18,6 +24,10 @@ import type { QRScannerScreenProps } from '../navigation/types';
 
 export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   const insets = useSafeAreaInsets();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ title: 'Scan transaction QR' });
+  }, [navigation]);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
   const decoderRef = useRef<URDecoder | null>(null);
@@ -134,12 +144,6 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
         showFrame={false}
       />
 
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <Text variant="headlineMedium" style={styles.topTitle}>
-          Scan transaction QR
-        </Text>
-      </View>
-
       <View style={styles.viewfinderContainer}>
         <View style={styles.viewfinder}>
           <View style={[styles.corner, styles.cornerTL]} />
@@ -186,23 +190,6 @@ const styles = StyleSheet.create({
   },
   permissionButton: {
     marginTop: 8,
-  },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingBottom: 12,
-  },
-  topTitle: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  topSubtitle: {
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
   },
   viewfinderContainer: {
     flex: 1,

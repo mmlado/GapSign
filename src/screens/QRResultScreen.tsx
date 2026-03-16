@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect } from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
@@ -15,10 +15,6 @@ export default function QRResultScreen({
   const { urString } = route.params;
   const QR_PADDING = 24;
   const qrSize = width - QR_PADDING * 2 - 12 * 2; // screen padding + qrWrapper padding
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Scan QR code' });
-  }, [navigation]);
 
   const handleDone = useCallback(() => {
     navigation.reset({ index: 0, routes: [{ name: 'Dashboard' }] });

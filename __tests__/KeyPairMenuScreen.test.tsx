@@ -56,14 +56,14 @@ describe('KeyPairMenuScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders the "Generate new keypair" menu entry', async () => {
+    it('renders the "Generate new key pair" menu entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Generate new keypair');
+      expect(toJson(renderer)).toContain('Generate new key pair');
     });
   });
 
   describe('navigation', () => {
-    it('navigates to KeySize when "Generate new keypair" is pressed', async () => {
+    it('navigates to KeySize when "Generate new key pair" is pressed', async () => {
       const renderer = await renderScreen();
       const [entry] = getActivePressables(renderer);
       await act(async () => {
