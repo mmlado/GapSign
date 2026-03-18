@@ -199,7 +199,7 @@ describe('useNFCSession', () => {
         await capturedOnConnected?.();
       });
       expect(latestHook.phase).toBe('error');
-      expect(latestHook.status).toBe('Error: bad mac');
+      expect(latestHook.status).toBe('bad mac');
     });
   });
 
