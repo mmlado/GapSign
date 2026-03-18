@@ -60,9 +60,9 @@ const WORDS = [
 const CHALLENGE_POSITIONS = [1, 2, 3, 4];
 const CORRECT_WORDS = CHALLENGE_POSITIONS.map(i => WORDS[i]);
 
-// For the first challenge (position 1, correct='bravo'), Fisher-Yates with
-// random=0 produces choices=['charlie','delta','echo','bravo']. The word
-// 'charlie' is a wrong answer for this slot.
+// With N_CHOICES=4: choices for slot 0 = ['charlie','delta','echo','bravo'],
+// so 'charlie' is a wrong answer for that slot.
+// With N_CHOICES=1: only the correct word is shown, so this button won't exist.
 const WRONG_WORD_FOR_SLOT_0 = 'charlie';
 
 const navigation = {
@@ -208,10 +208,16 @@ describe('ConfirmKeyScreen', () => {
 
     it('does not advance when the wrong word is pressed', async () => {
       const renderer = await renderScreen();
-      await pressChoice(renderer, WRONG_WORD_FOR_SLOT_0);
-      // First slot is still unfilled — __ still present
+      const pressables = getActivePressables(renderer);
+      const wrongBtn = pressables.find(p =>
+        extractText(p).includes(WRONG_WORD_FOR_SLOT_0),
+      );
+      if (wrongBtn) {
+        await act(async () => {
+          wrongBtn.props.onPress();
+        });
+      }
       expect(toJson(renderer)).toContain('____');
-      // start() was not called
       expect(mockStart).not.toHaveBeenCalled();
     });
 

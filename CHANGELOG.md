@@ -8,7 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- PIN verification error feedback: shows remaining attempts under the PIN field, and a card locked message when no attempts remain
+- Wrong PIN feedback: remaining attempts shown under PIN field, card locked message when no attempts remain
+- BIP39 passphrase support for key generation (12 and 24 word variants)
 
 ## [0.5.0] - 2026-03-16
 

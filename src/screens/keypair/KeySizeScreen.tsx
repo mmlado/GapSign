@@ -12,10 +12,26 @@ export default function KeySizeScreen({ navigation }: KeySizeScreenProps) {
         }),
     },
     {
+      label: '12 word + passphrase',
+      onPress: () =>
+        navigation.navigate('GenerateKey', {
+          size: 12,
+          passphrase: true,
+        }),
+    },
+    {
       label: '24 word',
       onPress: () =>
         navigation.navigate('GenerateKey', {
           size: 24,
+        }),
+    },
+    {
+      label: '24 word + passphrase',
+      onPress: () =>
+        navigation.navigate('GenerateKey', {
+          size: 24,
+          passphrase: true,
         }),
     },
   ];

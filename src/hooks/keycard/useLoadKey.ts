@@ -3,7 +3,7 @@ import { useKeycardOperation } from './useKeycardOperation';
 import { Mnemonic } from 'keycard-sdk/dist/mnemonic';
 import { BIP32KeyPair } from 'keycard-sdk/dist/bip32key';
 
-export function useLoadKey(words: string[]) {
+export function useLoadKey(words: string[], passphrase?: string) {
   const keycard = useKeycardOperation<void>();
 
   const start = useCallback(() => {
@@ -15,14 +15,14 @@ export function useLoadKey(words: string[]) {
         }
 
         const phrase = words.join(' ');
-        const seed = Mnemonic.toBinarySeed(phrase);
+        const seed = Mnemonic.toBinarySeed(phrase, passphrase);
         const keyPair = BIP32KeyPair.fromBinarySeed(seed);
         const response = await cmdSet.loadBIP32KeyPair(keyPair);
         response.checkOK();
       },
       { requiresPin: true },
     );
-  }, [keycard, words]);
+  }, [keycard, words, passphrase]);
 
   return { ...keycard, start };
 }

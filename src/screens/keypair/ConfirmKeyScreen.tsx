@@ -40,10 +40,12 @@ export default function ConfirmKeyScreen({
   route,
 }: ConfirmKeySreenProps) {
   const insets = useSafeAreaInsets();
-  const { words } = route.params;
+  const { words, passphrase } = route.params;
 
-  const { phase, status, pinError, start, cancel, submitPin } =
-    useLoadKey(words);
+  const { phase, status, pinError, start, cancel, submitPin } = useLoadKey(
+    words,
+    passphrase,
+  );
 
   const [challengePositions] = useState(() => {
     const indices = words.map((_, i) => i);
@@ -182,7 +184,9 @@ export default function ConfirmKeyScreen({
       )}
 
       {phase === 'pin_entry' && (
-        <PinPad onComplete={submitPin} error={pinError ?? undefined} />
+        <View style={styles.pinOverlay}>
+          <PinPad onComplete={submitPin} error={pinError ?? undefined} />
+        </View>
       )}
 
       <NFCBottomSheet
@@ -282,4 +286,5 @@ const styles = StyleSheet.create({
     lineHeight: 15 * 1.45,
     letterSpacing: -0.135,
   },
+  pinOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

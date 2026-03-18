@@ -63,6 +63,16 @@ describe('KeySizeScreen', () => {
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('24 word');
     });
+
+    it('renders the "12 word + passphrase" option', async () => {
+      const renderer = await renderScreen();
+      expect(toJson(renderer)).toContain('12 word + passphrase');
+    });
+
+    it('renders the "24 word + passphrase" option', async () => {
+      const renderer = await renderScreen();
+      expect(toJson(renderer)).toContain('24 word + passphrase');
+    });
   });
 
   describe('navigation', () => {
@@ -77,14 +87,38 @@ describe('KeySizeScreen', () => {
       });
     });
 
-    it('navigates to GenerateKey with size 24 when "24 word" is pressed', async () => {
+    it('navigates to GenerateKey with size 12 + passphrase when "12 word + passphrase" is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = getActivePressables(renderer);
       await act(async () => {
         pressables[1].props.onPress();
       });
       expect(navigation.navigate).toHaveBeenCalledWith('GenerateKey', {
+        size: 12,
+        passphrase: true,
+      });
+    });
+
+    it('navigates to GenerateKey with size 24 when "24 word" is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = getActivePressables(renderer);
+      await act(async () => {
+        pressables[2].props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('GenerateKey', {
         size: 24,
+      });
+    });
+
+    it('navigates to GenerateKey with size 24 + passphrase when "24 word + passphrase" is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = getActivePressables(renderer);
+      await act(async () => {
+        pressables[3].props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('GenerateKey', {
+        size: 24,
+        passphrase: true,
       });
     });
   });
