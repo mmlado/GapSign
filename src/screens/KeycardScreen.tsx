@@ -28,7 +28,7 @@ export default function KeycardScreen({
   const insets = useSafeAreaInsets();
   const hashRef = useRef<Uint8Array | null>(null);
 
-  const { phase, status, result, execute, submitPin, cancel } =
+  const { phase, status, result, pinError, execute, submitPin, cancel } =
     useKeycardOperation<Uint8Array>();
 
   const handleSign = useCallback(() => {
@@ -131,7 +131,9 @@ export default function KeycardScreen({
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
-      {phase === 'pin_entry' && <PinPad onComplete={submitPin} />}
+      {phase === 'pin_entry' && (
+        <PinPad onComplete={submitPin} error={pinError ?? undefined} />
+      )}
 
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error' || phase === 'done'}

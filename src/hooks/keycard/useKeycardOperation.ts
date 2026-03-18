@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import Keycard from 'keycard-sdk';
+import { WrongPINException } from 'keycard-sdk/dist/apdu-exception';
 import { loadPairing, savePairing } from '../../storage/pairingStorage';
 import useNFCSession from './useNFCSession';
 import { Commandset } from 'keycard-sdk/dist/commandset';
@@ -25,8 +26,10 @@ export interface UseKeycardOperation<T> {
   phase: Phase;
   status: string;
   result: T | null;
+  pinError: string | null;
   execute: (op: KeycardOperationFn<T>, options?: ExecuteOptions) => void;
   submitPin: (pin: string) => void;
+  clearPinError: () => void;
   cancel: () => void;
   reset: () => void;
 }
@@ -34,6 +37,7 @@ export interface UseKeycardOperation<T> {
 export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [result, setResult] = useState<T | null>(null);
   const [waitingForPin, setWaitingForPin] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
@@ -85,8 +89,19 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
         console.log(
           `[Keycard] verifyPIN SW: 0x${pinResp.sw.toString(16).toUpperCase()}`,
         );
-        pinResp.checkAuthOK();
         pinRef.current = ''; // clear from memory
+        try {
+          pinResp.checkAuthOK();
+        } catch (e) {
+          if (e instanceof WrongPINException) {
+            const attempts = e.getRetryAttempts();
+            if (attempts === 0) {
+              throw new Error('Card is locked. Use Unblock Card option.');
+            }
+            setPinError(`PIN is not valid. ${attempts} attempts left.`);
+          }
+          throw e;
+        }
       }
 
       if (operationRunningRef.current || !operationRef.current) {
@@ -113,7 +128,10 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
 
   // Overlay pin_entry on top of the NFC session phases.
   const phase: Phase =
-    waitingForPin && nfcPhase === 'idle' ? 'pin_entry' : nfcPhase;
+    (waitingForPin && nfcPhase === 'idle') ||
+    (pinError !== null && nfcPhase === 'error')
+      ? 'pin_entry'
+      : nfcPhase;
 
   const execute = useCallback(
     (op: KeycardOperationFn<T>, options: ExecuteOptions = {}) => {
@@ -133,15 +151,21 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const submitPin = useCallback(
     (pin: string) => {
       pinRef.current = pin;
+      setPinError(null);
       setWaitingForPin(false);
       startNFC();
     },
     [startNFC],
   );
 
+  const clearPinError = useCallback(() => {
+    setPinError(null);
+  }, []);
+
   const cancel = useCallback(() => {
     resetNFC();
     setWaitingForPin(false);
+    setPinError(null);
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
@@ -150,11 +174,22 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const reset = useCallback(() => {
     resetNFC();
     setWaitingForPin(false);
+    setPinError(null);
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
     setResult(null);
   }, [resetNFC]);
 
-  return { phase, status, result, execute, submitPin, cancel, reset };
+  return {
+    phase,
+    status,
+    result,
+    pinError,
+    execute,
+    submitPin,
+    clearPinError,
+    cancel,
+    reset,
+  };
 }

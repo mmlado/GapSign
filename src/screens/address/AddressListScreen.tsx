@@ -37,6 +37,7 @@ export default function AddressListScreen({
     phase,
     result: accountKey,
     status,
+    pinError,
     cancel,
     start,
     submitPin,
@@ -119,7 +120,7 @@ export default function AddressListScreen({
 
       {phase === 'pin_entry' && (
         <View style={styles.pinOverlay}>
-          <PinPad onComplete={submitPin} />
+          <PinPad onComplete={submitPin} error={pinError ?? undefined} />
         </View>
       )}
 

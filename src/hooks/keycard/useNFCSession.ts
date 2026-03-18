@@ -51,7 +51,7 @@ export default function useNFCSession(
       setPhase('done');
     } catch (e: any) {
       console.log(`[Keycard] Error: ${e.message}`, e);
-      setStatus(`Error: ${e.message}`);
+      setStatus(e.message);
       setPhase('error');
     }
   }, [onCardConnected]);

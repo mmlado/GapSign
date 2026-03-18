@@ -42,7 +42,8 @@ export default function ConfirmKeyScreen({
   const insets = useSafeAreaInsets();
   const { words } = route.params;
 
-  const { phase, status, start, cancel, submitPin } = useLoadKey(words);
+  const { phase, status, pinError, start, cancel, submitPin } =
+    useLoadKey(words);
 
   const [challengePositions] = useState(() => {
     const indices = words.map((_, i) => i);
@@ -180,7 +181,9 @@ export default function ConfirmKeyScreen({
         </View>
       )}
 
-      {phase === 'pin_entry' && <PinPad onComplete={submitPin} />}
+      {phase === 'pin_entry' && (
+        <PinPad onComplete={submitPin} error={pinError ?? undefined} />
+      )}
 
       <NFCBottomSheet
         visible={phase === 'nfc' || phase === 'error'}

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- PIN verification error feedback: shows remaining attempts under the PIN field, and a card locked message when no attempts remain
+
 ## [0.5.0] - 2026-03-16
 
 ### Added
