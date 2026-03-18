@@ -26,8 +26,8 @@ export type RootStackParamList = {
   ExportKey: undefined;
   KeyPairMenu: undefined;
   KeySize: undefined;
-  GenerateKey: { size: 12 | 24 };
-  ConfirmKey: { words: string[] };
+  GenerateKey: { size: 12 | 24; passphrase?: boolean };
+  ConfirmKey: { words: string[]; passphrase?: string };
   FactoryReset: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };

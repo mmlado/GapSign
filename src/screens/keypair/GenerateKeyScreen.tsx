@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,8 @@ export default function GenerateKeyScreen({
   const { phase, status, result, start, cancel } = useGenerateKey(
     route.params.size,
   );
+  const withPassphrase = route.params.passphrase ?? false;
+  const [passphrase, setPassphrase] = useState('');
 
   useEffect(() => {
     start();
@@ -34,8 +36,11 @@ export default function GenerateKeyScreen({
       setRevealed(true);
       return;
     }
-    navigation.replace('ConfirmKey', { words: result ?? [] });
-  }, [revealed, navigation, result]);
+    navigation.replace('ConfirmKey', {
+      words: result ?? [],
+      passphrase: withPassphrase ? passphrase : undefined,
+    });
+  }, [revealed, navigation, result, withPassphrase, passphrase]);
 
   const words = result ?? [];
   const half = words.length / 2;
@@ -53,33 +58,49 @@ export default function GenerateKeyScreen({
         </Text>
 
         {phase === 'done' && result && (
-          <View style={styles.wordGridWrapper}>
-            <View style={styles.wordGrid}>
-              <View style={styles.column}>
-                {words.slice(0, half).map((word, i) => (
-                  <View key={i} style={styles.wordCell}>
-                    <Text style={styles.wordIndex}>{i + 1}.</Text>
-                    <Text style={styles.wordText}>{word}</Text>
-                  </View>
-                ))}
+          <>
+            <View style={styles.wordGridWrapper}>
+              <View style={styles.wordGrid}>
+                <View style={styles.column}>
+                  {words.slice(0, half).map((word, i) => (
+                    <View key={i} style={styles.wordCell}>
+                      <Text style={styles.wordIndex}>{i + 1}.</Text>
+                      <Text style={styles.wordText}>{word}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.column}>
+                  {words.slice(half).map((word, i) => (
+                    <View key={i} style={styles.wordCell}>
+                      <Text style={styles.wordIndex}>{half + i + 1}.</Text>
+                      <Text style={styles.wordText}>{word}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-              <View style={styles.column}>
-                {words.slice(half).map((word, i) => (
-                  <View key={i} style={styles.wordCell}>
-                    <Text style={styles.wordIndex}>{half + i + 1}.</Text>
-                    <Text style={styles.wordText}>{word}</Text>
-                  </View>
-                ))}
-              </View>
+              {!revealed && (
+                <BlurView
+                  style={StyleSheet.absoluteFill}
+                  blurType="dark"
+                  blurAmount={10}
+                />
+              )}
             </View>
-            {!revealed && (
-              <BlurView
-                style={StyleSheet.absoluteFill}
-                blurType="dark"
-                blurAmount={10}
-              />
+            {revealed && withPassphrase && (
+              <View style={styles.passphraseContainer}>
+                <Text style={styles.passphraseLabel}>Passphrase</Text>
+                <TextInput
+                  style={styles.passphraseInput}
+                  value={passphrase}
+                  onChangeText={setPassphrase}
+                  placeholder="Enter passphrase "
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             )}
-          </View>
+          </>
         )}
       </ScrollView>
 
@@ -88,6 +109,7 @@ export default function GenerateKeyScreen({
           <PrimaryButton
             label={revealed ? 'Done' : 'Reveal recovery phrase'}
             onPress={handleButton}
+            disabled={revealed && withPassphrase && passphrase.trim() === ''}
           />
         </View>
       )}
@@ -154,5 +176,22 @@ const styles = StyleSheet.create({
   buttonArea: {
     paddingHorizontal: 24,
     paddingTop: 16,
+  },
+  passphraseContainer: {
+    marginTop: 24,
+    gap: 8,
+  },
+  passphraseLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+  },
+  passphraseInput: {
+    backgroundColor: '#2A2438',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: '#ffffff',
+    fontSize: 15,
+    fontFamily: 'Inter',
   },
 });

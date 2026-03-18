@@ -68,16 +68,18 @@ const WORDS = [
 
 let hookStart: () => void;
 
-function TestHook() {
-  const { start } = useLoadKey(WORDS);
+function TestHook({ passphrase }: { passphrase?: string } = {}) {
+  const { start } = useLoadKey(WORDS, passphrase);
   hookStart = start;
   return null;
 }
 
-async function mountHook() {
+async function mountHook(passphrase?: string) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
-    renderer = ReactTestRenderer.create(React.createElement(TestHook));
+    renderer = ReactTestRenderer.create(
+      React.createElement(TestHook, { passphrase }),
+    );
   });
   return renderer;
 }
@@ -127,10 +129,49 @@ describe('useLoadKey', () => {
 
       await runOperation(cmdSet);
 
-      expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '));
+      expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
       expect(mockFromBinarySeed).toHaveBeenCalledWith(Buffer.from('seed'));
       expect(mockLoadBIP32KeyPair).toHaveBeenCalledWith({ type: 'keypair' });
       expect(mockCheckOK).toHaveBeenCalled();
+    });
+
+    it('passes passphrase to toBinarySeed when provided', async () => {
+      const mockCheckOK = jest.fn();
+      const mockLoadBIP32KeyPair = jest
+        .fn()
+        .mockResolvedValue({ checkOK: mockCheckOK });
+      const cmdSet = {
+        applicationInfo: { hasMasterKey: () => false },
+        loadBIP32KeyPair: mockLoadBIP32KeyPair,
+      };
+
+      await mountHook('my passphrase');
+      await act(async () => {
+        hookStart();
+      });
+      await capturedOperation!(cmdSet);
+
+      expect(mockToBinarySeed).toHaveBeenCalledWith(
+        WORDS.join(' '),
+        'my passphrase',
+      );
+      expect(mockLoadBIP32KeyPair).toHaveBeenCalledWith({ type: 'keypair' });
+      expect(mockCheckOK).toHaveBeenCalled();
+    });
+
+    it('passes undefined passphrase to toBinarySeed when not provided', async () => {
+      const mockCheckOK = jest.fn();
+      const mockLoadBIP32KeyPair = jest
+        .fn()
+        .mockResolvedValue({ checkOK: mockCheckOK });
+      const cmdSet = {
+        applicationInfo: { hasMasterKey: () => false },
+        loadBIP32KeyPair: mockLoadBIP32KeyPair,
+      };
+
+      await runOperation(cmdSet);
+
+      expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
     });
 
     it('throws if card already has a master key', async () => {
