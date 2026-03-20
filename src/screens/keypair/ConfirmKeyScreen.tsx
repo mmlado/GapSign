@@ -1,8 +1,3 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import theme from '../../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ConfirmKeySreenProps } from '../../navigation/types';
-import { useLoadKey } from '../../hooks/keycard/useLoadKey';
 import {
   useCallback,
   useEffect,
@@ -10,10 +5,18 @@ import {
   useMemo,
   useState,
 } from 'react';
-import NFCBottomSheet from '../../components/NFCBottomSheet';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ConfirmKeySreenProps } from '../../navigation/types';
+import theme from '../../theme';
+
+import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PinPad from '../../components/PinPad';
 import { Icons } from '../../assets/icons';
+
+import { useLoadKey } from '../../hooks/keycard/useLoadKey';
 
 const N_CHALLENGE = 4;
 const N_CHOICES = 4;
@@ -99,7 +102,9 @@ export default function ConfirmKeyScreen({
 
   useEffect(() => {
     if (phase === 'done') {
-      navigation.navigate('Dashboard', { toast: 'Key saved to card' });
+      navigation.navigate('Dashboard', {
+        toast: 'Key pair has been added to Keycard',
+      });
     }
   }, [phase, navigation]);
 

@@ -1,22 +1,30 @@
 import React from 'react';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
-import DashboardScreen from '../screens/DashboardScreen';
-import InitCardScreen from '../screens/InitCardScreen';
-import ExportKeyScreen from '../screens/ExportKeyScreen';
-import FactoryResetScreen from '../screens/FactoryResetScreen';
-import QRScannerScreen from '../screens/QRScannerScreen';
-import TransactionDetailScreen from '../screens/TransactionDetailScreen';
-import KeycardScreen from '../screens/KeycardScreen';
-import QRResultScreen from '../screens/QRResultScreen';
+
 import theme from '../theme';
 import type { RootStackParamList } from './types';
-import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
-import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
-import KeySizeScreen from '../screens/keypair/KeySizeScreen';
-import ConfirmKeyScreen from '../screens/keypair/ConfirmKeyScreen';
-import AddressesMenuScreen from '../screens/address/AddressMenuScreen';
-import AddressListScreen from '../screens/address/AddressListScreen';
+
+// Top-level screens
+import DashboardScreen from '../screens/DashboardScreen';
+import ExportKeyScreen from '../screens/ExportKeyScreen';
+import FactoryResetScreen from '../screens/FactoryResetScreen';
+import InitCardScreen from '../screens/InitCardScreen';
+import KeycardScreen from '../screens/KeycardScreen';
+import QRResultScreen from '../screens/QRResultScreen';
+import QRScannerScreen from '../screens/QRScannerScreen';
+import TransactionDetailScreen from '../screens/TransactionDetailScreen';
+
+// Address screens
 import AddressDetailScreen from '../screens/address/AddressDetailScreen';
+import AddressListScreen from '../screens/address/AddressListScreen';
+import AddressesMenuScreen from '../screens/address/AddressMenuScreen';
+
+// Key pair screens
+import ConfirmKeyScreen from '../screens/keypair/ConfirmKeyScreen';
+import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
+import ImportKeyScreen from '../screens/keypair/ImportKeyScreen';
+import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
+import KeySizeScreen from '../screens/keypair/KeySizeScreen';
 
 const headerStyle = { backgroundColor: theme.colors.background };
 const headerTitleStyle = { fontWeight: '600' as const };
@@ -38,9 +46,16 @@ type Route = {
 
 export const routes: Route[] = [
   { name: 'Dashboard', component: DashboardScreen },
+
+  // Keycard operations
   {
     name: 'InitCard',
     component: InitCardScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'FactoryReset',
+    component: FactoryResetScreen,
     options: defaultHeaderOptions,
   },
   {
@@ -48,6 +63,8 @@ export const routes: Route[] = [
     component: ExportKeyScreen,
     options: { ...defaultHeaderOptions, title: 'Chain selection' },
   },
+
+  // Key pair flow
   {
     name: 'KeyPairMenu',
     component: KeyPairMenuScreen,
@@ -64,6 +81,18 @@ export const routes: Route[] = [
     options: { ...defaultHeaderOptions, title: 'Backup recovery phrase' },
   },
   {
+    name: 'ConfirmKey',
+    component: ConfirmKeyScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'ImportKey',
+    component: ImportKeyScreen,
+    options: defaultHeaderOptions,
+  },
+
+  // Address flow
+  {
     name: 'AddressMenu',
     component: AddressesMenuScreen,
     options: { ...defaultHeaderOptions, title: 'Addresses' },
@@ -78,16 +107,8 @@ export const routes: Route[] = [
     component: AddressDetailScreen,
     options: defaultHeaderOptions,
   },
-  {
-    name: 'ConfirmKey',
-    component: ConfirmKeyScreen,
-    options: defaultHeaderOptions,
-  },
-  {
-    name: 'FactoryReset',
-    component: FactoryResetScreen,
-    options: defaultHeaderOptions,
-  },
+
+  // QR / signing flow
   {
     name: 'QRScanner',
     component: QRScannerScreen,
@@ -98,11 +119,7 @@ export const routes: Route[] = [
     component: TransactionDetailScreen,
     options: { ...defaultHeaderOptions, title: 'Review transaction' },
   },
-  {
-    name: 'Keycard',
-    component: KeycardScreen,
-    options: defaultHeaderOptions,
-  },
+  { name: 'Keycard', component: KeycardScreen, options: defaultHeaderOptions },
   {
     name: 'QRResult',
     component: QRResultScreen,

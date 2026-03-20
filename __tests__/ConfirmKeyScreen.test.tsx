@@ -295,7 +295,7 @@ describe('ConfirmKeyScreen', () => {
     it('navigates to Dashboard with toast when phase is done', async () => {
       await renderScreen('done');
       expect(navigation.navigate).toHaveBeenCalledWith('Dashboard', {
-        toast: 'Key saved to card',
+        toast: 'Key pair has been added to Keycard',
       });
     });
 

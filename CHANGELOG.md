@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Import recovery phrase (12/24 words + optional passphrase)
 - Wrong PIN feedback: remaining attempts shown under PIN field, card locked message when no attempts remain
 - BIP39 passphrase support for key generation (12 and 24 word variants)
 - Mid-operation NFC disconnect shows nudge instead of error
