@@ -23,6 +23,8 @@ export default function useNFCSession(
   const [status, setStatus] = useState('');
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  const disconnectedRef = useRef(false);
+  const realErrorRef = useRef(false);
 
   const handleCardConnected = useCallback(async () => {
     if (phaseRef.current !== 'nfc') {
@@ -50,6 +52,11 @@ export default function useNFCSession(
       await onCardConnected(cmdSet, setStatus);
       setPhase('done');
     } catch (e: any) {
+      if (disconnectedRef.current) {
+        disconnectedRef.current = false;
+        return;
+      }
+      realErrorRef.current = true;
       console.log(`[Keycard] Error: ${e.message}`, e);
       setStatus(e.message);
       setPhase('error');
@@ -59,13 +66,19 @@ export default function useNFCSession(
   const handleCardDisconnected = useCallback(() => {
     console.log('[Keycard] Card disconnected');
     onCardDisconnected();
-    // Only update status if we're mid-operation (don't clobber done/error).
+    // Set the ref synchronously so the catch block (which may fire right after)
+    // can see it before React processes the setPhase update.
+    if (phaseRef.current === 'nfc' && !realErrorRef.current) {
+      disconnectedRef.current = true;
+    }
     setPhase(prev => {
-      if (prev === 'nfc') {
-        setStatus('Card removed — tap again');
-        return 'nfc';
+      if (prev !== 'nfc') return prev;
+      if (realErrorRef.current) {
+        realErrorRef.current = false;
+        return 'error';
       }
-      return prev;
+      setStatus('Connection lost - adjust Keycard position');
+      return 'nfc';
     });
   }, [onCardDisconnected]);
 

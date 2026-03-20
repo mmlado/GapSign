@@ -240,7 +240,48 @@ describe('useNFCSession', () => {
         capturedOnDisconnected?.();
       });
       expect(latestHook.phase).toBe('nfc');
-      expect(latestHook.status).toBe('Card removed — tap again');
+      expect(latestHook.status).toBe(
+        'Connection lost - adjust Keycard position',
+      );
+    });
+
+    it('mid-operation disconnect stays in nfc and does not show error', async () => {
+      await mountHook();
+      // Simulate: disconnect fires before the error reaches the catch
+      mockOnCardConnected.mockImplementation(async () => {
+        capturedOnDisconnected?.();
+        throw new Error('CardIO Error: Error sending command');
+      });
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(latestHook.phase).toBe('nfc');
+      expect(latestHook.status).toBe(
+        'Connection lost - adjust Keycard position',
+      );
+    });
+
+    it('real card error followed by disconnect stays in error', async () => {
+      await mountHook();
+      mockOnCardConnected.mockRejectedValue(new Error('Card is locked'));
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(latestHook.phase).toBe('error');
+      expect(latestHook.status).toBe('Card is locked');
+
+      // Android NFC always fires disconnect after an operation — must not override the error
+      await act(async () => {
+        capturedOnDisconnected?.();
+      });
+      expect(latestHook.phase).toBe('error');
+      expect(latestHook.status).toBe('Card is locked');
     });
 
     it('card disconnected outside nfc does not change status', async () => {
