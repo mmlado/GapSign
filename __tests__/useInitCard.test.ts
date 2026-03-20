@@ -173,7 +173,9 @@ describe('useInitCard', () => {
         capturedOnDisconnected?.();
       });
       expect(latestHook.phase).toBe('nfc');
-      expect(latestHook.status).toBe('Card removed — tap again');
+      expect(latestHook.status).toBe(
+        'Connection lost - adjust Keycard position',
+      );
     });
 
     it('card disconnected outside nfc does not update status', async () => {
