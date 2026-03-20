@@ -1,6 +1,7 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { ScanResult } from '../types';
 import { NavigationProp } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+import type { ScanResult } from '../types';
 
 export type KeycardParams =
   | {
@@ -28,6 +29,7 @@ export type RootStackParamList = {
   KeySize: undefined;
   GenerateKey: { size: 12 | 24; passphrase?: boolean };
   ConfirmKey: { words: string[]; passphrase?: string };
+  ImportKey: undefined;
   FactoryReset: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
@@ -70,6 +72,11 @@ export type QRResultScreenProps = NativeStackScreenProps<
 export type ExportKeyScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'ExportKey'
+>;
+
+export type ImportKeyScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'ImportKey'
 >;
 
 export type FactoryResetSreenProps = NativeStackScreenProps<

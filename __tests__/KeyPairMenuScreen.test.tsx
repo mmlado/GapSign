@@ -38,6 +38,13 @@ function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
   return JSON.stringify(r.toJSON());
 }
 
+function extractText(node: any): string {
+  if (typeof node === 'string') return node;
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node?.children) return extractText(node.children);
+  return '';
+}
+
 function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) =>
@@ -60,14 +67,34 @@ describe('KeyPairMenuScreen', () => {
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Generate new key pair');
     });
+
+    it('renders the "Import recovery phrase" menu entry', async () => {
+      const renderer = await renderScreen();
+      expect(toJson(renderer)).toContain('Import recovery phrase');
+    });
   });
 
   describe('navigation', () => {
+    it('navigates to ImportKey when "Import recovery phrase" is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = getActivePressables(renderer);
+      const entry = pressables.find(p =>
+        extractText(p).includes('Import recovery phrase'),
+      );
+      await act(async () => {
+        entry!.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('ImportKey');
+    });
+
     it('navigates to KeySize when "Generate new key pair" is pressed', async () => {
       const renderer = await renderScreen();
-      const [entry] = getActivePressables(renderer);
+      const pressables = getActivePressables(renderer);
+      const entry = pressables.find(p =>
+        extractText(p).includes('Generate new key pair'),
+      );
       await act(async () => {
-        entry.props.onPress();
+        entry!.props.onPress();
       });
       expect(navigation.navigate).toHaveBeenCalledWith('KeySize');
     });
