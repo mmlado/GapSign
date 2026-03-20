@@ -1,4 +1,5 @@
 import {
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -27,6 +28,22 @@ import theme from '../../theme';
 
 const BATCH = 20;
 const ADDR_FN = { eth: pubKeyToEthAddress, btc: pubKeyToBtcAddress };
+
+type RowProps = {
+  address: string;
+  index: number;
+  onNavigate: (address: string, index: number) => void;
+};
+
+const AddressRow = memo(({ address, index, onNavigate }: RowProps) => (
+  <Pressable style={styles.row} onPress={() => onNavigate(address, index)}>
+    <Text style={styles.index}>{index}</Text>
+    <Text style={styles.address}>{address}</Text>
+    <View style={styles.qrIcon}>
+      <Icons.qr width={20} height={20} color={theme.colors.onSurfaceVariant} />
+    </View>
+  </Pressable>
+));
 
 export default function AddressListScreen({
   route,
@@ -70,6 +87,21 @@ export default function AddressListScreen({
     }
   }, [phase, accountKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const keyExtractor = useCallback((_: string, i: number) => String(i), []);
+
+  const handleRowPress = useCallback(
+    (address: string, index: number) =>
+      navigation.navigate('AddressDetail', { address, index }),
+    [navigation],
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: string; index: number }) => (
+      <AddressRow address={item} index={index} onNavigate={handleRowPress} />
+    ),
+    [handleRowPress],
+  );
+
   const loadMore = useCallback(() => {
     if (!externalRef.current) return;
     const from = nextIndexRef.current;
@@ -87,7 +119,7 @@ export default function AddressListScreen({
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <FlatList
         data={addresses}
-        keyExtractor={(_, i) => String(i)}
+        keyExtractor={keyExtractor}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
@@ -98,24 +130,7 @@ export default function AddressListScreen({
             />
           ) : null
         }
-        renderItem={({ item, index }) => (
-          <Pressable
-            style={styles.row}
-            onPress={() =>
-              navigation.navigate('AddressDetail', { address: item, index })
-            }
-          >
-            <Text style={styles.index}>{index}</Text>
-            <Text style={styles.address}>{item}</Text>
-            <View style={styles.qrIcon}>
-              <Icons.qr
-                width={20}
-                height={20}
-                color={theme.colors.onSurfaceVariant}
-              />
-            </View>
-          </Pressable>
-        )}
+        renderItem={renderItem}
       />
 
       {phase === 'pin_entry' && (
