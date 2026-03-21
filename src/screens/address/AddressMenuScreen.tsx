@@ -1,11 +1,12 @@
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import {
   AddressMenuScreenProps,
   DashboardAction,
 } from '../../navigation/types';
 import Menu from '../../components/Menu';
 import theme from '../../theme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const dashboardEntry: DashboardAction = {
   label: 'Addresses',
@@ -28,12 +29,7 @@ export default function AddressesMenuScreen({
     },
   ];
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <Menu entries={entries} />
     </View>
   );

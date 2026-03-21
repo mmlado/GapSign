@@ -1,10 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
+
 import Keycard from 'keycard-sdk';
 import { WrongPINException } from 'keycard-sdk/dist/apdu-exception';
-import { loadPairing, savePairing } from '../../storage/pairingStorage';
-import useNFCSession from './useNFCSession';
 import { Commandset } from 'keycard-sdk/dist/commandset';
+
 import { PAIRING_PASSWORD } from '../../constants/keycard';
+import { loadPairing, savePairing } from '../../storage/pairingStorage';
+import { checkGenuine } from '../../utils/genuineCheck';
+import useNFCSession from './useNFCSession';
 
 function toHex(arr: Uint8Array): string {
   return Array.from(arr)
@@ -12,7 +15,13 @@ function toHex(arr: Uint8Array): string {
     .join('');
 }
 
-export type Phase = 'idle' | 'pin_entry' | 'nfc' | 'done' | 'error';
+export type Phase =
+  | 'idle'
+  | 'pin_entry'
+  | 'nfc'
+  | 'genuine_warning'
+  | 'done'
+  | 'error';
 
 export type KeycardOperationFn<T> = (
   cmdSet: InstanceType<typeof Keycard.Commandset>,
@@ -32,35 +41,26 @@ export interface UseKeycardOperation<T> {
   clearPinError: () => void;
   cancel: () => void;
   reset: () => void;
+  proceedWithNonGenuine: () => void;
 }
 
 export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [result, setResult] = useState<T | null>(null);
   const [waitingForPin, setWaitingForPin] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [showGenuineWarning, setShowGenuineWarning] = useState(false);
 
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
   const requiresPinRef = useRef(true);
   const operationRunningRef = useRef(false);
+  const approvedNonGenuineUidsRef = useRef<Set<string>>(new Set());
+  const pendingUidRef = useRef<string | null>(null);
 
   const handleCardDisconnected = useCallback(async () => {}, []);
 
-  const handleCardConnected = useCallback(
-    async (cmdSet: Commandset, setStatus: (status: string) => void) => {
-      const appInfo = cmdSet.applicationInfo;
-      if (!appInfo) {
-        throw new Error('No application info in SELECT response');
-      }
-
-      const uid = toHex(appInfo.instanceUID);
-      console.log(
-        `[Keycard] SELECT OK — UID: ${uid}, initialized: ${appInfo.initializedCard}, ` +
-          `freePairingSlots: ${
-            appInfo.freePairingSlots
-          }, hasMasterKey: ${appInfo.hasMasterKey()}`,
-      );
-
+  const doPairAndExecute = useCallback(
+    async (cmdSet: Commandset, uid: string, setStatus: (s: string) => void) => {
       const existingPairing = await loadPairing(uid);
       if (existingPairing) {
         console.log(
@@ -119,6 +119,41 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     [],
   );
 
+  const handleCardConnected = useCallback(
+    async (cmdSet: Commandset, setStatus: (status: string) => void) => {
+      const appInfo = cmdSet.applicationInfo;
+      if (!appInfo) {
+        throw new Error('No application info in SELECT response');
+      }
+
+      const uid = toHex(appInfo.instanceUID);
+      console.log(
+        `[Keycard] SELECT OK — UID: ${uid}, initialized: ${appInfo.initializedCard}, ` +
+          `freePairingSlots: ${
+            appInfo.freePairingSlots
+          }, hasMasterKey: ${appInfo.hasMasterKey()}`,
+      );
+
+      const existingPairing = await loadPairing(uid);
+      if (!existingPairing && !approvedNonGenuineUidsRef.current.has(uid)) {
+        setStatus('Verifying card...');
+        const isGenuine = await checkGenuine(cmdSet);
+        if (!isGenuine) {
+          console.log('[Keycard] Genuine check failed — showing warning');
+          pendingUidRef.current = uid;
+          setShowGenuineWarning(true);
+          // Return without throwing: useNFCSession will set nfcPhase='done',
+          // but our phase computation overrides it to 'genuine_warning'.
+          return;
+        }
+        console.log('[Keycard] Genuine check passed');
+      }
+
+      await doPairAndExecute(cmdSet, uid, setStatus);
+    },
+    [doPairAndExecute],
+  );
+
   const {
     phase: nfcPhase,
     status,
@@ -126,12 +161,13 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     reset: resetNFC,
   } = useNFCSession(handleCardConnected, handleCardDisconnected);
 
-  // Overlay pin_entry on top of the NFC session phases.
-  const phase: Phase =
-    (waitingForPin && nfcPhase === 'idle') ||
-    (pinError !== null && nfcPhase === 'error')
-      ? 'pin_entry'
-      : nfcPhase;
+  // 'genuine_warning' takes priority over all other phase overrides.
+  const phase: Phase = showGenuineWarning
+    ? 'genuine_warning'
+    : (waitingForPin && nfcPhase === 'idle') ||
+      (pinError !== null && nfcPhase === 'error')
+    ? 'pin_entry'
+    : nfcPhase;
 
   const execute = useCallback(
     (op: KeycardOperationFn<T>, options: ExecuteOptions = {}) => {
@@ -162,10 +198,22 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     setPinError(null);
   }, []);
 
+  const proceedWithNonGenuine = useCallback(() => {
+    const uid = pendingUidRef.current;
+    if (uid) {
+      approvedNonGenuineUidsRef.current.add(uid);
+      pendingUidRef.current = null;
+    }
+    setShowGenuineWarning(false);
+    startNFC(); // Re-enter nfc phase; user taps card again
+  }, [startNFC]);
+
   const cancel = useCallback(() => {
     resetNFC();
     setWaitingForPin(false);
     setPinError(null);
+    setShowGenuineWarning(false);
+    pendingUidRef.current = null;
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
@@ -175,6 +223,8 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     resetNFC();
     setWaitingForPin(false);
     setPinError(null);
+    setShowGenuineWarning(false);
+    pendingUidRef.current = null;
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
@@ -191,5 +241,6 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     clearPinError,
     cancel,
     reset,
+    proceedWithNonGenuine,
   };
 }

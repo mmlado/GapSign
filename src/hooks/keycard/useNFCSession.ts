@@ -1,7 +1,7 @@
-import Keycard from 'keycard-sdk';
-import { Commandset } from 'keycard-sdk/dist/commandset';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import RNKeycard from 'react-native-keycard';
+import Keycard from 'keycard-sdk';
+import { Commandset } from 'keycard-sdk/dist/commandset';
 
 export type Phase = 'idle' | 'nfc' | 'done' | 'error';
 
@@ -27,11 +27,16 @@ export default function useNFCSession(
   const realErrorRef = useRef(false);
 
   const handleCardConnected = useCallback(async () => {
-    if (phaseRef.current !== 'nfc') {
+    if (phaseRef.current !== 'nfc' && phaseRef.current !== 'error') {
       console.log(
         `[Keycard] Card connected (ignored — phase is '${phaseRef.current}')`,
       );
       return;
+    }
+    if (phaseRef.current === 'error') {
+      // User re-tapped after an error — reset stale error state and retry.
+      realErrorRef.current = false;
+      setPhase('nfc');
     }
     console.log('[Keycard] Card connected');
     try {

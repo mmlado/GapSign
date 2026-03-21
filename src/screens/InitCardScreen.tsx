@@ -33,7 +33,8 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
   const pinRef = useRef('');
   const duressRef = useRef<string | null>(null);
 
-  const { phase, status, result, start, cancel } = useInitCard();
+  const keycard = useInitCard();
+  const { phase, result, start, cancel } = keycard;
 
   useEffect(() => {
     if (phase !== 'done' || !result) {
@@ -189,18 +190,7 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
         />
       )}
 
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
-        status={status}
-        variant={
-          phase === 'done'
-            ? 'success'
-            : phase === 'error'
-            ? 'error'
-            : 'scanning'
-        }
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
     </View>
   );
 }

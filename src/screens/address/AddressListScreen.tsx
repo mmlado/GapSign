@@ -22,7 +22,6 @@ import { deriveAddresses } from '../../utils/hdAddress';
 import { pubKeyToEthAddress } from '../../utils/ethereumAddress';
 import { pubKeyToBtcAddress } from '../../utils/bitcoinAddress';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
-import PinPad from '../../components/PinPad';
 import { AddressListScreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
@@ -50,15 +49,8 @@ export default function AddressListScreen({
   navigation,
 }: AddressListScreenProps) {
   const { coin } = route.params;
-  const {
-    phase,
-    result: accountKey,
-    status,
-    pinError,
-    cancel,
-    start,
-    submitPin,
-  } = useAddresses(coin);
+  const keycard = useAddresses(coin);
+  const { phase, result: accountKey, start } = keycard;
   const insets = useSafeAreaInsets();
 
   const [addresses, setAddresses] = useState<string[]>([]);
@@ -102,6 +94,11 @@ export default function AddressListScreen({
     [handleRowPress],
   );
 
+  const handleCancel = useCallback(() => {
+    keycard.cancel();
+    navigation.goBack();
+  }, [keycard, navigation]);
+
   const loadMore = useCallback(() => {
     if (!externalRef.current) return;
     const from = nextIndexRef.current;
@@ -133,21 +130,7 @@ export default function AddressListScreen({
         renderItem={renderItem}
       />
 
-      {phase === 'pin_entry' && (
-        <View style={styles.pinOverlay}>
-          <PinPad onComplete={submitPin} error={pinError ?? undefined} />
-        </View>
-      )}
-
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error'}
-        status={status}
-        variant={phase === 'error' ? 'error' : 'scanning'}
-        onCancel={() => {
-          cancel();
-          navigation.goBack();
-        }}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
     </View>
   );
 }
@@ -164,5 +147,4 @@ const styles = StyleSheet.create({
   address: { flex: 1, color: theme.colors.onSurface, fontFamily: 'monospace' },
   footer: { paddingVertical: 16 },
   qrIcon: { width: 40, alignItems: 'center', justifyContent: 'center' },
-  pinOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

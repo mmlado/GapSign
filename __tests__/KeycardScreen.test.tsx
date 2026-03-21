@@ -80,10 +80,6 @@ async function renderScreen(phase: string) {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -105,19 +101,25 @@ describe('KeycardScreen', () => {
       });
     });
 
-    it('shows the PIN pad when phase is pin_entry', async () => {
-      const renderer = await renderScreen('pin_entry');
-      expect(toJson(renderer)).toContain('6 digits');
+    it('nfc.phase is pin_entry when phase is pin_entry', async () => {
+      await renderScreen('pin_entry');
+      const calls = MockNFCBottomSheet.mock.calls;
+      const props = calls[calls.length - 1][0];
+      expect(props.nfc.phase).toBe('pin_entry');
     });
 
-    it('hides PIN pad when phase is nfc', async () => {
-      const renderer = await renderScreen('nfc');
-      expect(toJson(renderer)).not.toContain('6 digits');
+    it('nfc.phase is nfc when phase is nfc', async () => {
+      await renderScreen('nfc');
+      const calls = MockNFCBottomSheet.mock.calls;
+      const props = calls[calls.length - 1][0];
+      expect(props.nfc.phase).toBe('nfc');
     });
 
-    it('hides PIN pad when phase is idle', async () => {
-      const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).not.toContain('6 digits');
+    it('nfc.phase is idle when phase is idle', async () => {
+      await renderScreen('idle');
+      const calls = MockNFCBottomSheet.mock.calls;
+      const props = calls[calls.length - 1][0];
+      expect(props.nfc.phase).toBe('idle');
     });
   });
 
@@ -134,27 +136,25 @@ describe('KeycardScreen', () => {
       return calls[calls.length - 1][0];
     }
 
-    it('passes variant=scanning and visible=true when phase is nfc', async () => {
+    it('nfc.phase is nfc when phase is nfc', async () => {
       await renderScreen('nfc');
-      expect(lastProps().variant).toBe('scanning');
-      expect(lastProps().visible).toBe(true);
+      expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('passes variant=error and visible=true when phase is error', async () => {
+    it('nfc.phase is error when phase is error', async () => {
       await renderScreen('error');
-      expect(lastProps().variant).toBe('error');
-      expect(lastProps().visible).toBe(true);
+      expect(lastProps().nfc.phase).toBe('error');
     });
 
-    it('passes variant=success and visible=true when phase is done', async () => {
+    it('nfc.phase is done and showOnDone is true when phase is done', async () => {
       await renderScreen('done');
-      expect(lastProps().variant).toBe('success');
-      expect(lastProps().visible).toBe(true);
+      expect(lastProps().nfc.phase).toBe('done');
+      expect(lastProps().showOnDone).toBe(true);
     });
 
-    it('passes visible=false when phase is pin_entry', async () => {
+    it('nfc.phase is pin_entry when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('pin_entry');
     });
   });
 
@@ -196,60 +196,19 @@ describe('KeycardScreen', () => {
   });
 
   describe('PIN pad input', () => {
-    function getActivePressables(
-      renderer: ReactTestRenderer.ReactTestRenderer,
-    ) {
-      return renderer.root.findAll(
-        (node: any) =>
-          typeof node.props.onPress === 'function' && !node.props.disabled,
-        { deep: true },
-      );
+    function lastProps() {
+      const calls = MockNFCBottomSheet.mock.calls;
+      return calls[calls.length - 1][0];
     }
 
-    it('does not call submitPin before 6 digits are entered', async () => {
-      const renderer = await renderScreen('pin_entry');
-      const keys = getActivePressables(renderer);
-      // Press '1' five times
-      for (let i = 0; i < 5; i++) {
-        await act(async () => {
-          keys[0].props.onPress();
-        });
-      }
-      expect(mockSubmitPin).not.toHaveBeenCalled();
+    it('nfc.submitPin is the submitPin function when phase is pin_entry', async () => {
+      await renderScreen('pin_entry');
+      expect(lastProps().nfc.submitPin).toBe(mockSubmitPin);
     });
 
-    it('calls submitPin with the 6-digit PIN on the final press', async () => {
-      const renderer = await renderScreen('pin_entry');
-      // Press '1' six times (first active key = '1')
-      for (let i = 0; i < 6; i++) {
-        const keys = getActivePressables(renderer);
-        await act(async () => {
-          keys[0].props.onPress();
-        });
-      }
-      expect(mockSubmitPin).toHaveBeenCalledTimes(1);
-      expect(mockSubmitPin).toHaveBeenCalledWith('111111');
-    });
-
-    it('backspace removes the last entered digit', async () => {
-      const renderer = await renderScreen('pin_entry');
-      // Press '2' (index 1), then backspace, then '1' × 6.
-      // If backspace works:   pin goes '' → '111111' → submitPin('111111')
-      // If backspace is broken: pin goes '2' → '211111' → submitPin('211111')
-      await act(async () => {
-        getActivePressables(renderer)[1].props.onPress(); // '2'
-      });
-      await act(async () => {
-        const keys = getActivePressables(renderer);
-        keys[keys.length - 1].props.onPress(); // '⌫'
-      });
-      for (let i = 0; i < 6; i++) {
-        const keys = getActivePressables(renderer);
-        await act(async () => {
-          keys[0].props.onPress(); // '1'
-        });
-      }
-      expect(mockSubmitPin).toHaveBeenCalledWith('111111');
+    it('nfc.submitPin is available when phase is pin_entry', async () => {
+      await renderScreen('pin_entry');
+      expect(typeof lastProps().nfc.submitPin).toBe('function');
     });
   });
 });

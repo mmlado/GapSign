@@ -2,11 +2,14 @@ import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { useKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
 import type { UseKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
+import { checkGenuine } from '../src/utils/genuineCheck';
+import { loadPairing } from '../src/storage/pairingStorage';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
 // ---------------------------------------------------------------------------
 
+let capturedOnConnected: (() => Promise<void>) | null = null;
 let capturedOnDisconnected: (() => void) | null = null;
 let capturedOnCancelled: (() => void) | null = null;
 let capturedOnTimeout: (() => void) | null = null;
@@ -18,7 +21,10 @@ jest.mock('react-native-keycard', () => ({
   __esModule: true,
   default: {
     Core: {
-      onKeycardConnected: (_cb: () => Promise<void>) => ({ remove: jest.fn() }),
+      onKeycardConnected: (cb: () => Promise<void>) => {
+        capturedOnConnected = cb;
+        return { remove: jest.fn() };
+      },
       onKeycardDisconnected: (cb: () => void) => {
         capturedOnDisconnected = cb;
         return { remove: jest.fn() };
@@ -40,13 +46,25 @@ jest.mock('react-native-keycard', () => ({
 
 jest.mock('keycard-sdk', () => ({
   __esModule: true,
-  default: { Commandset: class {} },
+  default: {
+    Commandset: jest.fn(),
+    Certificate: { verifyIdentity: jest.fn() },
+  },
+}));
+
+jest.mock('../src/utils/genuineCheck', () => ({
+  checkGenuine: jest.fn(),
 }));
 
 jest.mock('../src/storage/pairingStorage', () => ({
   loadPairing: jest.fn(),
   savePairing: jest.fn(),
 }));
+
+const mockCheckGenuine = checkGenuine as jest.MockedFunction<
+  typeof checkGenuine
+>;
+const mockLoadPairing = loadPairing as jest.MockedFunction<typeof loadPairing>;
 
 // ---------------------------------------------------------------------------
 // Test wrapper component
@@ -77,9 +95,12 @@ describe('useKeycardOperation', () => {
     mockStopNFC.mockResolvedValue(undefined);
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
+    capturedOnConnected = null;
     capturedOnDisconnected = null;
     capturedOnCancelled = null;
     capturedOnTimeout = null;
+    mockCheckGenuine.mockClear();
+    mockLoadPairing.mockClear();
   });
 
   describe('initial state', () => {
@@ -215,6 +236,147 @@ describe('useKeycardOperation', () => {
       });
       expect(latestHook.phase).toBe('idle');
       expect(latestHook.status).toBe('');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Genuine check
+  // -------------------------------------------------------------------------
+
+  describe('genuine check', () => {
+    // A minimal Commandset whose select() returns 0x9000 so useNFCSession
+    // proceeds to call our handleCardConnected.
+    const makeMockCmdSet = () => ({
+      applicationInfo: {
+        instanceUID: new Uint8Array([0xaa, 0xbb]),
+        initializedCard: true,
+        freePairingSlots: 5,
+        hasMasterKey: () => false,
+      },
+      select: jest.fn().mockResolvedValue({ sw: 0x9000 }),
+      identifyCard: jest.fn(),
+      autoPair: jest.fn().mockResolvedValue(undefined),
+      getPairing: jest.fn().mockReturnValue({ pairingIndex: 0 }),
+      setPairing: jest.fn(),
+      autoOpenSecureChannel: jest.fn().mockResolvedValue(undefined),
+      verifyPIN: jest.fn().mockResolvedValue({
+        sw: 0x9000,
+        checkAuthOK: jest.fn(),
+      }),
+    });
+
+    beforeEach(() => {
+      // Default: no existing pairing, genuine check passes
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+
+      // Make Keycard.Commandset return a fresh mock for each test
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => makeMockCmdSet());
+    });
+
+    async function triggerCardConnect() {
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+    }
+
+    it('genuine check runs when no existing pairing', async () => {
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect();
+      expect(mockCheckGenuine).toHaveBeenCalledTimes(1);
+    });
+
+    it('phase becomes genuine_warning when check fails', async () => {
+      mockCheckGenuine.mockResolvedValue(false);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn(), { requiresPin: false });
+      });
+      await triggerCardConnect();
+      expect(latestHook.phase).toBe('genuine_warning');
+    });
+
+    it('genuine check is skipped when pairing already exists', async () => {
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 0 } as any);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect();
+      expect(mockCheckGenuine).not.toHaveBeenCalled();
+    });
+
+    it('proceedWithNonGenuine transitions back to nfc', async () => {
+      mockCheckGenuine.mockResolvedValue(false);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn(), { requiresPin: false });
+      });
+      await triggerCardConnect();
+      expect(latestHook.phase).toBe('genuine_warning');
+
+      await act(async () => {
+        latestHook.proceedWithNonGenuine();
+      });
+      expect(latestHook.phase).toBe('nfc');
+      expect(mockStartNFC).toHaveBeenCalledTimes(2); // initial + after proceed
+    });
+
+    it('reconnect after proceedWithNonGenuine skips genuine check', async () => {
+      mockCheckGenuine.mockResolvedValue(false);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn().mockResolvedValue('r'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect(); // first connect: check fails, warning shown
+      await act(async () => {
+        latestHook.proceedWithNonGenuine();
+      });
+      // Simulate second card connect after user proceeds
+      mockCheckGenuine.mockClear();
+      await triggerCardConnect();
+      expect(mockCheckGenuine).not.toHaveBeenCalled();
+    });
+
+    it('cancel in genuine_warning returns to idle', async () => {
+      mockCheckGenuine.mockResolvedValue(false);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn(), { requiresPin: false });
+      });
+      await triggerCardConnect();
+      expect(latestHook.phase).toBe('genuine_warning');
+
+      await act(async () => {
+        latestHook.cancel();
+      });
+      expect(latestHook.phase).toBe('idle');
+    });
+
+    it('reset in genuine_warning returns to idle and clears result', async () => {
+      mockCheckGenuine.mockResolvedValue(false);
+      await mountHook();
+      await act(async () => {
+        latestHook.execute(jest.fn(), { requiresPin: false });
+      });
+      await triggerCardConnect();
+      expect(latestHook.phase).toBe('genuine_warning');
+
+      await act(async () => {
+        latestHook.reset();
+      });
+      expect(latestHook.phase).toBe('idle');
+      expect(latestHook.result).toBeNull();
     });
   });
 });

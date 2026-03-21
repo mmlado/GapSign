@@ -183,26 +183,24 @@ describe('GenerateKeyScreen', () => {
       return calls[calls.length - 1][0];
     }
 
-    it('passes visible=false when phase is idle', async () => {
+    it('nfc.phase is idle when phase is idle', async () => {
       await renderScreen('idle');
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('idle');
     });
 
-    it('passes visible=true and variant=scanning when phase is nfc', async () => {
+    it('nfc.phase is nfc when phase is nfc', async () => {
       await renderScreen('nfc');
-      expect(lastProps().visible).toBe(true);
-      expect(lastProps().variant).toBe('scanning');
+      expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('passes visible=true and variant=error when phase is error', async () => {
+    it('nfc.phase is error when phase is error', async () => {
       await renderScreen('error');
-      expect(lastProps().visible).toBe(true);
-      expect(lastProps().variant).toBe('error');
+      expect(lastProps().nfc.phase).toBe('error');
     });
 
-    it('passes visible=false when phase is done', async () => {
+    it('nfc.phase is done when phase is done', async () => {
       await renderScreen('done', WORDS);
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('done');
     });
   });
 
