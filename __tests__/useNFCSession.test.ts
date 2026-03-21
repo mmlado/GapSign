@@ -158,9 +158,9 @@ describe('useNFCSession', () => {
       expect(mockOnCardConnected).not.toHaveBeenCalled();
     });
 
-    it('ignores card connected when phase is error', async () => {
+    it('retries card connected when phase is error', async () => {
       await mountHook();
-      mockOnCardConnected.mockRejectedValue(new Error('fail'));
+      mockOnCardConnected.mockRejectedValueOnce(new Error('fail'));
       await act(async () => {
         latestHook.startNFC();
       });
@@ -169,11 +169,13 @@ describe('useNFCSession', () => {
       });
       expect(latestHook.phase).toBe('error');
 
-      mockOnCardConnected.mockClear();
+      // Re-tap: phase resets to nfc, operation is retried.
+      mockOnCardConnected.mockResolvedValueOnce(undefined);
       await act(async () => {
         await capturedOnConnected?.();
       });
-      expect(mockOnCardConnected).not.toHaveBeenCalled();
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(2);
+      expect(latestHook.phase).toBe('done');
     });
 
     it('handles card connected when phase is nfc', async () => {

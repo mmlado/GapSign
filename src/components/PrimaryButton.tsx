@@ -8,6 +8,7 @@ type Props = {
   onPress: () => void;
   icon?: React.FC<SvgProps>;
   disabled?: boolean;
+  testID?: string;
 };
 
 export default function PrimaryButton({
@@ -15,6 +16,7 @@ export default function PrimaryButton({
   onPress,
   icon: Icon,
   disabled = false,
+  testID,
 }: Props) {
   const handlePress = useCallback(() => {
     onPress();
@@ -28,6 +30,7 @@ export default function PrimaryButton({
       android_ripple={{ color: 'rgba(255,255,255,0.3)' }}
       onPress={handlePress}
       disabled={disabled}
+      testID={testID}
     >
       <View style={styles.content}>
         {Icon && <Icon width={24} height={24} color={contentColor} />}

@@ -3,11 +3,14 @@ import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { BlurView } from '@react-native-community/blur';
 import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { GenerateKeyScreenProps } from '../../navigation/types';
+import theme from '../../theme';
+
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
-import { GenerateKeyScreenProps } from '../../navigation/types';
+
 import { useGenerateKey } from '../../hooks/keycard/useGenerateKey';
-import theme from '../../theme';
 
 export default function GenerateKeyScreen({
   navigation,
@@ -16,9 +19,8 @@ export default function GenerateKeyScreen({
   const insets = useSafeAreaInsets();
   const [revealed, setRevealed] = useState(false);
 
-  const { phase, status, result, start, cancel } = useGenerateKey(
-    route.params.size,
-  );
+  const keycard = useGenerateKey(route.params.size);
+  const { phase, result, start, cancel } = keycard;
   const withPassphrase = route.params.passphrase ?? false;
   const [passphrase, setPassphrase] = useState('');
 
@@ -114,12 +116,7 @@ export default function GenerateKeyScreen({
         </View>
       )}
 
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error'}
-        status={status}
-        variant={phase === 'error' ? 'error' : 'scanning'}
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
     </View>
   );
 }

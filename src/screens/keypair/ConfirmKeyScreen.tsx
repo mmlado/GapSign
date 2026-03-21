@@ -13,7 +13,6 @@ import { ConfirmKeySreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
 import NFCBottomSheet from '../../components/NFCBottomSheet';
-import PinPad from '../../components/PinPad';
 import { Icons } from '../../assets/icons';
 
 import { useLoadKey } from '../../hooks/keycard/useLoadKey';
@@ -45,10 +44,8 @@ export default function ConfirmKeyScreen({
   const insets = useSafeAreaInsets();
   const { words, passphrase } = route.params;
 
-  const { phase, status, pinError, start, cancel, submitPin } = useLoadKey(
-    words,
-    passphrase,
-  );
+  const keycard = useLoadKey(words, passphrase);
+  const { phase, start, cancel } = keycard;
 
   const [challengePositions] = useState(() => {
     const indices = words.map((_, i) => i);
@@ -188,18 +185,7 @@ export default function ConfirmKeyScreen({
         </View>
       )}
 
-      {phase === 'pin_entry' && (
-        <View style={styles.pinOverlay}>
-          <PinPad onComplete={submitPin} error={pinError ?? undefined} />
-        </View>
-      )}
-
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error'}
-        status={status}
-        variant={phase === 'error' ? 'error' : 'scanning'}
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
     </View>
   );
 }
@@ -291,5 +277,4 @@ const styles = StyleSheet.create({
     lineHeight: 15 * 1.45,
     letterSpacing: -0.135,
   },
-  pinOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
 });

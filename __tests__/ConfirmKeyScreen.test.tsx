@@ -239,23 +239,24 @@ describe('ConfirmKeyScreen', () => {
   // -------------------------------------------------------------------------
 
   describe('PinPad', () => {
-    it('is not shown when phase is idle', async () => {
+    function lastProps() {
+      const calls = MockNFCBottomSheet.mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    it('nfc.phase is not pin_entry when phase is idle', async () => {
       await renderScreen('idle');
-      expect(MockPinPad).not.toHaveBeenCalled();
+      expect(lastProps().nfc.phase).not.toBe('pin_entry');
     });
 
-    it('is shown when phase is pin_entry', async () => {
+    it('nfc.phase is pin_entry when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
-      expect(MockPinPad).toHaveBeenCalled();
+      expect(lastProps().nfc.phase).toBe('pin_entry');
     });
 
-    it('calls submitPin when PinPad completes', async () => {
+    it('nfc.submitPin is the submitPin function when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
-      const onComplete = MockPinPad.mock.calls[0][0].onComplete;
-      await act(async () => {
-        onComplete('123456');
-      });
-      expect(mockSubmitPin).toHaveBeenCalledWith('123456');
+      expect(lastProps().nfc.submitPin).toBe(mockSubmitPin);
     });
   });
 
@@ -269,21 +270,19 @@ describe('ConfirmKeyScreen', () => {
       return calls[calls.length - 1][0];
     }
 
-    it('passes visible=false when phase is idle', async () => {
+    it('nfc.phase is idle when phase is idle', async () => {
       await renderScreen('idle');
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('idle');
     });
 
-    it('passes visible=true and variant=scanning when phase is nfc', async () => {
+    it('nfc.phase is nfc when phase is nfc', async () => {
       await renderScreen('nfc');
-      expect(lastProps().visible).toBe(true);
-      expect(lastProps().variant).toBe('scanning');
+      expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('passes visible=true and variant=error when phase is error', async () => {
+    it('nfc.phase is error when phase is error', async () => {
       await renderScreen('error');
-      expect(lastProps().visible).toBe(true);
-      expect(lastProps().variant).toBe('error');
+      expect(lastProps().nfc.phase).toBe('error');
     });
   });
 

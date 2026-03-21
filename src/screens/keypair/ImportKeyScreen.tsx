@@ -21,7 +21,6 @@ import { ImportKeyScreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
 import NFCBottomSheet from '../../components/NFCBottomSheet';
-import PinPad from '../../components/PinPad';
 import PrimaryButton from '../../components/PrimaryButton';
 import { Icons } from '../../assets/icons';
 
@@ -46,10 +45,8 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
     [input],
   );
 
-  const { phase, status, pinError, start, cancel, submitPin } = useLoadKey(
-    words,
-    passphrase || undefined,
-  );
+  const keycard = useLoadKey(words, passphrase || undefined);
+  const { phase, start, cancel } = keycard;
 
   const handleTextChange = useCallback((text: string) => {
     setInput(text);
@@ -169,18 +166,7 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
         />
       </View>
 
-      {phase === 'pin_entry' && (
-        <View style={styles.pinOverlay}>
-          <PinPad onComplete={submitPin} error={pinError ?? undefined} />
-        </View>
-      )}
-
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error'}
-        status={status}
-        variant={phase === 'error' ? 'error' : 'scanning'}
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
     </View>
   );
 }
@@ -266,12 +252,5 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingHorizontal: 16,
-  },
-  pinOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
   },
 });

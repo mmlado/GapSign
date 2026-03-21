@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import NFCBottomSheet, { NFCVariant } from '../src/components/NFCBottomSheet';
+import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import type { NFCOperation } from '../src/components/NFCBottomSheet';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -15,11 +16,23 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/components/PinPad', () => {
+  const { View } = require('react-native');
+  return () => <View testID="pin-pad" />;
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 const onCancel = jest.fn();
+
+function makeNfc(
+  phase: string,
+  extra: Partial<NFCOperation> = {},
+): NFCOperation {
+  return { phase, status: 'Ready', ...extra };
+}
 
 // PulseRing uses useNativeDriver:true which crashes when timers fire in the
 // test environment. Fake timers prevent animation callbacks from executing.
@@ -32,16 +45,11 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-async function renderSheet(variant: NFCVariant, status = 'Ready') {
+async function renderSheet(nfc: NFCOperation, showOnDone?: boolean) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <NFCBottomSheet
-        visible={true}
-        status={status}
-        onCancel={onCancel}
-        variant={variant}
-      />,
+      <NFCBottomSheet nfc={nfc} onCancel={onCancel} showOnDone={showOnDone} />,
     );
   });
   return renderer;
@@ -65,19 +73,21 @@ function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 describe('NFCBottomSheet', () => {
   describe('status text', () => {
     it('renders the status string', async () => {
-      const renderer = await renderSheet('scanning', 'Waiting for card…');
+      const renderer = await renderSheet(
+        makeNfc('nfc', { status: 'Waiting for card…' }),
+      );
       expect(toJson(renderer)).toContain('Waiting for card…');
     });
   });
 
-  describe('Cancel button — variant scanning', () => {
+  describe('Cancel button — phase nfc (scanning)', () => {
     it('shows the Cancel button', async () => {
-      const renderer = await renderSheet('scanning');
+      const renderer = await renderSheet(makeNfc('nfc'));
       expect(toJson(renderer)).toContain('Cancel');
     });
 
     it('calls onCancel when Cancel is pressed', async () => {
-      const renderer = await renderSheet('scanning');
+      const renderer = await renderSheet(makeNfc('nfc'));
       const [cancelBtn] = getPressables(renderer);
       await act(async () => {
         cancelBtn.props.onPress();
@@ -86,14 +96,14 @@ describe('NFCBottomSheet', () => {
     });
   });
 
-  describe('Cancel button — variant error', () => {
+  describe('Cancel button — phase error', () => {
     it('shows the Cancel button', async () => {
-      const renderer = await renderSheet('error');
+      const renderer = await renderSheet(makeNfc('error'));
       expect(toJson(renderer)).toContain('Cancel');
     });
 
     it('calls onCancel when Cancel is pressed', async () => {
-      const renderer = await renderSheet('error');
+      const renderer = await renderSheet(makeNfc('error'));
       const [cancelBtn] = getPressables(renderer);
       await act(async () => {
         cancelBtn.props.onPress();
@@ -102,43 +112,120 @@ describe('NFCBottomSheet', () => {
     });
   });
 
-  describe('Cancel button — variant success', () => {
-    it('hides the Cancel button', async () => {
-      const renderer = await renderSheet('success');
+  describe('Cancel button — phase done with showOnDone', () => {
+    it('hides the Cancel button (success variant)', async () => {
+      const renderer = await renderSheet(makeNfc('done'), true);
       expect(toJson(renderer)).not.toContain('Cancel');
     });
 
     it('has no pressable elements', async () => {
-      const renderer = await renderSheet('success');
+      const renderer = await renderSheet(makeNfc('done'), true);
       expect(getPressables(renderer)).toHaveLength(0);
     });
   });
 
+  describe('genuine_warning phase', () => {
+    const onProceed = jest.fn();
+
+    beforeEach(() => {
+      onProceed.mockClear();
+    });
+
+    it('shows the unverified title', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      expect(toJson(renderer)).toContain('Unverified Keycard');
+    });
+
+    it('shows warning body text', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      expect(toJson(renderer)).toContain('could not be verified');
+    });
+
+    it('shows Cancel and Proceed Anyway buttons', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      const json = toJson(renderer);
+      expect(json).toContain('Cancel');
+      expect(json).toContain('Proceed Anyway');
+    });
+
+    it('calls onCancel when Cancel is pressed', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      const cancelBtn = renderer.root.find(
+        (n: any) => n.props.testID === 'cancel-button',
+      );
+      await act(async () => {
+        cancelBtn.props.onPress();
+      });
+      expect(onCancel).toHaveBeenCalledTimes(1);
+      expect(onProceed).not.toHaveBeenCalled();
+    });
+
+    it('calls proceedWithNonGenuine when Proceed Anyway is pressed', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      const proceedBtn = renderer.root.find(
+        (n: any) => n.props.testID === 'proceed-button',
+      );
+      await act(async () => {
+        proceedBtn.props.onPress();
+      });
+      expect(onProceed).toHaveBeenCalledTimes(1);
+      expect(onCancel).not.toHaveBeenCalled();
+    });
+
+    it('does not show the NFC icon area', async () => {
+      const renderer = await renderSheet(
+        makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
+      );
+      expect(toJson(renderer)).not.toContain('Tap your Keycard');
+    });
+  });
+
+  describe('pin_entry phase', () => {
+    it('renders PinPad instead of the bottom sheet', async () => {
+      const submitPin = jest.fn();
+      const renderer = await renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(
+        renderer.root.findAll((n: any) => n.props.testID === 'pin-pad').length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('does not show the NFC sheet content', async () => {
+      const submitPin = jest.fn();
+      const renderer = await renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(toJson(renderer)).not.toContain('Tap your Keycard');
+    });
+  });
+
   describe('pulse rings', () => {
-    it('renders more animated views when scanning than when success', async () => {
-      // PulseRing adds 3 extra Animated.Views when variant=scanning; none otherwise.
+    it('renders more animated views when scanning than when done+showOnDone', async () => {
       function countViews(r: ReactTestRenderer.ReactTestRenderer) {
         return r.root.findAll(() => true, { deep: true }).length;
       }
 
-      const scanning = await renderSheet('scanning');
-      const success = await renderSheet('success');
+      const scanning = await renderSheet(makeNfc('nfc'));
+      const success = await renderSheet(makeNfc('done'), true);
 
       expect(countViews(scanning)).toBeGreaterThan(countViews(success));
     });
 
-    it('renders the same number of elements for success and error (no pulse rings)', async () => {
+    it('error has fewer elements than scanning (no pulse rings)', async () => {
       function countViews(r: ReactTestRenderer.ReactTestRenderer) {
         return r.root.findAll(() => true, { deep: true }).length;
       }
 
-      const success = await renderSheet('success');
-      const error = await renderSheet('error');
+      const scanning = await renderSheet(makeNfc('nfc'));
+      const error = await renderSheet(makeNfc('error'));
 
-      // Both hide pulse rings; error just adds the cancel button back
-      // so the counts aren't equal, but neither should be as high as scanning.
-      const scanning = await renderSheet('scanning');
-      expect(countViews(success)).toBeLessThan(countViews(scanning));
       expect(countViews(error)).toBeLessThan(countViews(scanning));
     });
   });

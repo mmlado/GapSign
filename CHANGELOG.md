@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Genuine Keycard verification before first pairing
 - Import recovery phrase (12/24 words + optional passphrase)
 - Wrong PIN feedback: remaining attempts shown under PIN field, card locked message when no attempts remain
 - BIP39 passphrase support for key generation (12 and 24 word variants)
@@ -15,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fix
 
+- Address menu: removed duplicate top padding that caused a gap below the navigation header
 - Address list FlatList performance fix (memoized renderItem/keyExtractor)
 
 ## [0.5.0] - 2026-03-16

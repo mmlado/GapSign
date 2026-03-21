@@ -19,7 +19,8 @@ export default function FactoryResetScreen({
   const insets = useSafeAreaInsets();
   const [checked, setChecked] = useState(false);
 
-  const { phase, status, start, cancel } = useFactoryReset();
+  const keycard = useFactoryReset();
+  const { phase, start, cancel } = keycard;
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Factory reset' });
@@ -82,18 +83,7 @@ export default function FactoryResetScreen({
         </View>
       )}
 
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
-        status={status}
-        variant={
-          phase === 'done'
-            ? 'success'
-            : phase === 'error'
-            ? 'error'
-            : 'scanning'
-        }
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
     </View>
   );
 }

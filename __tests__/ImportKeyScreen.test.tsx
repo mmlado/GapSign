@@ -321,33 +321,24 @@ describe('ImportKeyScreen', () => {
   });
 
   describe('NFC sheet', () => {
-    it('is hidden when phase is idle', async () => {
+    function lastProps() {
+      const calls = MockNFCBottomSheet.mock.calls;
+      return calls[calls.length - 1][0];
+    }
+
+    it('nfc.phase is idle when phase is idle', async () => {
       await renderScreen('idle');
-      const lastCall =
-        MockNFCBottomSheet.mock.calls[
-          MockNFCBottomSheet.mock.calls.length - 1
-        ][0];
-      expect(lastCall.visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('idle');
     });
 
-    it('is visible in scanning variant when phase is nfc', async () => {
+    it('nfc.phase is nfc when phase is nfc', async () => {
       await renderScreen('nfc');
-      const lastCall =
-        MockNFCBottomSheet.mock.calls[
-          MockNFCBottomSheet.mock.calls.length - 1
-        ][0];
-      expect(lastCall.visible).toBe(true);
-      expect(lastCall.variant).toBe('scanning');
+      expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('is visible in error variant when phase is error', async () => {
+    it('nfc.phase is error when phase is error', async () => {
       await renderScreen('error');
-      const lastCall =
-        MockNFCBottomSheet.mock.calls[
-          MockNFCBottomSheet.mock.calls.length - 1
-        ][0];
-      expect(lastCall.visible).toBe(true);
-      expect(lastCall.variant).toBe('error');
+      expect(lastProps().nfc.phase).toBe('error');
     });
   });
 });

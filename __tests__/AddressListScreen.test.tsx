@@ -146,46 +146,46 @@ describe('AddressListScreen', () => {
       return calls[calls.length - 1][0];
     }
 
-    it('passes visible=false when phase is idle', async () => {
+    it('nfc.phase is idle when phase is idle', async () => {
       await renderScreen('idle');
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('idle');
     });
 
-    it('passes visible=true when phase is nfc', async () => {
+    it('nfc.phase is nfc when phase is nfc', async () => {
       await renderScreen('nfc');
-      expect(lastProps().visible).toBe(true);
+      expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('passes visible=true when phase is error', async () => {
+    it('nfc.phase is error when phase is error', async () => {
       await renderScreen('error');
-      expect(lastProps().visible).toBe(true);
+      expect(lastProps().nfc.phase).toBe('error');
     });
 
-    it('passes visible=false when phase is done', async () => {
+    it('nfc.phase is done when phase is done', async () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('0xAddr'));
       await renderScreen('done', mockAccountKey);
-      expect(lastProps().visible).toBe(false);
+      expect(lastProps().nfc.phase).toBe('done');
     });
 
-    it('passes the status string to NFCBottomSheet', async () => {
+    it('passes the status string to NFCBottomSheet via nfc.status', async () => {
       await renderScreen('nfc');
-      expect(lastProps().status).toBe('status-nfc');
+      expect(lastProps().nfc.status).toBe('status-nfc');
     });
   });
 
   describe('pin_entry phase', () => {
-    it('renders PinPad when phase is pin_entry', async () => {
+    it('nfc.phase is pin_entry when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
-      expect(MockPinPad).toHaveBeenCalled();
+      const calls = MockNFCBottomSheet.mock.calls;
+      const props = calls[calls.length - 1][0];
+      expect(props.nfc.phase).toBe('pin_entry');
     });
 
-    it('calls submitPin when PinPad onComplete fires', async () => {
+    it('nfc.submitPin is available when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
-      const onComplete = MockPinPad.mock.calls[0][0].onComplete;
-      await act(async () => {
-        onComplete('123456');
-      });
-      expect(mockSubmitPin).toHaveBeenCalledWith('123456');
+      const calls = MockNFCBottomSheet.mock.calls;
+      const props = calls[calls.length - 1][0];
+      expect(props.nfc.submitPin).toBe(mockSubmitPin);
     });
   });
 

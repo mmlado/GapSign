@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { keccak_256 } from '@noble/hashes/sha3.js';
+
 import type { KeycardScreenProps } from '../navigation/types';
-import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
+
 import NFCBottomSheet from '../components/NFCBottomSheet';
+
+import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 import { buildEthSignatureUR } from '../utils/ethSignature';
 import { buildCryptoHdKeyUR } from '../utils/cryptoHdKey';
-import PinPad from '../components/PinPad';
 
 function prepareHash(
   signData: string,
@@ -28,8 +30,8 @@ export default function KeycardScreen({
   const insets = useSafeAreaInsets();
   const hashRef = useRef<Uint8Array | null>(null);
 
-  const { phase, status, result, pinError, execute, submitPin, cancel } =
-    useKeycardOperation<Uint8Array>();
+  const keycard = useKeycardOperation<Uint8Array>();
+  const { phase, result, execute, cancel } = keycard;
 
   const handleSign = useCallback(() => {
     if (params.operation !== 'sign') {
@@ -131,22 +133,7 @@ export default function KeycardScreen({
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
-      {phase === 'pin_entry' && (
-        <PinPad onComplete={submitPin} error={pinError ?? undefined} />
-      )}
-
-      <NFCBottomSheet
-        visible={phase === 'nfc' || phase === 'error' || phase === 'done'}
-        status={status}
-        variant={
-          phase === 'done'
-            ? 'success'
-            : phase === 'error'
-            ? 'error'
-            : 'scanning'
-        }
-        onCancel={handleCancel}
-      />
+      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
     </View>
   );
 }
