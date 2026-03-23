@@ -51,9 +51,20 @@ function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 
 describe('PinPad', () => {
   describe('field label', () => {
-    it('renders the "6 digits" field label', async () => {
+    it('renders the "6 digits" field label by default', async () => {
       const renderer = await renderPad();
       expect(toJson(renderer)).toContain('6 digits');
+    });
+
+    it('renders the correct label for a custom length', async () => {
+      let renderer!: ReactTestRenderer.ReactTestRenderer;
+      await act(async () => {
+        renderer = ReactTestRenderer.create(
+          <PinPad onComplete={onComplete} length={12} />,
+        );
+      });
+      expect(toJson(renderer)).toContain('12 digits');
+      expect(toJson(renderer)).not.toContain('6 digits');
     });
   });
 

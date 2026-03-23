@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Modal, StyleSheet, View } from 'react-native';
+import { Animated, BackHandler, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PinPad from '../PinPad';
@@ -34,7 +34,15 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
     phase === 'nfc' ||
     phase === 'error' ||
     (showOnDone === true && phase === 'done');
-  const modalVisible = showPinPad || showGenuineWarning || showSheet;
+
+  useEffect(() => {
+    if (!showPinPad) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onCancel();
+      return true;
+    });
+    return () => sub.remove();
+  }, [showPinPad, onCancel]);
 
   useEffect(() => {
     Animated.spring(slideAnim, {
@@ -55,34 +63,43 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
       : 'scanning';
 
   return (
-    <Modal
-      visible={modalVisible}
-      transparent
-      statusBarTranslucent
-      animationType="fade"
-      onRequestClose={onCancel}
-    >
-      {showPinPad ? (
-        <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
-      ) : showGenuineWarning ? (
-        <GenuineWarning onCancel={onCancel} onProceed={proceedWithNonGenuine} />
-      ) : (
-        <View style={styles.overlay}>
-          <Animated.View
-            style={[
-              styles.sheet,
-              {
-                paddingBottom: Math.max(insets.bottom, 16) + 8,
-                transform: [{ translateY: slideAnim }],
-              },
-            ]}
-          >
-            <View style={styles.handle} />
-            <NFCSheet variant={variant} status={status} onCancel={onCancel} />
-          </Animated.View>
+    <>
+      {showPinPad && (
+        <View style={StyleSheet.absoluteFill}>
+          <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
         </View>
       )}
-    </Modal>
+
+      <Modal
+        visible={showGenuineWarning || showSheet}
+        transparent
+        statusBarTranslucent
+        animationType="fade"
+        onRequestClose={onCancel}
+      >
+        {showGenuineWarning ? (
+          <GenuineWarning
+            onCancel={onCancel}
+            onProceed={proceedWithNonGenuine}
+          />
+        ) : (
+          <View style={styles.overlay}>
+            <Animated.View
+              style={[
+                styles.sheet,
+                {
+                  paddingBottom: Math.max(insets.bottom, 16) + 8,
+                  transform: [{ translateY: slideAnim }],
+                },
+              ]}
+            >
+              <View style={styles.handle} />
+              <NFCSheet variant={variant} status={status} onCancel={onCancel} />
+            </Animated.View>
+          </View>
+        )}
+      </Modal>
+    </>
   );
 }
 

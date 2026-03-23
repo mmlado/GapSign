@@ -1,16 +1,9 @@
 import { useCallback } from 'react';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import { useNFCOperation } from './useNFCOperation';
-import { Phase } from './useNFCSession';
 
-export interface UseFactoryResetOperation {
-  phase: Phase;
-  status: string;
-  result: string | null;
-  start: () => void;
-  cancel: () => void;
-  reset: () => void;
-}
+import { useNFCOperation, UseNFCOperation } from './useNFCOperation';
+
+export type UseFactoryResetOperation = UseNFCOperation<string>;
 
 export function useFactoryReset(): UseFactoryResetOperation {
   const { phase, status, result, start, cancel, reset } = useNFCOperation(
