@@ -21,6 +21,30 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
           derivationPath: "m/44'/60'/0'",
         }),
     },
+    {
+      label: 'Bitcoin',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: "m/84'/0'/0'",
+        }),
+    },
+    {
+      label: 'Bitcoin Multisig',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: "m/48'/0'/0'/2'",
+        }),
+    },
+    {
+      label: 'Bitcoin Testnet',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: "m/84'/1'/0'",
+        }),
+    },
   ];
 
   return (
