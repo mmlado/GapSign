@@ -18,9 +18,13 @@ export type KeycardParams =
     };
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
+export type SecretType = 'pin' | 'puk' | 'pairing';
+
 export type RootStackParamList = {
   Dashboard: { toast?: string } | undefined;
   InitCard: undefined;
+  SecretsMenu: undefined;
+  ChangeSecret: { secretType: SecretType };
   QRScanner: undefined;
   TransactionDetail: { result: ScanResult };
   Keycard: KeycardParams;
@@ -117,6 +121,16 @@ export type AddressListScreenProps = NativeStackScreenProps<
 export type AddressDetailScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'AddressDetail'
+>;
+
+export type SecretsMenuScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'SecretsMenu'
+>;
+
+export type ChangeSecretScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'ChangeSecret'
 >;
 
 export type DashboardAction = {

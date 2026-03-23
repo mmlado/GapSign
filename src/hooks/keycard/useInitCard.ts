@@ -1,17 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import { PAIRING_PASSWORD } from '../../constants/keycard';
-import { useNFCOperation } from './useNFCOperation';
-import { Phase } from './useNFCSession';
 
-export interface UseInitCardOperation {
-  phase: Phase;
-  status: string;
-  result: string | null;
+import { PAIRING_PASSWORD } from '../../constants/keycard';
+import { useNFCOperation, UseNFCOperation } from './useNFCOperation';
+
+export type UseInitCardOperation = Omit<UseNFCOperation<string>, 'start'> & {
   start: (pin: string, duressPin?: string | null) => void;
-  cancel: () => void;
-  reset: () => void;
-}
+};
 
 function generatePUK(): string {
   const bytes = new Uint8Array(12);

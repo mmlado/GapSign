@@ -26,6 +26,10 @@ import ImportKeyScreen from '../screens/keypair/ImportKeyScreen';
 import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
 import KeySizeScreen from '../screens/keypair/KeySizeScreen';
 
+// Secrets screens
+import ChangeSecretScreen from '../screens/secrets/ChangeSecretScreen';
+import SecretsMenuScreen from '../screens/secrets/SecretsMenuScreen';
+
 const headerStyle = { backgroundColor: theme.colors.background };
 const headerTitleStyle = { fontWeight: '600' as const };
 const defaultHeaderOptions: NativeStackNavigationOptions = {
@@ -88,6 +92,18 @@ export const routes: Route[] = [
   {
     name: 'ImportKey',
     component: ImportKeyScreen,
+    options: defaultHeaderOptions,
+  },
+
+  // Secrets flow
+  {
+    name: 'SecretsMenu',
+    component: SecretsMenuScreen,
+    options: { ...defaultHeaderOptions, title: 'Secrets' },
+  },
+  {
+    name: 'ChangeSecret',
+    component: ChangeSecretScreen,
     options: defaultHeaderOptions,
   },
 

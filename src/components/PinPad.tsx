@@ -32,6 +32,7 @@ interface PinPadProps {
   onComplete: (pin: string) => void;
   error?: string;
   onType?: () => void;
+  length?: number;
 }
 
 const PIN_LENGTH = 6;
@@ -43,7 +44,12 @@ const PAD_KEYS = [
   ['', '0', '⌫'],
 ];
 
-export default function PinPad({ onComplete, error, onType }: PinPadProps) {
+export default function PinPad({
+  onComplete,
+  error,
+  onType,
+  length = PIN_LENGTH,
+}: PinPadProps) {
   const [pin, setPin] = useState('');
 
   const handleKey = useCallback(
@@ -56,16 +62,16 @@ export default function PinPad({ onComplete, error, onType }: PinPadProps) {
       }
       if (key === '⌫') {
         setPin(p => p.slice(0, -1));
-      } else if (pin.length < PIN_LENGTH) {
+      } else if (pin.length < length) {
         const next = pin + key;
         setPin(next);
-        if (next.length === PIN_LENGTH) {
+        if (next.length === length) {
           onComplete(next);
           setPin('');
         }
       }
     },
-    [pin, onComplete, onType],
+    [pin, onComplete, onType, length],
   );
 
   return (
@@ -73,7 +79,7 @@ export default function PinPad({ onComplete, error, onType }: PinPadProps) {
       <View style={styles.header}>
         <View style={styles.fieldWrapper}>
           <View style={styles.pinField}>
-            <Text style={styles.pinFieldLabel}>6 digits</Text>
+            <Text style={styles.pinFieldLabel}>{`${length} digits`}</Text>
             <View style={styles.pinFieldRow}>
               <Text style={styles.pinFieldText}>{'•'.repeat(pin.length)}</Text>
               <Caret />
