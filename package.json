@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@ethereumjs/rlp": "^10.1.1",
+    "@keystonehq/bc-ur-registry": "^0.7.1",
+    "@keystonehq/bc-ur-registry-eth": "^0.22.1",
     "@ngraveio/bc-ur": "^1.1.13",
     "@noble/hashes": "^2.0.1",
     "@noble/secp256k1": "^3.0.0",
@@ -25,6 +27,7 @@
     "@scure/bip32": "^2.0.1",
     "@scure/bip39": "^2.0.1",
     "keycard-sdk": "^3.1.5",
+    "node-libs-react-native": "^1.2.1",
     "react": "^19.2.0",
     "react-native": "^0.83.1",
     "react-native-camera-kit": "^17.0.1",

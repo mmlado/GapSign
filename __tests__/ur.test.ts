@@ -1,7 +1,38 @@
-import { Buffer } from 'buffer';
-import CBOR from 'cbor-sync';
+import { URDecoder } from '@ngraveio/bc-ur';
+import { EthSignRequest } from '@keystonehq/bc-ur-registry-eth';
 import { handleUR } from '../src/utils/ur';
 import { DATA_TYPE_LABELS } from '../src/types';
+
+// ---------------------------------------------------------------------------
+// Helper: build CBOR bytes from a properly encoded EthSignRequest UR
+// ---------------------------------------------------------------------------
+
+function buildCbor(
+  signData: string,
+  dataType: number,
+  hdPath: string,
+  opts: {
+    xfp?: string;
+    uuid?: string;
+    chainId?: number;
+    address?: string;
+    origin?: string;
+  } = {},
+): Buffer {
+  const req = EthSignRequest.constructETHRequest(
+    Buffer.from(signData, 'hex'),
+    dataType,
+    hdPath,
+    opts.xfp ?? '00000000',
+    opts.uuid,
+    opts.chainId,
+    opts.address,
+    opts.origin,
+  );
+  const decoder = new URDecoder();
+  decoder.receivePart(req.toUREncoder(1000).nextPart());
+  return decoder.resultUR().cbor;
+}
 
 // ---------------------------------------------------------------------------
 // handleUR
@@ -13,26 +44,17 @@ describe('handleUR', () => {
     expect(result).toEqual({ kind: 'unsupported', type: 'some-unknown-type' });
   });
 
-  it('returns error when CBOR.decode throws', () => {
-    // cbor-sync is lenient and won't throw on its own for most bad inputs,
-    // so we simulate a decode failure with a spy.
-    const cborModule = require('cbor-sync');
-    const spy = jest.spyOn(cborModule, 'decode').mockImplementation(() => {
-      throw new Error('unexpected end of input');
-    });
-
-    const result = handleUR('eth-sign-request', Buffer.from('anything'));
+  it('returns error when CBOR is invalid', () => {
+    const result = handleUR('eth-sign-request', Buffer.from([0xff, 0xfe]));
     expect(result.kind).toBe('error');
     if (result.kind === 'error') {
       expect(result.message).toMatch(/Failed to parse sign request/);
     }
-
-    spy.mockRestore();
   });
 
   it('parses a minimal eth-sign-request (signData + dataType only)', () => {
-    const encoded = CBOR.encode({ 2: Buffer.from('deadbeef', 'hex'), 3: 1 });
-    const result = handleUR('eth-sign-request', encoded);
+    const cbor = buildCbor('deadbeef', 1, "m/44'/60'/0'/0");
+    const result = handleUR('eth-sign-request', cbor);
 
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
@@ -43,21 +65,18 @@ describe('handleUR', () => {
       expect(request.chainId).toBeUndefined();
       expect(request.address).toBeUndefined();
       expect(request.origin).toBeUndefined();
-      expect(request.derivationPath).toBe('unknown');
+      expect(request.derivationPath).toBe("m/44'/60'/0'/0");
     }
   });
 
   it('parses a full eth-sign-request with all optional fields', () => {
-    const encoded = CBOR.encode({
-      1: Buffer.from('01020304', 'hex'), // requestId
-      2: Buffer.from('aabbccdd', 'hex'), // signData
-      3: 4, // dataType: EIP-1559
-      4: 1, // chainId: mainnet
-      5: { 1: [44, true, 60, true, 0, true, 0, false] }, // derivation path
-      6: Buffer.from('abcdef1234567890abcdef1234567890abcdef12', 'hex'), // address
-      7: 'MetaMask', // origin
+    const cbor = buildCbor('aabbccdd', 4, "m/44'/60'/0'/0", {
+      uuid: 'b3281a82-950d-4076-934b-1aa8b4f87492',
+      chainId: 1,
+      address: '0xabcdef1234567890abcdef1234567890abcdef12',
+      origin: 'MetaMask',
     });
-    const result = handleUR('eth-sign-request', encoded);
+    const result = handleUR('eth-sign-request', cbor);
 
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
@@ -65,7 +84,7 @@ describe('handleUR', () => {
       expect(request.signData).toBe('aabbccdd');
       expect(request.dataType).toBe(4);
       expect(request.chainId).toBe(1);
-      expect(request.requestId).toBe('01020304');
+      expect(request.requestId).toBe('b3281a82950d4076934b1aa8b4f87492');
       expect(request.address).toBe(
         '0xabcdef1234567890abcdef1234567890abcdef12',
       );
@@ -80,19 +99,9 @@ describe('handleUR', () => {
 // ---------------------------------------------------------------------------
 
 describe('parseEthSignRequest – derivation paths', () => {
-  function encodeWithComponents(components: any[]): Buffer {
-    return CBOR.encode({
-      2: Buffer.from('00', 'hex'),
-      3: 1,
-      5: { 1: components },
-    });
-  }
-
   it('formats hardened components with apostrophes', () => {
-    const result = handleUR(
-      'eth-sign-request',
-      encodeWithComponents([44, true, 60, true, 0, true]),
-    );
+    const cbor = buildCbor('00', 1, "m/44'/60'/0'");
+    const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       expect(result.request.derivationPath).toBe("m/44'/60'/0'");
@@ -100,10 +109,8 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('formats non-hardened components without apostrophes', () => {
-    const result = handleUR(
-      'eth-sign-request',
-      encodeWithComponents([0, false, 1, false]),
-    );
+    const cbor = buildCbor('00', 1, 'm/0/1');
+    const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       expect(result.request.derivationPath).toBe('m/0/1');
@@ -111,36 +118,17 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('formats a mixed hardened/non-hardened path (standard Ethereum path)', () => {
-    const result = handleUR(
-      'eth-sign-request',
-      encodeWithComponents([44, true, 60, true, 0, true, 0, false, 0, false]),
-    );
+    const cbor = buildCbor('00', 1, "m/44'/60'/0'/0/0");
+    const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       expect(result.request.derivationPath).toBe("m/44'/60'/0'/0/0");
     }
   });
 
-  it('returns "unknown" when the derivation path field is absent', () => {
-    const encoded = CBOR.encode({ 2: Buffer.from('00', 'hex'), 3: 1 });
-    const result = handleUR('eth-sign-request', encoded);
-    expect(result.kind).toBe('eth-sign-request');
-    if (result.kind === 'eth-sign-request') {
-      expect(result.request.derivationPath).toBe('unknown');
-    }
-  });
-
-  it('returns "unknown" for an invalid path structure', () => {
-    const encoded = CBOR.encode({
-      2: Buffer.from('00', 'hex'),
-      3: 1,
-      5: 'not-a-map',
-    });
-    const result = handleUR('eth-sign-request', encoded);
-    expect(result.kind).toBe('eth-sign-request');
-    if (result.kind === 'eth-sign-request') {
-      expect(result.request.derivationPath).toBe('unknown');
-    }
+  it('returns error when CBOR is malformed', () => {
+    const result = handleUR('eth-sign-request', Buffer.from([0x00]));
+    expect(result.kind).toBe('error');
   });
 });
 

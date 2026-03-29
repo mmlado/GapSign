@@ -1,32 +1,16 @@
 /* eslint-disable no-bitwise */
 import Keycard from 'keycard-sdk';
 import * as secp from '@noble/secp256k1';
-import { UREncoder, UR } from '@ngraveio/bc-ur';
+import { ETHSignature } from '@keystonehq/bc-ur-registry-eth';
 
 // ── Keycard TLV tags ─────────────────────────────────────────────────────────
-const TLV_SIGNATURE_TEMPLATE = 0xa0; // constructed tag wrapping the full signature
-const TLV_PUB_KEY = 0x80; // uncompressed public key, 65 bytes
-const TLV_ECDSA_TEMPLATE = 0x30; // DER SEQUENCE containing r and s
-const TLV_INTEGER = 0x02; // DER INTEGER (used for both r and s)
-
-// ── CBOR encoding ────────────────────────────────────────────────────────────
-const CBOR_SMALL_MAX = 23; // max value/length that fits in the major-type byte
-const CBOR_BYTES_SMALL = 0x40; // major type 2 (byte string) — length in low 5 bits
-const CBOR_BYTES_U8 = 0x58; // major type 2 — 1-byte length follows
-const CBOR_BYTES_U16 = 0x59; // major type 2 — 2-byte length follows
-const CBOR_TEXT_SMALL = 0x60; // major type 3 (text string) — length in low 5 bits
-const CBOR_TEXT_U8 = 0x78; // major type 3 — 1-byte length follows
-const CBOR_MAP_SMALL = 0xa0; // major type 5 (map) — count in low 5 bits
-const CBOR_TAG_U8 = 0xd8; // major type 6 (tag) — 1-byte tag number follows
-const CBOR_TAG_UUID = 0x25; // tag 37: RFC 4122 UUID
-
-// ── ERC-4527 eth-signature CBOR map keys ────────────────────────────────────
-const KEY_REQUEST_ID = 1;
-const KEY_SIGNATURE = 2;
-const KEY_ORIGIN = 3;
+const TLV_SIGNATURE_TEMPLATE = 0xa0;
+const TLV_PUB_KEY = 0x80;
+const TLV_ECDSA_TEMPLATE = 0x30;
+const TLV_INTEGER = 0x02;
 
 // ── secp256k1 / Ethereum ─────────────────────────────────────────────────────
-const SCALAR_BYTES = 32; // r and s are 256-bit (32-byte) scalars
+const SCALAR_BYTES = 32;
 const PUBKEY_PREFIX_EVEN = 0x02;
 const PUBKEY_PREFIX_ODD = 0x03;
 const V_BASE_LEGACY = 27; // EIP-712 / personal_sign: v = 27 + recId
@@ -75,10 +59,6 @@ function uint8ArrayEqual(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
-function uuidToBytes(uuid: string): Uint8Array {
-  return hexToBytes(uuid.replace(/-/g, ''));
-}
-
 function encodeV(v: number): Uint8Array {
   if (v <= 0xff) {
     return new Uint8Array([v]);
@@ -97,55 +77,6 @@ function encodeV(v: number): Uint8Array {
   ]);
 }
 
-function cborUint(n: number): Uint8Array {
-  return new Uint8Array([n]);
-}
-
-function cborBytes(data: Uint8Array): Uint8Array {
-  let header: Uint8Array;
-  if (data.length <= CBOR_SMALL_MAX) {
-    header = new Uint8Array([CBOR_BYTES_SMALL | data.length]);
-  } else if (data.length <= 0xff) {
-    header = new Uint8Array([CBOR_BYTES_U8, data.length]);
-  } else {
-    header = new Uint8Array([
-      CBOR_BYTES_U16,
-      (data.length >> 8) & 0xff,
-      data.length & 0xff,
-    ]);
-  }
-  const out = new Uint8Array(header.length + data.length);
-  out.set(header, 0);
-  out.set(data, header.length);
-  return out;
-}
-
-function cborText(s: string): Uint8Array {
-  const bytes = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) {
-    bytes[i] = s.charCodeAt(i);
-  }
-  let header: Uint8Array;
-  if (bytes.length <= CBOR_SMALL_MAX) {
-    header = new Uint8Array([CBOR_TEXT_SMALL | bytes.length]);
-  } else {
-    header = new Uint8Array([CBOR_TEXT_U8, bytes.length]);
-  }
-  const out = new Uint8Array(header.length + bytes.length);
-  out.set(header, 0);
-  out.set(bytes, header.length);
-  return out;
-}
-
-function cborTag37Bytes(data: Uint8Array): Uint8Array {
-  const tagHeader = new Uint8Array([CBOR_TAG_U8, CBOR_TAG_UUID]);
-  const encoded = cborBytes(data);
-  const out = new Uint8Array(tagHeader.length + encoded.length);
-  out.set(tagHeader, 0);
-  out.set(encoded, tagHeader.length);
-  return out;
-}
-
 function concat(...arrays: Uint8Array[]): Uint8Array {
   const total = arrays.reduce((n, a) => n + a.length, 0);
   const out = new Uint8Array(total);
@@ -157,34 +88,15 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
   return out;
 }
 
-function buildCbor(sig: Uint8Array, requestId?: string): Uint8Array {
-  const hasRequestId = requestId !== undefined && requestId.length > 0;
-  const mapSize = hasRequestId ? 3 : 2;
-  const mapHeader = new Uint8Array([CBOR_MAP_SMALL | mapSize]);
-
-  const keySig = cborUint(KEY_SIGNATURE);
-  const valSig = cborBytes(sig);
-  const keyOrigin = cborUint(KEY_ORIGIN);
-  const valOrigin = cborText('GapSign');
-
-  if (!hasRequestId) {
-    return concat(mapHeader, keySig, valSig, keyOrigin, valOrigin);
-  }
-
-  const keyId = cborUint(KEY_REQUEST_ID);
-  const valId = cborTag37Bytes(uuidToBytes(requestId!));
-  return concat(mapHeader, keyId, valId, keySig, valSig, keyOrigin, valOrigin);
-}
-
 /**
- * Parse the raw Keycard signature TLV, compute v, CBOR-encode per ERC-4527,
- * and wrap in a `ur:eth-signature` UR string ready to display as a QR code.
+ * Parse the raw Keycard signature TLV, compute v, and wrap in a
+ * `ur:eth-signature` UR string ready to display as a QR code.
  *
  * @param signRespDataHex - hex string of `signResp.data` (TLV from Keycard)
  * @param hash            - the 32-byte hash that was signed (for recId recovery)
  * @param dataType        - eth-sign-request dataType (1=legacy, 2=typed, 3=personal, 4=EIP-1559)
  * @param chainId         - chain ID (used for legacy tx v calculation)
- * @param requestId       - optional UUID from the original eth-sign-request
+ * @param requestId       - optional UUID hex from the original eth-sign-request
  */
 export function buildEthSignatureUR(
   signRespDataHex: string,
@@ -249,11 +161,12 @@ export function buildEthSignatureUR(
     `[ethSignature] v: ${v} (dataType=${dataType}, chainId=${chainId})`,
   );
 
-  const vBytes = encodeV(v);
-  const sig = concat(r, s, vBytes);
-  const cbor = buildCbor(sig, requestId);
-  const ur = new UR(Buffer.from(cbor), 'eth-signature');
-  const urString = UREncoder.encodeSinglePart(ur);
+  const sig = concat(r, s, encodeV(v));
+  const requestIdBuf = requestId
+    ? Buffer.from(requestId.replace(/-/g, ''), 'hex')
+    : undefined;
+  const ethSig = new ETHSignature(Buffer.from(sig), requestIdBuf, 'GapSign');
+  const urString = ethSig.toUREncoder(1000).nextPart();
   console.log(`[ethSignature] UR: ${urString.slice(0, 60)}...`);
   return urString;
 }

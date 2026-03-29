@@ -1,26 +1,17 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { keccak_256 } from '@noble/hashes/sha3.js';
 
 import type { KeycardScreenProps } from '../navigation/types';
-
 import NFCBottomSheet from '../components/NFCBottomSheet';
-
 import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 import { buildEthSignatureUR } from '../utils/ethSignature';
-import { buildCryptoHdKeyUR } from '../utils/cryptoHdKey';
-
-function prepareHash(
-  signData: string,
-  dataType: number | undefined,
-): Uint8Array {
-  const raw = new Uint8Array(Buffer.from(signData, 'hex'));
-  if (dataType === 1 || dataType === 4) {
-    return keccak_256(raw);
-  }
-  return raw;
-}
+import {
+  buildExportUr,
+  exportKeyForWallet,
+  prepareSignHash,
+  type ExportKeyResult,
+} from '../utils/keycardExport';
 
 export default function KeycardScreen({
   route,
@@ -30,19 +21,18 @@ export default function KeycardScreen({
   const insets = useSafeAreaInsets();
   const hashRef = useRef<Uint8Array | null>(null);
 
-  const keycard = useKeycardOperation<Uint8Array>();
+  const keycard = useKeycardOperation<ExportKeyResult>();
   const { phase, result, execute, cancel } = keycard;
 
   const handleSign = useCallback(() => {
     if (params.operation !== 'sign') {
       return;
     }
-    const hash = prepareHash(params.signData, params.dataType);
+
+    const hash = prepareSignHash(params.signData, params.dataType);
     hashRef.current = hash;
+
     execute(async cmdSet => {
-      console.log(
-        `[Keycard] signWithPath — path: ${params.derivationPath}, dataType: ${params.dataType}`,
-      );
       const signResp = await cmdSet.signWithPath(
         hash,
         params.derivationPath,
@@ -51,27 +41,25 @@ export default function KeycardScreen({
       signResp.checkOK();
       return signResp.data;
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [execute, params]);
 
   const handleExportKey = useCallback(() => {
-    execute(
-      async cmdSet => {
-        const resp = await cmdSet.exportExtendedKey(
-          0,
-          params.derivationPath,
-          false,
-        );
-        resp.checkOK();
-        return resp.data;
-      },
-      { requiresPin: true },
-    );
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (params.operation !== 'export_key') {
+      return;
+    }
+
+    execute(cmdSet => exportKeyForWallet(cmdSet, params.derivationPath), {
+      requiresPin: true,
+    });
+  }, [execute, params]);
 
   useEffect(() => {
-    if (params.operation === 'sign') handleSign();
-    else if (params.operation === 'export_key') handleExportKey();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (params.operation === 'sign') {
+      handleSign();
+    } else if (params.operation === 'export_key') {
+      handleExportKey();
+    }
+  }, [handleExportKey, handleSign, params.operation]);
 
   useEffect(() => {
     if (phase !== 'done' || !result) {
@@ -81,7 +69,10 @@ export default function KeycardScreen({
     const timer = setTimeout(() => {
       try {
         if (params.operation === 'sign') {
-          if (!hashRef.current) return;
+          if (!hashRef.current || !(result instanceof Uint8Array)) {
+            return;
+          }
+
           const urString = buildEthSignatureUR(
             Array.from(result)
               .map(b => b.toString(16).padStart(2, '0'))
@@ -95,16 +86,14 @@ export default function KeycardScreen({
             index: 1,
             routes: [
               { name: 'QRScanner' },
-              {
-                name: 'QRResult',
-                params: { urString },
-              },
+              { name: 'QRResult', params: { urString } },
             ],
           });
           return;
         }
+
         if (params.operation === 'export_key') {
-          const urString = buildCryptoHdKeyUR(result, params.derivationPath);
+          const urString = buildExportUr(result, params.derivationPath);
           navigation.reset({
             index: 2,
             routes: [
@@ -120,7 +109,7 @@ export default function KeycardScreen({
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [phase, result, params, navigation]);
+  }, [navigation, params, phase, result]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Enter Keycard PIN' });
