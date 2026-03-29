@@ -68,9 +68,12 @@ describe('ExportKeyScreen', () => {
   describe('navigation', () => {
     it('navigates to Keycard with export_key operation when Ethereum is pressed', async () => {
       const renderer = await renderScreen();
-      const pressable = renderer.root.find(
+      const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
       );
+      const pressable = pressables.find(node =>
+        node.findAll((n: any) => n.props.children === 'Ethereum').length > 0,
+      )!;
       await act(async () => {
         pressable.props.onPress();
       });

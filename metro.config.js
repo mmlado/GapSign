@@ -17,6 +17,7 @@ const config = {
     unstable_enablePackageExports: true,
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg'],
+    extraNodeModules: require('node-libs-react-native'),
   },
 };
 

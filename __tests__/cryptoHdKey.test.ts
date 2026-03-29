@@ -93,8 +93,8 @@ describe('buildCryptoHdKeyUR', () => {
       decoded = decodeUR(ur);
     });
 
-    it('key 2 (is-private) is false', () => {
-      expect(decoded[2]).toBe(false);
+    it('key 2 (is-private) is false or absent (defaults to false)', () => {
+      expect(decoded[2] ?? false).toBe(false);
     });
 
     it('key 3 (key-data) is a 33-byte compressed public key', () => {

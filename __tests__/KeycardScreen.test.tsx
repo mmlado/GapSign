@@ -3,10 +3,6 @@ import ReactTestRenderer from 'react-test-renderer';
 import KeycardScreen from '../src/screens/KeycardScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -25,6 +21,11 @@ jest.mock('../src/utils/ethSignature', () => ({
   buildEthSignatureUR: jest.fn(),
 }));
 
+jest.mock('../src/utils/cryptoAccount', () => ({
+  buildCryptoAccountUR: jest.fn(),
+  pubKeyFingerprint: jest.fn(),
+}));
+
 const mockSubmitPin = jest.fn();
 const mockCancel = jest.fn();
 const mockExecute = jest.fn();
@@ -33,10 +34,6 @@ const mockUseKeycardOperation = jest.fn();
 jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   useKeycardOperation: () => mockUseKeycardOperation(),
 }));
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const navigation = {
   goBack: jest.fn(),
@@ -49,9 +46,18 @@ const signRoute = {
     operation: 'sign',
     signData: 'deadbeef',
     derivationPath: "m/44'/60'/0'/0",
-    dataType: 2, // EIP-712 — no keccak needed
+    dataType: 2,
     chainId: 1,
     requestId: undefined,
+  },
+  key: 'Keycard',
+  name: 'Keycard',
+} as any;
+
+const btcExportRoute = {
+  params: {
+    operation: 'export_key',
+    derivationPath: "m/84'/0'/0'",
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -69,28 +75,20 @@ function hookMock(phase: string) {
   };
 }
 
-async function renderScreen(phase: string) {
+async function renderScreen(phase: string, route = signRoute) {
   mockUseKeycardOperation.mockReturnValue(hookMock(phase));
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <KeycardScreen route={signRoute} navigation={navigation} />,
+      <KeycardScreen route={route} navigation={navigation} />,
     );
   });
   return renderer;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe('KeycardScreen', () => {
   beforeEach(() => {
-    mockExecute.mockClear();
-    mockSubmitPin.mockClear();
-    mockCancel.mockClear();
-    MockNFCBottomSheet.mockClear();
-    navigation.setOptions.mockClear();
+    jest.clearAllMocks();
   });
 
   describe('phase-based rendering', () => {
@@ -190,6 +188,32 @@ describe('KeycardScreen', () => {
       expect(navigation.reset).not.toHaveBeenCalled();
       await act(async () => {
         jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses crypto-account URs for bitcoin wallet export', async () => {
+      const { buildCryptoAccountUR } = require('../src/utils/cryptoAccount') as {
+        buildCryptoAccountUR: jest.Mock;
+      };
+      buildCryptoAccountUR.mockReturnValue('UR:CRYPTO-ACCOUNT/...');
+
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: { masterFingerprint: 1, descriptors: [] },
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={btcExportRoute} navigation={navigation} />,
+        );
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+
+      expect(buildCryptoAccountUR).toHaveBeenCalledWith({
+        masterFingerprint: 1,
+        descriptors: [],
       });
       expect(navigation.reset).toHaveBeenCalledTimes(1);
     });
