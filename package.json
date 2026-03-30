@@ -30,6 +30,7 @@
     "node-libs-react-native": "^1.2.1",
     "react": "^19.2.0",
     "react-native": "^0.83.1",
+    "react-native-animated-ur-qr": "^0.1.4",
     "react-native-camera-kit": "^17.0.1",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-get-random-values": "^2.0.0",
