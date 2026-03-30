@@ -1,4 +1,5 @@
 import Keycard from 'keycard-sdk';
+import { UR, UREncoder } from '@ngraveio/bc-ur';
 import {
   CryptoHDKey,
   CryptoKeypath,
@@ -9,7 +10,6 @@ const TLV_KEY_TEMPLATE = 0xa1;
 const TLV_PUB_KEY = 0x80;
 const TLV_CHAIN_CODE = 0x82;
 const SCALAR_BYTES = 32;
-const SINGLE_PART_UR_FRAGMENT_LENGTH = 1000;
 
 function compressPubKey(uncompressed: Uint8Array): Buffer {
   const x = uncompressed.slice(1, 1 + SCALAR_BYTES);
@@ -58,5 +58,10 @@ export function buildCryptoHdKeyUR(
     name: 'GapSign',
   });
 
-  return hdKey.toUREncoder(SINGLE_PART_UR_FRAGMENT_LENGTH).nextPart();
+  const cbor = hdKey.toCBOR();
+  const type = hdKey.getRegistryType().getType();
+  return new UREncoder(
+    new UR(cbor, type),
+    Math.max(cbor.length, 100),
+  ).nextPart();
 }

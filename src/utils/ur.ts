@@ -1,12 +1,19 @@
 import { EthSignRequest } from '@keystonehq/bc-ur-registry-eth';
-import type { EthSignRequest as EthSignRequestType, ScanResult } from '../types';
+
+import { parseCryptoPsbtRequest } from './btcPsbt';
+import type {
+  EthSignRequest as EthSignRequestType,
+  ScanResult,
+} from '../types';
 
 function parseEthSignRequest(cbor: Buffer): EthSignRequestType {
   const parsed = EthSignRequest.fromCBOR(cbor);
 
   const signDataBuf = parsed.getSignData();
   const requestIdBuf = parsed.getRequestId() as Buffer | undefined;
-  const address = (parsed as any).getSignRequestAddress?.() as Buffer | undefined;
+  const address = (parsed as any).getSignRequestAddress?.() as
+    | Buffer
+    | undefined;
 
   return {
     signData: Buffer.isBuffer(signDataBuf)
@@ -40,5 +47,17 @@ export function handleUR(type: string, cbor: Buffer): ScanResult {
       };
     }
   }
+
+  if (type === 'crypto-psbt') {
+    try {
+      return { kind: 'crypto-psbt', request: parseCryptoPsbtRequest(cbor) };
+    } catch (e: any) {
+      return {
+        kind: 'error',
+        message: `Failed to parse PSBT: ${e.message}`,
+      };
+    }
+  }
+
   return { kind: 'unsupported', type };
 }

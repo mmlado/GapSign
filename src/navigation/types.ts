@@ -6,11 +6,17 @@ import type { ScanResult } from '../types';
 export type KeycardParams =
   | {
       operation: 'sign';
+      signMode: 'eth';
       signData: string; // hex-encoded bytes to sign
       derivationPath: string;
       chainId?: number;
       requestId?: string;
       dataType?: number;
+    }
+  | {
+      operation: 'sign';
+      signMode: 'btc';
+      psbtHex: string;
     }
   | {
       operation: 'export_key';

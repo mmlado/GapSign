@@ -8,8 +8,13 @@ export type EthSignRequest = {
   origin?: string;
 };
 
+export type BtcPsbtRequest = {
+  psbtHex: string;
+};
+
 export type ScanResult =
   | { kind: 'eth-sign-request'; request: EthSignRequest }
+  | { kind: 'crypto-psbt'; request: BtcPsbtRequest }
   | { kind: 'unsupported'; type: string }
   | { kind: 'error'; message: string };
 

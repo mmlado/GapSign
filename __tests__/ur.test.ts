@@ -1,4 +1,5 @@
 import { URDecoder } from '@ngraveio/bc-ur';
+import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
 import { EthSignRequest } from '@keystonehq/bc-ur-registry-eth';
 import { handleUR } from '../src/utils/ur';
 import { DATA_TYPE_LABELS } from '../src/types';
@@ -129,6 +130,33 @@ describe('parseEthSignRequest – derivation paths', () => {
   it('returns error when CBOR is malformed', () => {
     const result = handleUR('eth-sign-request', Buffer.from([0x00]));
     expect(result.kind).toBe('error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// crypto-psbt
+// ---------------------------------------------------------------------------
+
+describe('handleUR – crypto-psbt', () => {
+  function buildPsbtCbor(): Buffer {
+    // Minimal valid PSBT: magic + empty global map
+    const psbtBytes = Buffer.from('70736274ff01000a0200000000000000000000', 'hex');
+    return new CryptoPSBT(psbtBytes).toCBOR();
+  }
+
+  it('parses a valid crypto-psbt', () => {
+    const cbor = buildPsbtCbor();
+    const result = handleUR('crypto-psbt', cbor);
+    expect(result.kind).toBe('crypto-psbt');
+    if (result.kind === 'crypto-psbt') {
+      expect(typeof result.request.psbtHex).toBe('string');
+      expect(result.request.psbtHex.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('returns unsupported for unrecognised type (not crypto-psbt)', () => {
+    const result = handleUR('unknown-type', Buffer.alloc(0));
+    expect(result.kind).toBe('unsupported');
   });
 });
 
