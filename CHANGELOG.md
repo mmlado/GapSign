@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
 - Add Bitcoin PSBT signing support
+
+### Fixed
+
+- Fix PIN pad bottom key obscured by Android gesture navigation bar
 
 ## [0.7.0] - 2026-03-23
 

@@ -65,7 +65,9 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
   return (
     <>
       {showPinPad && (
-        <View style={StyleSheet.absoluteFill}>
+        <View
+          style={[StyleSheet.absoluteFill, { paddingBottom: insets.bottom }]}
+        >
           <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
         </View>
       )}
