@@ -26,6 +26,13 @@ jest.mock('../src/utils/cryptoAccount', () => ({
   pubKeyFingerprint: jest.fn(),
 }));
 
+jest.mock('../src/utils/btcPsbt', () => ({
+  BtcSigningSession: jest.fn().mockImplementation(() => ({
+    signWithKeycard: jest.fn().mockResolvedValue({ psbtHex: 'deadbeef' }),
+  })),
+  inspectBtcPsbt: jest.fn(),
+}));
+
 const mockSubmitPin = jest.fn();
 const mockCancel = jest.fn();
 const mockExecute = jest.fn();
@@ -44,11 +51,22 @@ const navigation = {
 const signRoute = {
   params: {
     operation: 'sign',
+    signMode: 'eth',
     signData: 'deadbeef',
     derivationPath: "m/44'/60'/0'/0",
     dataType: 2,
     chainId: 1,
     requestId: undefined,
+  },
+  key: 'Keycard',
+  name: 'Keycard',
+} as any;
+
+const btcSignRoute = {
+  params: {
+    operation: 'sign',
+    signMode: 'btc',
+    psbtHex: 'deadbeef',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -233,6 +251,49 @@ describe('KeycardScreen', () => {
     it('nfc.submitPin is available when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
       expect(typeof lastProps().nfc.submitPin).toBe('function');
+    });
+  });
+
+  describe('BTC sign navigation', () => {
+    it('calls execute for a btc sign operation', async () => {
+      await renderScreen('pin_entry', btcSignRoute);
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+    });
+
+    it('navigates to QRResult after btc sign completes', async () => {
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: { psbtHex: '70736274ff01000a0200000000000000000000' },
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={btcSignRoute} navigation={navigation} />,
+        );
+      });
+      expect(navigation.reset).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
+      const resetCall = navigation.reset.mock.calls[0][0];
+      expect(resetCall.routes[1].name).toBe('QRResult');
+      expect(resetCall.routes[1].params.urString).toMatch(/^ur:crypto-psbt\//i);
+    });
+
+    it('does not navigate if result is missing psbtHex', async () => {
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: { psbtHex: undefined },
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={btcSignRoute} navigation={navigation} />,
+        );
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).not.toHaveBeenCalled();
     });
   });
 });

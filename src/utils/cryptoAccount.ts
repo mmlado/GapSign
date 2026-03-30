@@ -1,8 +1,12 @@
 /* eslint-disable no-bitwise */
 import { ripemd160 } from '@noble/hashes/legacy.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import { UR, UREncoder } from '@ngraveio/bc-ur';
 import {
   CryptoAccount,
+  CryptoCoinInfo,
+  CryptoCoinInfoNetwork,
+  CryptoCoinInfoType,
   CryptoHDKey,
   CryptoKeypath,
   CryptoOutput,
@@ -10,13 +14,7 @@ import {
   ScriptExpressions,
 } from '@keystonehq/bc-ur-registry';
 
-type ScriptType =
-  | 'wpkh'
-  | 'sh-wpkh'
-  | 'pkh'
-  | 'wsh'
-  | 'sh-wsh'
-  | 'sh';
+type ScriptType = 'wpkh' | 'sh-wpkh' | 'pkh' | 'wsh' | 'sh-wsh' | 'sh';
 
 export type BitcoinAccountDescriptor = {
   derivationPath: string;
@@ -30,11 +28,10 @@ export type BitcoinCryptoAccount = {
   descriptors: BitcoinAccountDescriptor[];
 };
 
-const TLV_KEY_TEMPLATE = 0xA1;
+const TLV_KEY_TEMPLATE = 0xa1;
 const TLV_PUB_KEY = 0x80;
 const TLV_CHAIN_CODE = 0x82;
 const SCALAR_BYTES = 32;
-const SINGLE_PART_UR_FRAGMENT_LENGTH = 1000;
 
 function parseExportedExtendedKey(data: Uint8Array) {
   let position = 0;
@@ -117,6 +114,11 @@ function derivationPathToKeypath(
   );
 }
 
+function coinTypeFromPath(derivationPath: string): number {
+  const match = derivationPath.match(/^m\/\d+'\/(\d+)'/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
 function buildHdKey(
   descriptor: BitcoinAccountDescriptor,
   masterFingerprint: number,
@@ -125,12 +127,22 @@ function buildHdKey(
     descriptor.exportRespData,
   );
 
+  const coinType = coinTypeFromPath(descriptor.derivationPath);
+  const network =
+    coinType === 1
+      ? CryptoCoinInfoNetwork.testnet
+      : CryptoCoinInfoNetwork.mainnet;
+
   return new CryptoHDKey({
     isMaster: false,
     key: compressPubKey(pubKeyUncompressed),
     chainCode: Buffer.from(chainCode),
-    origin: derivationPathToKeypath(descriptor.derivationPath, masterFingerprint),
+    origin: derivationPathToKeypath(
+      descriptor.derivationPath,
+      masterFingerprint,
+    ),
     parentFingerprint: numberToFingerprintBuffer(descriptor.parentFingerprint),
+    useInfo: new CryptoCoinInfo(CryptoCoinInfoType.bitcoin, network),
     name: 'GapSign',
   });
 }
@@ -143,10 +155,16 @@ function buildOutputDescriptor(
 
   switch (descriptor.scriptType) {
     case 'wpkh':
-      return new CryptoOutput([ScriptExpressions.WITNESS_PUBLIC_KEY_HASH], hdKey);
+      return new CryptoOutput(
+        [ScriptExpressions.WITNESS_PUBLIC_KEY_HASH],
+        hdKey,
+      );
     case 'sh-wpkh':
       return new CryptoOutput(
-        [ScriptExpressions.SCRIPT_HASH, ScriptExpressions.WITNESS_PUBLIC_KEY_HASH],
+        [
+          ScriptExpressions.SCRIPT_HASH,
+          ScriptExpressions.WITNESS_PUBLIC_KEY_HASH,
+        ],
         hdKey,
       );
     case 'pkh':
@@ -167,11 +185,12 @@ export function pubKeyFingerprint(uncompressedPubKey: Uint8Array): number {
   const compressed = compressPubKey(uncompressedPubKey);
   const hash160 = ripemd160(sha256(compressed));
   return (
-    (hash160[0] << 24) |
-    (hash160[1] << 16) |
-    (hash160[2] << 8) |
-    hash160[3]
-  ) >>> 0;
+    ((hash160[0] << 24) |
+      (hash160[1] << 16) |
+      (hash160[2] << 8) |
+      hash160[3]) >>>
+    0
+  );
 }
 
 export function buildCryptoAccountUR(account: BitcoinCryptoAccount): string {
@@ -182,7 +201,10 @@ export function buildCryptoAccountUR(account: BitcoinCryptoAccount): string {
     ),
   );
 
-  return cryptoAccount
-    .toUREncoder(SINGLE_PART_UR_FRAGMENT_LENGTH)
-    .nextPart();
+  const cbor = cryptoAccount.toCBOR();
+  const type = cryptoAccount.getRegistryType().getType();
+  return new UREncoder(
+    new UR(cbor, type),
+    Math.max(cbor.length, 100),
+  ).nextPart();
 }

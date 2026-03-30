@@ -3,6 +3,25 @@ import ReactTestRenderer from 'react-test-renderer';
 import TransactionDetailScreen from '../src/screens/TransactionDetailScreen';
 import type { EthSignRequest } from '../src/types';
 
+// PSBT with one input and one output so inspectBtcPsbt can parse it fully
+const VALID_PSBT_HEX = (() => {
+  const { Psbt, payments, networks } = require('bitcoinjs-lib');
+  const psbt = new Psbt({ network: networks.testnet });
+  const fakePubkey = Buffer.alloc(33, 0x02);
+  const { output } = payments.p2wpkh({ pubkey: fakePubkey, network: networks.testnet });
+  psbt.addInput({
+    hash: Buffer.alloc(32, 0xaa),
+    index: 0,
+    bip32Derivation: [{
+      masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+      path: "m/84'/1'/0'/0/0",
+      pubkey: fakePubkey,
+    }],
+  });
+  psbt.addOutput({ script: output!, value: 90_000 });
+  return psbt.toBuffer().toString('hex');
+})();
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -178,5 +197,45 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
     expect(json).toContain('cafebabe');
     expect(json).toContain('Personal Message');
     expect(json).not.toContain('MetaMask');
+  });
+});
+
+describe('TransactionDetailScreen – crypto-psbt result', () => {
+  it('renders without crashing', async () => {
+    await expect(
+      renderScreen({ kind: 'crypto-psbt', request: { psbtHex: VALID_PSBT_HEX } }),
+    ).resolves.toBeDefined();
+  });
+
+  it('shows the Sign transaction button', async () => {
+    const renderer = await renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: VALID_PSBT_HEX },
+    });
+    expect(toJson(renderer)).toContain('Sign transaction');
+  });
+
+  it('shows Bitcoin PSBT label', async () => {
+    const renderer = await renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: VALID_PSBT_HEX },
+    });
+    expect(toJson(renderer)).toContain('Bitcoin PSBT');
+  });
+
+  it('shows Invalid PSBT error for malformed hex', async () => {
+    const renderer = await renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: 'deadbeef' },
+    });
+    expect(toJson(renderer)).toContain('Invalid PSBT');
+  });
+
+  it('shows Sign transaction button even on invalid PSBT (screen-level decision)', async () => {
+    const renderer = await renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: 'deadbeef' },
+    });
+    expect(toJson(renderer)).toContain('Sign transaction');
   });
 });

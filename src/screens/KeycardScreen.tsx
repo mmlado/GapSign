@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
+import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { KeycardScreenProps } from '../navigation/types';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
+import { BtcSigningSession } from '../utils/btcPsbt';
 import { buildEthSignatureUR } from '../utils/ethSignature';
 import {
   buildExportUr,
@@ -13,6 +16,36 @@ import {
   type ExportKeyResult,
 } from '../utils/keycardExport';
 
+function buildEthResultUR(
+  result: Uint8Array,
+  hash: Uint8Array,
+  params: {
+    dataType?: number;
+    chainId?: number;
+    requestId?: string;
+  },
+): string {
+  return buildEthSignatureUR(
+    Array.from(result)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join(''),
+    hash,
+    params.dataType,
+    params.chainId,
+    params.requestId,
+  );
+}
+
+function buildBtcResultUR(psbtHex: string): string {
+  const psbt = new CryptoPSBT(Buffer.from(psbtHex, 'hex'));
+  const cbor = psbt.toCBOR();
+  const type = psbt.getRegistryType().getType();
+  return new UREncoder(
+    new UR(cbor, type),
+    Math.max(cbor.length, 100),
+  ).nextPart();
+}
+
 export default function KeycardScreen({
   route,
   navigation,
@@ -20,8 +53,9 @@ export default function KeycardScreen({
   const params = route.params;
   const insets = useSafeAreaInsets();
   const hashRef = useRef<Uint8Array | null>(null);
+  const btcSessionRef = useRef<BtcSigningSession | null>(null);
 
-  const keycard = useKeycardOperation<ExportKeyResult>();
+  const keycard = useKeycardOperation<ExportKeyResult | { psbtHex: string }>();
   const { phase, result, execute, cancel } = keycard;
 
   const handleSign = useCallback(() => {
@@ -29,17 +63,32 @@ export default function KeycardScreen({
       return;
     }
 
-    const hash = prepareSignHash(params.signData, params.dataType);
-    hashRef.current = hash;
+    if (params.signMode === 'eth') {
+      const hash = prepareSignHash(params.signData, params.dataType);
+      hashRef.current = hash;
 
-    execute(async cmdSet => {
-      const signResp = await cmdSet.signWithPath(
-        hash,
-        params.derivationPath,
-        false,
+      execute(async cmdSet => {
+        const signResp = await cmdSet.signWithPath(
+          hash,
+          params.derivationPath,
+          false,
+        );
+        signResp.checkOK();
+        return signResp.data;
+      });
+      return;
+    }
+
+    if (!btcSessionRef.current) {
+      btcSessionRef.current = new BtcSigningSession(params.psbtHex);
+    }
+
+    execute(async (cmdSet, { setStatus }) => {
+      const signed = await btcSessionRef.current!.signWithKeycard(
+        cmdSet,
+        setStatus,
       );
-      signResp.checkOK();
-      return signResp.data;
+      return { psbtHex: signed.psbtHex };
     });
   }, [execute, params]);
 
@@ -61,6 +110,68 @@ export default function KeycardScreen({
     }
   }, [handleExportKey, handleSign, params.operation]);
 
+  const navigateToSignResult = useCallback(
+    (urString: string) => {
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'QRScanner' },
+          { name: 'QRResult', params: { urString } },
+        ],
+      });
+    },
+    [navigation],
+  );
+
+  const navigateToExportResult = useCallback(
+    (urString: string) => {
+      navigation.reset({
+        index: 2,
+        routes: [
+          { name: 'Dashboard' },
+          { name: 'ExportKey' },
+          { name: 'QRResult', params: { urString } },
+        ],
+      });
+    },
+    [navigation],
+  );
+
+  const handleEthSignDone = useCallback(() => {
+    if (!hashRef.current || !(result instanceof Uint8Array)) {
+      return;
+    }
+    const urString = buildEthResultUR(
+      result,
+      hashRef.current,
+      params as {
+        dataType?: number;
+        chainId?: number;
+        requestId?: string;
+      },
+    );
+    navigateToSignResult(urString);
+  }, [result, params, navigateToSignResult]);
+
+  const handleBtcSignDone = useCallback(() => {
+    if (!result || !('psbtHex' in result)) {
+      return;
+    }
+    navigateToSignResult(buildBtcResultUR(result.psbtHex));
+  }, [result, navigateToSignResult]);
+
+  const handleExportKeyDone = useCallback(() => {
+    if (!result || !(result instanceof Uint8Array || 'descriptors' in result)) {
+      return;
+    }
+    navigateToExportResult(
+      buildExportUr(
+        result,
+        (params as { derivationPath: string }).derivationPath,
+      ),
+    );
+  }, [result, params, navigateToExportResult]);
+
   useEffect(() => {
     if (phase !== 'done' || !result) {
       return;
@@ -68,40 +179,12 @@ export default function KeycardScreen({
 
     const timer = setTimeout(() => {
       try {
-        if (params.operation === 'sign') {
-          if (!hashRef.current || !(result instanceof Uint8Array)) {
-            return;
-          }
-
-          const urString = buildEthSignatureUR(
-            Array.from(result)
-              .map(b => b.toString(16).padStart(2, '0'))
-              .join(''),
-            hashRef.current,
-            params.dataType,
-            params.chainId,
-            params.requestId,
-          );
-          navigation.reset({
-            index: 1,
-            routes: [
-              { name: 'QRScanner' },
-              { name: 'QRResult', params: { urString } },
-            ],
-          });
-          return;
-        }
-
-        if (params.operation === 'export_key') {
-          const urString = buildExportUr(result, params.derivationPath);
-          navigation.reset({
-            index: 2,
-            routes: [
-              { name: 'Dashboard' },
-              { name: 'ExportKey' },
-              { name: 'QRResult', params: { urString } },
-            ],
-          });
+        if (params.operation === 'sign' && params.signMode === 'eth') {
+          handleEthSignDone();
+        } else if (params.operation === 'sign' && params.signMode === 'btc') {
+          handleBtcSignDone();
+        } else if (params.operation === 'export_key') {
+          handleExportKeyDone();
         }
       } catch (e: any) {
         console.error('[KeycardScreen] Failed to build UR:', e.message);
@@ -109,7 +192,14 @@ export default function KeycardScreen({
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [navigation, params, phase, result]);
+  }, [
+    phase,
+    result,
+    params,
+    handleEthSignDone,
+    handleBtcSignDone,
+    handleExportKeyDone,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Enter Keycard PIN' });

@@ -25,6 +25,7 @@ export type Phase =
 
 export type KeycardOperationFn<T> = (
   cmdSet: InstanceType<typeof Keycard.Commandset>,
+  helpers: { setStatus: (status: string) => void },
 ) => Promise<T>;
 
 export interface ExecuteOptions {
@@ -89,7 +90,6 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
         console.log(
           `[Keycard] verifyPIN SW: 0x${pinResp.sw.toString(16).toUpperCase()}`,
         );
-        pinRef.current = ''; // clear from memory
         try {
           pinResp.checkAuthOK();
         } catch (e) {
@@ -100,6 +100,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
             }
             setPinError(`PIN is not valid. ${attempts} attempts left.`);
           }
+          pinRef.current = '';
           throw e;
         }
       }
@@ -110,7 +111,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       operationRunningRef.current = true;
       setStatus('Processing...');
       try {
-        const opResult = await operationRef.current(cmdSet);
+        const opResult = await operationRef.current(cmdSet, { setStatus });
         setResult(opResult);
       } finally {
         operationRunningRef.current = false;
