@@ -71,8 +71,9 @@ describe('ExportKeyScreen', () => {
       const pressables = renderer.root.findAll(
         (node: any) => typeof node.props.onPress === 'function',
       );
-      const pressable = pressables.find(node =>
-        node.findAll((n: any) => n.props.children === 'Ethereum').length > 0,
+      const pressable = pressables.find(
+        node =>
+          node.findAll((n: any) => n.props.children === 'Ethereum').length > 0,
       )!;
       await act(async () => {
         pressable.props.onPress();
@@ -80,6 +81,25 @@ describe('ExportKeyScreen', () => {
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: "m/44'/60'/0'",
+      });
+    });
+
+    it('navigates to Keycard with derivationPath "bitget" when Bitget is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = renderer.root.findAll(
+        (node: any) => typeof node.props.onPress === 'function',
+      );
+      const pressable = pressables.find(
+        node =>
+          node.findAll((n: any) => n.props.children === 'Bitget').length > 0,
+      )!;
+      expect(pressable).toBeDefined();
+      await act(async () => {
+        pressable.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: 'bitget',
       });
     });
   });

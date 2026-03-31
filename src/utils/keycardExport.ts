@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import Keycard from 'keycard-sdk';
 import type { Commandset } from 'keycard-sdk/dist/commandset';
@@ -8,8 +9,16 @@ import {
   type BitcoinCryptoAccount,
 } from './cryptoAccount';
 import { buildCryptoHdKeyUR } from './cryptoHdKey';
+import {
+  buildCryptoMultiAccountsUR,
+  exportKeysForBitget,
+  type BitgetExportResult,
+} from './cryptoMultiAccounts';
 
-export type ExportKeyResult = Uint8Array | BitcoinCryptoAccount;
+export type ExportKeyResult =
+  | Uint8Array
+  | BitcoinCryptoAccount
+  | BitgetExportResult;
 
 type BitcoinDescriptorPlan = {
   derivationPath: string;
@@ -35,15 +44,24 @@ export function buildExportUr(
   result: ExportKeyResult,
   derivationPath: string,
 ): string {
-  return result instanceof Uint8Array
-    ? buildCryptoHdKeyUR(result, derivationPath)
-    : buildCryptoAccountUR(result);
+  if (result instanceof Uint8Array) {
+    return buildCryptoHdKeyUR(result, derivationPath);
+  }
+  if ('keys' in result) {
+    return buildCryptoMultiAccountsUR(result);
+  }
+  return buildCryptoAccountUR(result);
 }
 
 export async function exportKeyForWallet(
   cmdSet: Commandset,
   derivationPath: string,
+  setStatus: (s: string) => void = () => {},
 ): Promise<ExportKeyResult> {
+  if (derivationPath === 'bitget') {
+    return exportKeysForBitget(cmdSet, setStatus);
+  }
+
   if (!isBitcoinPath(derivationPath)) {
     const resp = await cmdSet.exportExtendedKey(0, derivationPath, false);
     resp.checkOK();

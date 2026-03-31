@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add Bitcoin PSBT signing support
+- Add Bitget multi-account export via crypto-multi-accounts UR
 
 ### Fixed
 
@@ -59,11 +60,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.2.0] - 2026-03-04
 
 ### Added
+
 - Connect software wallet flow (export extended public key via QR)
 
 ## [0.1.0] - 2025-02-22
 
 ### Added
+
 - Scanning QR code from compatible Ethereum wallets
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet

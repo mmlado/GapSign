@@ -1,10 +1,11 @@
 import React, { useCallback } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import theme from '../theme';
-import type { QRResultScreenProps } from '../navigation/types';
-import PrimaryButton from '../components/PrimaryButton';
 import AnimatedURQRCode from 'react-native-animated-ur-qr';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import type { QRResultScreenProps } from '../navigation/types';
+import theme from '../theme';
+import PrimaryButton from '../components/PrimaryButton';
 
 const QR_PADDING = 24;
 

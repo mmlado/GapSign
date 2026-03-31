@@ -26,6 +26,11 @@ jest.mock('../src/utils/cryptoAccount', () => ({
   pubKeyFingerprint: jest.fn(),
 }));
 
+jest.mock('../src/utils/cryptoMultiAccounts', () => ({
+  buildCryptoMultiAccountsUR: jest.fn(() => 'ur:crypto-multi-accounts/mock'),
+  exportKeysForBitget: jest.fn(),
+}));
+
 jest.mock('../src/utils/btcPsbt', () => ({
   BtcSigningSession: jest.fn().mockImplementation(() => ({
     signWithKeycard: jest.fn().mockResolvedValue({ psbtHex: 'deadbeef' }),
@@ -76,6 +81,15 @@ const btcExportRoute = {
   params: {
     operation: 'export_key',
     derivationPath: "m/84'/0'/0'",
+  },
+  key: 'Keycard',
+  name: 'Keycard',
+} as any;
+
+const bitgetExportRoute = {
+  params: {
+    operation: 'export_key',
+    derivationPath: 'bitget',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -211,9 +225,10 @@ describe('KeycardScreen', () => {
     });
 
     it('uses crypto-account URs for bitcoin wallet export', async () => {
-      const { buildCryptoAccountUR } = require('../src/utils/cryptoAccount') as {
-        buildCryptoAccountUR: jest.Mock;
-      };
+      const { buildCryptoAccountUR } =
+        require('../src/utils/cryptoAccount') as {
+          buildCryptoAccountUR: jest.Mock;
+        };
       buildCryptoAccountUR.mockReturnValue('UR:CRYPTO-ACCOUNT/...');
 
       mockUseKeycardOperation.mockReturnValue({
@@ -251,6 +266,38 @@ describe('KeycardScreen', () => {
     it('nfc.submitPin is available when phase is pin_entry', async () => {
       await renderScreen('pin_entry');
       expect(typeof lastProps().nfc.submitPin).toBe('function');
+    });
+  });
+
+  describe('Bitget export navigation', () => {
+    it('navigates to QRResult after Bitget export completes', async () => {
+      const { buildCryptoMultiAccountsUR } =
+        require('../src/utils/cryptoMultiAccounts') as {
+          buildCryptoMultiAccountsUR: jest.Mock;
+        };
+      buildCryptoMultiAccountsUR.mockReturnValue(
+        'ur:crypto-multi-accounts/mock',
+      );
+
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: { masterFingerprint: 1, keys: [] },
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={bitgetExportRoute} navigation={navigation} />,
+        );
+      });
+      expect(navigation.reset).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
+      const resetCall = navigation.reset.mock.calls[0][0];
+      expect(resetCall.routes[2].name).toBe('QRResult');
+      expect(resetCall.routes[2].params.urString).toBe(
+        'ur:crypto-multi-accounts/mock',
+      );
     });
   });
 

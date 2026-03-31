@@ -5,8 +5,6 @@ import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { KeycardScreenProps } from '../navigation/types';
-import NFCBottomSheet from '../components/NFCBottomSheet';
-import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 import { BtcSigningSession } from '../utils/btcPsbt';
 import { buildEthSignatureUR } from '../utils/ethSignature';
 import {
@@ -15,6 +13,8 @@ import {
   prepareSignHash,
   type ExportKeyResult,
 } from '../utils/keycardExport';
+import NFCBottomSheet from '../components/NFCBottomSheet';
+import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 
 function buildEthResultUR(
   result: Uint8Array,
@@ -97,9 +97,11 @@ export default function KeycardScreen({
       return;
     }
 
-    execute(cmdSet => exportKeyForWallet(cmdSet, params.derivationPath), {
-      requiresPin: true,
-    });
+    execute(
+      (cmdSet, { setStatus }) =>
+        exportKeyForWallet(cmdSet, params.derivationPath, setStatus),
+      { requiresPin: true },
+    );
   }, [execute, params]);
 
   useEffect(() => {
@@ -161,7 +163,14 @@ export default function KeycardScreen({
   }, [result, navigateToSignResult]);
 
   const handleExportKeyDone = useCallback(() => {
-    if (!result || !(result instanceof Uint8Array || 'descriptors' in result)) {
+    if (
+      !result ||
+      !(
+        result instanceof Uint8Array ||
+        'descriptors' in result ||
+        'keys' in result
+      )
+    ) {
       return;
     }
     navigateToExportResult(

@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { DashboardAction, ExportKeyScreenProps } from '../navigation/types';
 import theme from '../theme';
 import Menu from '../components/Menu';
@@ -43,6 +44,14 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
         navigation.navigate('Keycard', {
           operation: 'export_key',
           derivationPath: "m/84'/1'/0'",
+        }),
+    },
+    {
+      label: 'Bitget',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: 'bitget',
         }),
     },
   ];
