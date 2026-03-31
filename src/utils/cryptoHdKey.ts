@@ -1,24 +1,15 @@
-import Keycard from 'keycard-sdk';
-import { UR, UREncoder } from '@ngraveio/bc-ur';
 import {
   CryptoHDKey,
   CryptoKeypath,
   PathComponent,
 } from '@keystonehq/bc-ur-registry';
+import { UR, UREncoder } from '@ngraveio/bc-ur';
 
-const TLV_KEY_TEMPLATE = 0xa1;
-const TLV_PUB_KEY = 0x80;
-const TLV_CHAIN_CODE = 0x82;
-const SCALAR_BYTES = 32;
+import { compressPubKey, parseKeyFromTLV } from './hdKeyUtils';
 
-function compressPubKey(uncompressed: Uint8Array): Buffer {
-  const x = uncompressed.slice(1, 1 + SCALAR_BYTES);
-  const y = uncompressed.slice(1 + SCALAR_BYTES);
-  const prefix = (y[SCALAR_BYTES - 1] & 1) === 0 ? 0x02 : 0x03;
-  return Buffer.concat([Buffer.from([prefix]), Buffer.from(x)]);
-}
-
-function derivationPathToKeypath(derivationPath: string): CryptoKeypath {
+function derivationPathToKeypathNoFingerprint(
+  derivationPath: string,
+): CryptoKeypath {
   const components = derivationPath
     .split('/')
     .slice(1)
@@ -45,16 +36,13 @@ export function buildCryptoHdKeyUR(
   exportRespData: Uint8Array,
   derivationPath: string,
 ): string {
-  const tlv = new Keycard.BERTLV(exportRespData);
-  tlv.enterConstructed(TLV_KEY_TEMPLATE);
-  const pubKeyUncompressed = tlv.readPrimitive(TLV_PUB_KEY);
-  const chainCode = tlv.readPrimitive(TLV_CHAIN_CODE);
+  const { pubKeyUncompressed, chainCode } = parseKeyFromTLV(exportRespData);
 
   const hdKey = new CryptoHDKey({
     isMaster: false,
     key: compressPubKey(pubKeyUncompressed),
     chainCode: Buffer.from(chainCode),
-    origin: derivationPathToKeypath(derivationPath),
+    origin: derivationPathToKeypathNoFingerprint(derivationPath),
     name: 'GapSign',
   });
 

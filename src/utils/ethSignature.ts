@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
-import Keycard from 'keycard-sdk';
-import * as secp from '@noble/secp256k1';
 import { ETHSignature } from '@keystonehq/bc-ur-registry-eth';
+import * as secp from '@noble/secp256k1';
+import Keycard from 'keycard-sdk';
 
 // ── Keycard TLV tags ─────────────────────────────────────────────────────────
 const TLV_SIGNATURE_TEMPLATE = 0xa0;
@@ -112,17 +112,6 @@ export function buildEthSignatureUR(
   const r = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
   const s = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
 
-  console.log(
-    `[ethSignature] r: ${Array.from(r)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')}`,
-  );
-  console.log(
-    `[ethSignature] s: ${Array.from(s)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')}`,
-  );
-
   const compressedPubKey = compressPubKey(pubKeyRaw);
   const compact = concat(r, s);
 
@@ -144,7 +133,6 @@ export function buildEthSignatureUR(
   if (recId === -1) {
     throw new Error('[ethSignature] Cannot determine recovery ID');
   }
-  console.log(`[ethSignature] recId: ${recId}`);
 
   let v: number;
   switch (dataType) {
@@ -157,9 +145,6 @@ export function buildEthSignatureUR(
     default: // EIP-712 (2), personal_sign (3), unknown
       v = V_BASE_LEGACY + recId;
   }
-  console.log(
-    `[ethSignature] v: ${v} (dataType=${dataType}, chainId=${chainId})`,
-  );
 
   const sig = concat(r, s, encodeV(v));
   const requestIdBuf = requestId
@@ -167,6 +152,6 @@ export function buildEthSignatureUR(
     : undefined;
   const ethSig = new ETHSignature(Buffer.from(sig), requestIdBuf, 'GapSign');
   const urString = ethSig.toUREncoder(1000).nextPart();
-  console.log(`[ethSignature] UR: ${urString.slice(0, 60)}...`);
+
   return urString;
 }
