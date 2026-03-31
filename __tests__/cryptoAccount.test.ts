@@ -86,7 +86,9 @@ describe('buildCryptoAccountUR', () => {
     expect(decoder.isSuccess()).toBe(true);
 
     const cryptoAccount = decoder.resultRegistryType() as any;
-    expect(cryptoAccount.getMasterFingerprint().toString('hex')).toBe('aabbccdd');
+    expect(cryptoAccount.getMasterFingerprint().toString('hex')).toBe(
+      'aabbccdd',
+    );
 
     const descriptors = cryptoAccount.getOutputDescriptors();
     expect(descriptors).toHaveLength(3);

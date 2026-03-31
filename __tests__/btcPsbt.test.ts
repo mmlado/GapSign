@@ -22,7 +22,10 @@ const TESTNET_WPKH_PSBT_HEX = (() => {
   const psbt = new Psbt({ network: networks.testnet });
 
   const fakePubkey = Buffer.alloc(33, 0x02);
-  const { output } = payments.p2wpkh({ pubkey: fakePubkey, network: networks.testnet });
+  const { output } = payments.p2wpkh({
+    pubkey: fakePubkey,
+    network: networks.testnet,
+  });
 
   psbt.addInput({
     hash: Buffer.alloc(32, 0xaa),

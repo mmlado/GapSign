@@ -1,8 +1,8 @@
 import { View, StyleSheet } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 import theme from '../theme';
-import { DATA_TYPE_LABELS, type EthSignRequest } from '../types';
-import { parseTx } from '../utils/txParser';
+import type { EthSignRequest } from '../types';
+import { getTxLabel, parseTx } from '../utils/txParser';
 import InfoRow from './InfoRow';
 
 const CHAIN_NAMES: Record<number, string> = {
@@ -33,8 +33,7 @@ export default function EthSignRequestDetail({
 }: {
   request: EthSignRequest;
 }) {
-  const typeLabel =
-    DATA_TYPE_LABELS[request.dataType] || `Unknown (${request.dataType})`;
+  const typeLabel = getTxLabel(request.signData, request.dataType);
   const tx = parseTx(request.signData, request.dataType);
 
   return (

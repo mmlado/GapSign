@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add Bitcoin PSBT signing support
 - Add Bitget multi-account export via crypto-multi-accounts UR
+- Add EIP-2930 (type 0x01) transaction signing support
 
 ### Fixed
 

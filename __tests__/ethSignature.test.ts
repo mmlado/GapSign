@@ -140,6 +140,14 @@ describe('buildEthSignatureUR', () => {
       const sig: Buffer = decodeUR(ur)[2];
       expect(sig[sig.length - 1]).toBe(27 + recId);
     });
+
+    it('EIP-2930 (txType=0x01, dataType=1): v equals recId, not EIP-155', () => {
+      // Without txType, dataType=1 chainId=1 would give v = 37 + recId
+      const ur = buildEthSignatureUR(tlvHex, HASH, 1, 1, undefined, 0x01);
+      const sig: Buffer = decodeUR(ur)[2];
+      expect(sig[sig.length - 1]).toBe(recId);
+      expect(sig[sig.length - 1]).not.toBe(37 + recId);
+    });
   });
 
   describe('CBOR map structure', () => {

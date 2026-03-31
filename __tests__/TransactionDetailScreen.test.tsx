@@ -8,15 +8,20 @@ const VALID_PSBT_HEX = (() => {
   const { Psbt, payments, networks } = require('bitcoinjs-lib');
   const psbt = new Psbt({ network: networks.testnet });
   const fakePubkey = Buffer.alloc(33, 0x02);
-  const { output } = payments.p2wpkh({ pubkey: fakePubkey, network: networks.testnet });
+  const { output } = payments.p2wpkh({
+    pubkey: fakePubkey,
+    network: networks.testnet,
+  });
   psbt.addInput({
     hash: Buffer.alloc(32, 0xaa),
     index: 0,
-    bip32Derivation: [{
-      masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
-      path: "m/84'/1'/0'/0/0",
-      pubkey: fakePubkey,
-    }],
+    bip32Derivation: [
+      {
+        masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+        path: "m/84'/1'/0'/0/0",
+        pubkey: fakePubkey,
+      },
+    ],
   });
   psbt.addOutput({ script: output!, value: 90_000 });
   return psbt.toBuffer().toString('hex');
@@ -203,7 +208,10 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
 describe('TransactionDetailScreen – crypto-psbt result', () => {
   it('renders without crashing', async () => {
     await expect(
-      renderScreen({ kind: 'crypto-psbt', request: { psbtHex: VALID_PSBT_HEX } }),
+      renderScreen({
+        kind: 'crypto-psbt',
+        request: { psbtHex: VALID_PSBT_HEX },
+      }),
     ).resolves.toBeDefined();
   });
 
