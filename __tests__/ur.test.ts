@@ -1,6 +1,14 @@
-import { URDecoder } from '@ngraveio/bc-ur';
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
+import {
+  CryptoKeypath,
+  DataItem,
+  PathComponent,
+  RegistryTypes,
+  encodeDataItem,
+} from '@keystonehq/bc-ur-registry';
 import { EthSignRequest } from '@keystonehq/bc-ur-registry-eth';
+import { URDecoder } from '@ngraveio/bc-ur';
+
 import { handleUR } from '../src/utils/ur';
 import { DATA_TYPE_LABELS } from '../src/types';
 
@@ -33,6 +41,54 @@ function buildCbor(
   const decoder = new URDecoder();
   decoder.receivePart(req.toUREncoder(1000).nextPart());
   return decoder.resultUR().cbor;
+}
+
+function buildBtcSignRequestCbor(
+  message: string,
+  hdPath: string,
+  opts: {
+    xfp?: string;
+    uuid?: string;
+    address?: string;
+    origin?: string;
+  } = {},
+): Buffer {
+  const components = hdPath
+    .replace(/^m\//, '')
+    .split('/')
+    .map(component => {
+      const hardened = component.endsWith("'");
+      const index = Number.parseInt(component.replace("'", ''), 10);
+      return new PathComponent({ index, hardened });
+    });
+  const keypath = new CryptoKeypath(
+    components,
+    Buffer.from(opts.xfp ?? 'deadbeef', 'hex'),
+  );
+  const keypathItem = keypath.toDataItem();
+  keypathItem.setTag(RegistryTypes.CRYPTO_KEYPATH.getTag());
+  const map: Record<number, any> = {
+    1: new DataItem(
+      Buffer.from(
+        (opts.uuid ?? '00112233-4455-6677-8899-aabbccddeeff').replace(/-/g, ''),
+        'hex',
+      ),
+      RegistryTypes.UUID.getTag(),
+    ),
+    2: Buffer.from(message, 'utf8'),
+    3: 1,
+    4: [keypathItem],
+  };
+
+  if (opts.address) {
+    map[5] = [opts.address];
+  }
+
+  if (opts.origin) {
+    map[6] = opts.origin;
+  }
+
+  return encodeDataItem(new DataItem(map));
 }
 
 // ---------------------------------------------------------------------------
@@ -160,6 +216,35 @@ describe('handleUR – crypto-psbt', () => {
   it('returns unsupported for unrecognised type (not crypto-psbt)', () => {
     const result = handleUR('unknown-type', Buffer.alloc(0));
     expect(result.kind).toBe('unsupported');
+  });
+});
+
+describe('handleUR – btc-sign-request', () => {
+  it('parses a valid btc-sign-request', () => {
+    const cbor = buildBtcSignRequestCbor('hello btc', "m/84'/0'/0'/0/3", {
+      address: 'bc1qexampleaddress',
+      origin: 'Sparrow',
+    });
+    const result = handleUR('btc-sign-request', cbor);
+
+    expect(result.kind).toBe('btc-sign-request');
+    if (result.kind === 'btc-sign-request') {
+      expect(result.request.requestId).toBe('00112233445566778899aabbccddeeff');
+      expect(result.request.signDataHex).toBe(
+        Buffer.from('hello btc', 'utf8').toString('hex'),
+      );
+      expect(result.request.derivationPath).toBe("m/84'/0'/0'/0/3");
+      expect(result.request.address).toBe('bc1qexampleaddress');
+      expect(result.request.origin).toBe('Sparrow');
+    }
+  });
+
+  it('returns an error for malformed btc-sign-request CBOR', () => {
+    const result = handleUR('btc-sign-request', Buffer.from([0xa0]));
+    expect(result.kind).toBe('error');
+    if (result.kind === 'error') {
+      expect(result.message).toMatch(/Failed to parse BTC sign request/);
+    }
   });
 });
 

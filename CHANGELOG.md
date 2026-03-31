@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add Bitcoin PSBT signing support
+- Add Bitcoin message signing support via BIP-322, including crypto-psbt detection and btc-sign-request / btc-signature QR flows
 - Add Bitget multi-account export via crypto-multi-accounts UR
 - Add EIP-2930 (type 0x01) transaction signing support
 

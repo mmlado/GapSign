@@ -1,8 +1,9 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
+
 import theme from '../theme';
-import { inspectBtcPsbt } from '../utils/btcPsbt';
 import InfoRow from './InfoRow';
+import { inspectBtcPsbt } from '../utils/btcPsbt';
 
 function formatSats(value: number): string {
   return `${value.toLocaleString()} sats`;
@@ -31,7 +32,9 @@ export default function BtcPsbtDetail({ psbtHex }: { psbtHex: string }) {
       <View style={styles.typeChip}>
         <Icon source="bitcoin" size={18} color={theme.colors.primary} />
         <Text variant="labelLarge" style={styles.typeChipText}>
-          Bitcoin PSBT
+          {summary.requestType === 'bip322-message'
+            ? 'Bitcoin Message'
+            : 'Bitcoin PSBT'}
         </Text>
       </View>
 
@@ -48,25 +51,43 @@ export default function BtcPsbtDetail({ psbtHex }: { psbtHex: string }) {
         />
       </View>
 
-      <View style={styles.row}>
-        <InfoRow label="Inputs" value={String(summary.inputCount)} />
-        <InfoRow label="Outputs" value={String(summary.outputCount)} />
-      </View>
+      {summary.requestType === 'bip322-message' ? (
+        <>
+          <View style={styles.row}>
+            <InfoRow label="Format" value="BIP-322 Message" />
+          </View>
 
-      {summary.feeSats !== undefined && (
-        <View style={styles.row}>
-          <InfoRow label="Fee" value={formatSats(summary.feeSats)} />
-        </View>
+          {summary.bip322Address && (
+            <View style={styles.row}>
+              <InfoRow label="Address" value={summary.bip322Address} />
+            </View>
+          )}
+        </>
+      ) : (
+        <>
+          <View style={styles.row}>
+            <InfoRow label="Inputs" value={String(summary.inputCount)} />
+            <InfoRow label="Outputs" value={String(summary.outputCount)} />
+          </View>
+
+          {summary.feeSats !== undefined && (
+            <View style={styles.row}>
+              <InfoRow label="Fee" value={formatSats(summary.feeSats)} />
+            </View>
+          )}
+
+          {summary.outputs.map((output, index) => (
+            <View key={`${output.address}-${index}`} style={styles.row}>
+              <InfoRow
+                label={`Output ${index + 1}${
+                  output.isChange ? ' (Change)' : ''
+                }`}
+                value={`${output.address}\n${formatSats(output.valueSats)}`}
+              />
+            </View>
+          ))}
+        </>
       )}
-
-      {summary.outputs.map((output, index) => (
-        <View key={`${output.address}-${index}`} style={styles.row}>
-          <InfoRow
-            label={`Output ${index + 1}${output.isChange ? ' (Change)' : ''}`}
-            value={`${output.address}\n${formatSats(output.valueSats)}`}
-          />
-        </View>
-      ))}
     </>
   );
 }
