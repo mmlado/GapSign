@@ -38,6 +38,20 @@ jest.mock('../src/utils/btcPsbt', () => ({
   inspectBtcPsbt: jest.fn(),
 }));
 
+jest.mock('../src/utils/btcMessage', () => ({
+  buildBtcSignatureUR: jest.fn(() => 'ur:btc-signature/mock'),
+  hashBitcoinMessage: jest.fn(() => new Uint8Array(32)),
+  inspectBtcSignRequest: jest.fn(() => ({
+    message: 'hello btc',
+    isUtf8: true,
+  })),
+  parseBtcSignRequest: jest.fn(),
+  parseKeycardBtcMessageSignature: jest.fn(() => ({
+    signature: Buffer.alloc(65, 0x11),
+    publicKey: Buffer.alloc(33, 0x02),
+  })),
+}));
+
 const mockSubmitPin = jest.fn();
 const mockCancel = jest.fn();
 const mockExecute = jest.fn();
@@ -72,6 +86,20 @@ const btcSignRoute = {
     operation: 'sign',
     signMode: 'btc',
     psbtHex: 'deadbeef',
+  },
+  key: 'Keycard',
+  name: 'Keycard',
+} as any;
+
+const btcMessageSignRoute = {
+  params: {
+    operation: 'sign',
+    signMode: 'btc-message',
+    requestId: '00112233445566778899aabbccddeeff',
+    signDataHex: Buffer.from('hello btc', 'utf8').toString('hex'),
+    derivationPath: "m/84'/0'/0'/0/3",
+    address: 'bc1qexampleaddress',
+    origin: 'Sparrow',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -341,6 +369,32 @@ describe('KeycardScreen', () => {
         jest.advanceTimersByTime(800);
       });
       expect(navigation.reset).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('BTC message sign navigation', () => {
+    it('calls execute for a btc message sign operation', async () => {
+      await renderScreen('pin_entry', btcMessageSignRoute);
+      expect(mockExecute).toHaveBeenCalledTimes(1);
+    });
+
+    it('navigates to QRResult after btc message sign completes', async () => {
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: new Uint8Array([1, 2, 3]),
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={btcMessageSignRoute} navigation={navigation} />,
+        );
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
+      const resetCall = navigation.reset.mock.calls[0][0];
+      expect(resetCall.routes[1].name).toBe('QRResult');
+      expect(resetCall.routes[1].params.urString).toBe('ur:btc-signature/mock');
     });
   });
 });

@@ -19,6 +19,15 @@ export type KeycardParams =
       psbtHex: string;
     }
   | {
+      operation: 'sign';
+      signMode: 'btc-message';
+      requestId: string;
+      signDataHex: string;
+      derivationPath: string;
+      address?: string;
+      origin?: string;
+    }
+  | {
       operation: 'export_key';
       derivationPath: string;
     };

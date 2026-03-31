@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
-import { Psbt, address, networks } from 'bitcoinjs-lib';
+import { Psbt, Transaction, address, networks } from 'bitcoinjs-lib';
 import Keycard from 'keycard-sdk';
 import type { Commandset } from 'keycard-sdk/dist/commandset';
 
@@ -22,12 +22,14 @@ export type BtcPsbtOutputSummary = {
 };
 
 export type BtcPsbtSummary = {
+  requestType: 'transaction' | 'bip322-message';
   network: NetworkName;
   inputCount: number;
   outputCount: number;
   outputs: BtcPsbtOutputSummary[];
   feeSats?: number;
   totalOutputSats: number;
+  bip322Address?: string;
 };
 
 type KeycardSignature = {
@@ -111,6 +113,62 @@ function extractInputPath(
   return input.bip32Derivation?.[0]?.path;
 }
 
+function getInputUtxo(
+  psbt: Psbt,
+  index: number,
+):
+  | {
+      script: Buffer;
+      valueSats: number;
+    }
+  | undefined {
+  const input = psbt.data.inputs[index];
+  if (!input) {
+    return undefined;
+  }
+
+  if (input.witnessUtxo) {
+    return {
+      script: input.witnessUtxo.script,
+      valueSats: input.witnessUtxo.value,
+    };
+  }
+
+  if (input.nonWitnessUtxo) {
+    const prevTx = Transaction.fromBuffer(input.nonWitnessUtxo).outs;
+    const prevout = prevTx[psbt.txInputs[index]?.index ?? -1];
+    if (!prevout) {
+      return undefined;
+    }
+
+    return {
+      script: prevout.script,
+      valueSats: prevout.value,
+    };
+  }
+
+  return undefined;
+}
+
+function isBip322MessagePsbt(psbt: Psbt): boolean {
+  if (psbt.inputCount !== 1 || psbt.txOutputs.length !== 1) {
+    return false;
+  }
+
+  const input = psbt.txInputs[0];
+  const output = psbt.txOutputs[0];
+  const utxo = getInputUtxo(psbt, 0);
+
+  return (
+    input.sequence === 0 &&
+    input.index === 0 &&
+    output.value === 0 &&
+    output.script.length === 1 &&
+    output.script[0] === 0x6a &&
+    utxo?.valueSats === 0
+  );
+}
+
 function isChangeOutput(output: Psbt['data']['outputs'][number]): boolean {
   return (
     (output.bip32Derivation?.length ?? 0) > 0 ||
@@ -189,6 +247,9 @@ export function parseCryptoPsbtRequest(cbor: Buffer): { psbtHex: string } {
 
 export function inspectBtcPsbt(psbtHex: string): BtcPsbtSummary {
   const psbt = toPsbt(psbtHex);
+  const requestType = isBip322MessagePsbt(psbt)
+    ? 'bip322-message'
+    : 'transaction';
   const network =
     inferNetworkFromPath(
       psbt.data.inputs[0] ? extractInputPath(psbt.data.inputs[0]) : undefined,
@@ -206,12 +267,17 @@ export function inspectBtcPsbt(psbtHex: string): BtcPsbtSummary {
   } catch {}
 
   return {
+    requestType,
     network,
     inputCount: psbt.inputCount,
     outputCount: psbt.txOutputs.length,
     outputs,
     feeSats,
     totalOutputSats: outputs.reduce((sum, output) => sum + output.valueSats, 0),
+    bip322Address:
+      requestType === 'bip322-message' && getInputUtxo(psbt, 0)
+        ? decodeAddress(getInputUtxo(psbt, 0)!.script, network)
+        : undefined,
   };
 }
 

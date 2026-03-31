@@ -1,5 +1,6 @@
-import { inspectBtcPsbt, parseCryptoPsbtRequest } from '../src/utils/btcPsbt';
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
+
+import { inspectBtcPsbt, parseCryptoPsbtRequest } from '../src/utils/btcPsbt';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -51,6 +52,55 @@ const TESTNET_WPKH_PSBT_HEX = (() => {
       },
     ],
   });
+
+  return psbt.toBuffer().toString('hex');
+})();
+
+const BIP322_PSBT_HEX = (() => {
+  const {
+    Psbt,
+    Transaction,
+    payments,
+    networks,
+    script,
+    opcodes,
+  } = require('bitcoinjs-lib');
+
+  const fakePubkey = Buffer.alloc(33, 0x02);
+  const { output } = payments.p2wpkh({
+    pubkey: fakePubkey,
+    network: networks.testnet,
+  });
+
+  const toSpend = new Transaction();
+  toSpend.version = 0;
+  toSpend.addInput(
+    Buffer.alloc(32, 0x00),
+    0xffffffff,
+    0,
+    script.compile([opcodes.OP_0, Buffer.alloc(32, 0x11)]),
+  );
+  toSpend.addOutput(output!, 0);
+
+  const psbt = new Psbt({ network: networks.testnet });
+  psbt.setVersion(0);
+  psbt.addInput({
+    hash: toSpend.getHash(),
+    index: 0,
+    sequence: 0,
+    witnessUtxo: {
+      script: output!,
+      value: 0,
+    },
+    bip32Derivation: [
+      {
+        masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+        path: "m/84'/1'/0'/0/0",
+        pubkey: fakePubkey,
+      },
+    ],
+  });
+  psbt.addOutput({ script: Buffer.from([0x6a]), value: 0 });
 
   return psbt.toBuffer().toString('hex');
 })();
@@ -109,5 +159,11 @@ describe('inspectBtcPsbt', () => {
   it('reports totalOutputSats as sum of all outputs', () => {
     const summary = inspectBtcPsbt(TESTNET_WPKH_PSBT_HEX);
     expect(summary.totalOutputSats).toBe(99_000);
+  });
+
+  it('detects shell-style BIP-322 message signing PSBTs', () => {
+    const summary = inspectBtcPsbt(BIP322_PSBT_HEX);
+    expect(summary.requestType).toBe('bip322-message');
+    expect(summary.bip322Address).toMatch(/^tb1/);
   });
 });

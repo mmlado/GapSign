@@ -4,11 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon, Text } from 'react-native-paper';
 
 import { Icons } from '../assets/icons';
-import BtcPsbtDetail from '../components/BtcPsbtDetail';
-import EthSignRequestDetail from '../components/EthSignRequestDetail';
-import PrimaryButton from '../components/PrimaryButton';
 import type { TransactionDetailScreenProps } from '../navigation/types';
 import theme from '../theme';
+import BtcPsbtDetail from '../components/BtcPsbtDetail';
+import BtcSignRequestDetail from '../components/BtcSignRequestDetail';
+import EthSignRequestDetail from '../components/EthSignRequestDetail';
+import PrimaryButton from '../components/PrimaryButton';
+import { inspectBtcPsbt } from '../utils/btcPsbt';
 
 export default function TransactionDetailScreen({
   route,
@@ -16,6 +18,18 @@ export default function TransactionDetailScreen({
 }: TransactionDetailScreenProps) {
   const insets = useSafeAreaInsets();
   const { result } = route.params;
+  const isBip322Message =
+    result.kind === 'crypto-psbt' &&
+    (() => {
+      try {
+        return (
+          inspectBtcPsbt(result.request.psbtHex).requestType ===
+          'bip322-message'
+        );
+      } catch {
+        return false;
+      }
+    })();
 
   const handleSign = useCallback(() => {
     if (result.kind === 'eth-sign-request') {
@@ -35,6 +49,17 @@ export default function TransactionDetailScreen({
         signMode: 'btc',
         psbtHex: result.request.psbtHex,
       });
+    } else if (result.kind === 'btc-sign-request') {
+      const request = result.request;
+      navigation.navigate('Keycard', {
+        operation: 'sign',
+        signMode: 'btc-message',
+        requestId: request.requestId,
+        signDataHex: request.signDataHex,
+        derivationPath: request.derivationPath,
+        address: request.address,
+        origin: request.origin,
+      });
     }
   }, [result, navigation]);
 
@@ -50,6 +75,10 @@ export default function TransactionDetailScreen({
 
         {result.kind === 'crypto-psbt' && (
           <BtcPsbtDetail psbtHex={result.request.psbtHex} />
+        )}
+
+        {result.kind === 'btc-sign-request' && (
+          <BtcSignRequestDetail request={result.request} />
         )}
 
         {result.kind === 'unsupported' && (
@@ -82,10 +111,15 @@ export default function TransactionDetailScreen({
       </ScrollView>
 
       {(result.kind === 'eth-sign-request' ||
-        result.kind === 'crypto-psbt') && (
+        result.kind === 'crypto-psbt' ||
+        result.kind === 'btc-sign-request') && (
         <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
           <PrimaryButton
-            label="Sign transaction"
+            label={
+              isBip322Message || result.kind === 'btc-sign-request'
+                ? 'Sign message'
+                : 'Sign transaction'
+            }
             onPress={handleSign}
             icon={Icons.nfcActivate}
           />

@@ -27,6 +27,55 @@ const VALID_PSBT_HEX = (() => {
   return psbt.toBuffer().toString('hex');
 })();
 
+const BIP322_PSBT_HEX = (() => {
+  const {
+    Psbt,
+    Transaction,
+    payments,
+    networks,
+    script,
+    opcodes,
+  } = require('bitcoinjs-lib');
+
+  const fakePubkey = Buffer.alloc(33, 0x02);
+  const { output } = payments.p2wpkh({
+    pubkey: fakePubkey,
+    network: networks.testnet,
+  });
+
+  const toSpend = new Transaction();
+  toSpend.version = 0;
+  toSpend.addInput(
+    Buffer.alloc(32, 0x00),
+    0xffffffff,
+    0,
+    script.compile([opcodes.OP_0, Buffer.alloc(32, 0x11)]),
+  );
+  toSpend.addOutput(output!, 0);
+
+  const psbt = new Psbt({ network: networks.testnet });
+  psbt.setVersion(0);
+  psbt.addInput({
+    hash: toSpend.getHash(),
+    index: 0,
+    sequence: 0,
+    witnessUtxo: {
+      script: output!,
+      value: 0,
+    },
+    bip32Derivation: [
+      {
+        masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+        path: "m/84'/1'/0'/0/0",
+        pubkey: fakePubkey,
+      },
+    ],
+  });
+  psbt.addOutput({ script: Buffer.from([0x6a]), value: 0 });
+
+  return psbt.toBuffer().toString('hex');
+})();
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -245,5 +294,37 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       request: { psbtHex: 'deadbeef' },
     });
     expect(toJson(renderer)).toContain('Sign transaction');
+  });
+
+  it('shows BIP-322 requests as message signing', async () => {
+    const renderer = await renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: BIP322_PSBT_HEX },
+    });
+    const json = toJson(renderer);
+    expect(json).toContain('Bitcoin Message');
+    expect(json).toContain('BIP-322 Message');
+    expect(json).toContain('Sign message');
+  });
+});
+
+describe('TransactionDetailScreen – btc-sign-request result', () => {
+  it('shows message signing details and CTA', async () => {
+    const renderer = await renderScreen({
+      kind: 'btc-sign-request',
+      request: {
+        requestId: '00112233445566778899aabbccddeeff',
+        signDataHex: Buffer.from('hello btc', 'utf8').toString('hex'),
+        dataType: 1,
+        derivationPath: "m/84'/0'/0'/0/3",
+        address: 'bc1qexampleaddress',
+        origin: 'Sparrow',
+      },
+    });
+    const json = toJson(renderer);
+    expect(json).toContain('Bitcoin Message');
+    expect(json).toContain('btc-sign-request');
+    expect(json).toContain('hello btc');
+    expect(json).toContain('Sign message');
   });
 });

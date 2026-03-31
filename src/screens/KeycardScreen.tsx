@@ -5,6 +5,13 @@ import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { KeycardScreenProps } from '../navigation/types';
+import NFCBottomSheet from '../components/NFCBottomSheet';
+import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
+import {
+  buildBtcSignatureUR,
+  hashBitcoinMessage,
+  parseKeycardBtcMessageSignature,
+} from '../utils/btcMessage';
 import { BtcSigningSession } from '../utils/btcPsbt';
 import { buildEthSignatureUR } from '../utils/ethSignature';
 import {
@@ -13,8 +20,6 @@ import {
   prepareSignHash,
   type ExportKeyResult,
 } from '../utils/keycardExport';
-import NFCBottomSheet from '../components/NFCBottomSheet';
-import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
 
 function buildEthResultUR(
   result: Uint8Array,
@@ -61,7 +66,9 @@ export default function KeycardScreen({
   const hashRef = useRef<Uint8Array | null>(null);
   const btcSessionRef = useRef<BtcSigningSession | null>(null);
 
-  const keycard = useKeycardOperation<ExportKeyResult | { psbtHex: string }>();
+  const keycard = useKeycardOperation<
+    ExportKeyResult | { psbtHex: string } | Uint8Array
+  >();
   const { phase, result, execute, cancel } = keycard;
 
   const handleSign = useCallback(() => {
@@ -71,6 +78,22 @@ export default function KeycardScreen({
 
     if (params.signMode === 'eth') {
       const hash = prepareSignHash(params.signData, params.dataType);
+      hashRef.current = hash;
+
+      execute(async cmdSet => {
+        const signResp = await cmdSet.signWithPath(
+          hash,
+          params.derivationPath,
+          false,
+        );
+        signResp.checkOK();
+        return signResp.data;
+      });
+      return;
+    }
+
+    if (params.signMode === 'btc-message') {
+      const hash = hashBitcoinMessage(params.signDataHex);
       hashRef.current = hash;
 
       execute(async cmdSet => {
@@ -169,6 +192,26 @@ export default function KeycardScreen({
     navigateToSignResult(buildBtcResultUR(result.psbtHex));
   }, [result, navigateToSignResult]);
 
+  const handleBtcMessageSignDone = useCallback(() => {
+    if (
+      params.operation !== 'sign' ||
+      params.signMode !== 'btc-message' ||
+      !hashRef.current ||
+      !(result instanceof Uint8Array)
+    ) {
+      return;
+    }
+
+    const parsed = parseKeycardBtcMessageSignature(hashRef.current, result);
+    navigateToSignResult(
+      buildBtcSignatureUR({
+        requestId: params.requestId,
+        signature: parsed.signature,
+        publicKey: parsed.publicKey,
+      }),
+    );
+  }, [result, params, navigateToSignResult]);
+
   const handleExportKeyDone = useCallback(() => {
     if (
       !result ||
@@ -199,6 +242,11 @@ export default function KeycardScreen({
           handleEthSignDone();
         } else if (params.operation === 'sign' && params.signMode === 'btc') {
           handleBtcSignDone();
+        } else if (
+          params.operation === 'sign' &&
+          params.signMode === 'btc-message'
+        ) {
+          handleBtcMessageSignDone();
         } else if (params.operation === 'export_key') {
           handleExportKeyDone();
         }
@@ -214,6 +262,7 @@ export default function KeycardScreen({
     params,
     handleEthSignDone,
     handleBtcSignDone,
+    handleBtcMessageSignDone,
     handleExportKeyDone,
   ]);
 
