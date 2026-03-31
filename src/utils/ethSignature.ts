@@ -97,6 +97,7 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
  * @param dataType        - eth-sign-request dataType (1=legacy, 2=typed, 3=personal, 4=EIP-1559)
  * @param chainId         - chain ID (used for legacy tx v calculation)
  * @param requestId       - optional UUID hex from the original eth-sign-request
+ * @param txType          - optional EIP-2718 transaction type byte (e.g. 0x01 for EIP-2930)
  */
 export function buildEthSignatureUR(
   signRespDataHex: string,
@@ -104,6 +105,7 @@ export function buildEthSignatureUR(
   dataType: number | undefined,
   chainId: number | undefined,
   requestId: string | undefined,
+  txType?: number,
 ): string {
   const tlv = new Keycard.BERTLV(hexToBytes(signRespDataHex));
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);
@@ -135,15 +137,20 @@ export function buildEthSignatureUR(
   }
 
   let v: number;
-  switch (dataType) {
-    case 1: // legacy transaction (EIP-155)
-      v = V_BASE_EIP155 + 2 * (chainId ?? 0) + recId;
-      break;
-    case 4: // EIP-1559
-      v = recId;
-      break;
-    default: // EIP-712 (2), personal_sign (3), unknown
-      v = V_BASE_LEGACY + recId;
+  if (txType === 0x01) {
+    // EIP-2930: v = recId (same as EIP-1559, no chain ID encoding)
+    v = recId;
+  } else {
+    switch (dataType) {
+      case 1: // legacy transaction (EIP-155)
+        v = V_BASE_EIP155 + 2 * (chainId ?? 0) + recId;
+        break;
+      case 4: // EIP-1559
+        v = recId;
+        break;
+      default: // EIP-712 (2), personal_sign (3), unknown
+        v = V_BASE_LEGACY + recId;
+    }
   }
 
   const sig = concat(r, s, encodeV(v));

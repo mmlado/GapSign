@@ -140,7 +140,10 @@ describe('parseEthSignRequest – derivation paths', () => {
 describe('handleUR – crypto-psbt', () => {
   function buildPsbtCbor(): Buffer {
     // Minimal valid PSBT: magic + empty global map
-    const psbtBytes = Buffer.from('70736274ff01000a0200000000000000000000', 'hex');
+    const psbtBytes = Buffer.from(
+      '70736274ff01000a0200000000000000000000',
+      'hex',
+    );
     return new CryptoPSBT(psbtBytes).toCBOR();
   }
 

@@ -1,5 +1,7 @@
 import { RLP } from '@ethereumjs/rlp';
 
+import { DATA_TYPE_LABELS } from '../types';
+
 export type ParsedTx = {
   to?: string;
   value?: string; // in ETH, e.g. "0.01"
@@ -92,8 +94,26 @@ function parseEIP1559(bytes: Buffer): ParsedTx {
   };
 }
 
+/** EIP-2930 (type 0x01): 0x01 || RLP([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList]) */
+function parseEIP2930(bytes: Buffer): ParsedTx {
+  const rlpBytes = bytes.slice(1);
+  const decoded = RLP.decode(rlpBytes) as Uint8Array[];
+  const [, nonce, gasPrice, gasLimit, to, value, data] = decoded;
+  return {
+    nonce: Number(bufToBigInt(nonce)),
+    to: toAddress(to),
+    value: weiToEth(bufToBigInt(value)),
+    data: data.length > 0 ? bufToHex(data) : undefined,
+    fees: {
+      kind: 'legacy',
+      gasPrice: weiToGwei(bufToBigInt(gasPrice)),
+      gasLimit: bufToBigInt(gasLimit).toString(),
+    },
+  };
+}
+
 /**
- * dataType 1 = Legacy transaction
+ * dataType 1 = Legacy transaction (or EIP-2930 if first byte is 0x01)
  * dataType 4 = EIP-1559 transaction
  * Others (EIP-712, personal sign) are not transactions — return null.
  */
@@ -103,10 +123,24 @@ export function parseTx(
 ): ParsedTx | null {
   try {
     const bytes = Buffer.from(signDataHex, 'hex');
+    if (dataType === 1 && bytes[0] === 0x01) return parseEIP2930(bytes);
     if (dataType === 1) return parseLegacy(bytes);
     if (dataType === 4) return parseEIP1559(bytes);
     return null;
   } catch {
     return null;
   }
+}
+
+/**
+ * Returns a human-readable label for the transaction type.
+ * Distinguishes EIP-2930 from legacy even though both arrive with dataType=1.
+ */
+export function getTxLabel(signDataHex: string, dataType: number): string {
+  if (dataType === 1) {
+    const bytes = Buffer.from(signDataHex, 'hex');
+    if (bytes[0] === 0x01) return 'EIP-2930 Transaction';
+    return 'Legacy Transaction';
+  }
+  return DATA_TYPE_LABELS[dataType] ?? `Unknown (${dataType})`;
 }

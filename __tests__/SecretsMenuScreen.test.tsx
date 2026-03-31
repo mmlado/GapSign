@@ -86,8 +86,12 @@ describe('SecretsMenuScreen', () => {
       const entry = getActivePressables(renderer).find(p =>
         extractText(p).includes('Change PIN'),
       );
-      await act(async () => { entry!.props.onPress(); });
-      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', { secretType: 'pin' });
+      await act(async () => {
+        entry!.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
+        secretType: 'pin',
+      });
     });
 
     it('navigates to ChangeSecret with puk secretType', async () => {
@@ -95,8 +99,12 @@ describe('SecretsMenuScreen', () => {
       const entry = getActivePressables(renderer).find(p =>
         extractText(p).includes('Change PUK'),
       );
-      await act(async () => { entry!.props.onPress(); });
-      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', { secretType: 'puk' });
+      await act(async () => {
+        entry!.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
+        secretType: 'puk',
+      });
     });
 
     it('navigates to ChangeSecret with pairing secretType', async () => {
@@ -104,8 +112,12 @@ describe('SecretsMenuScreen', () => {
       const entry = getActivePressables(renderer).find(p =>
         extractText(p).includes('Change Pairing Secret'),
       );
-      await act(async () => { entry!.props.onPress(); });
-      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', { secretType: 'pairing' });
+      await act(async () => {
+        entry!.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
+        secretType: 'pairing',
+      });
     });
   });
 

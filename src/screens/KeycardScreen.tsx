@@ -23,8 +23,13 @@ function buildEthResultUR(
     dataType?: number;
     chainId?: number;
     requestId?: string;
+    signData?: string;
   },
 ): string {
+  const firstByte = params.signData
+    ? parseInt(params.signData.slice(0, 2), 16)
+    : undefined;
+  const txType = firstByte === 0x01 ? 0x01 : undefined;
   return buildEthSignatureUR(
     Array.from(result)
       .map(b => b.toString(16).padStart(2, '0'))
@@ -33,6 +38,7 @@ function buildEthResultUR(
     params.dataType,
     params.chainId,
     params.requestId,
+    txType,
   );
 }
 
@@ -150,6 +156,7 @@ export default function KeycardScreen({
         dataType?: number;
         chainId?: number;
         requestId?: string;
+        signData?: string;
       },
     );
     navigateToSignResult(urString);
