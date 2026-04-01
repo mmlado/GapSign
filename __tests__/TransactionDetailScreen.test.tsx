@@ -252,6 +252,43 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
     expect(json).toContain('Personal Message');
     expect(json).not.toContain('MetaMask');
   });
+
+  it('displays decoded EIP-712 domain and message fields when signData is json', async () => {
+    const typedDataJson = JSON.stringify({
+      types: {
+        EIP712Domain: [{ name: 'name', type: 'string' }],
+        Mail: [{ name: 'contents', type: 'string' }],
+      },
+      primaryType: 'Mail',
+      domain: {
+        name: 'Ether Mail',
+        version: '1',
+        chainId: 1,
+      },
+      message: {
+        contents: 'Hello, Bob!',
+        account: '0x1234',
+      },
+    });
+    const renderer = await renderScreen({
+      kind: 'eth-sign-request',
+      request: {
+        signData: Buffer.from(typedDataJson, 'utf8').toString('hex'),
+        dataType: 2,
+        derivationPath: "m/44'/60'/0'/0",
+        origin: 'MetaMask',
+      },
+    });
+    const json = toJson(renderer);
+    expect(json).toContain('EIP-712 Typed Data');
+    expect(json).toContain('Primary type');
+    expect(json).toContain('Mail');
+    expect(json).toContain('EIP-712 Domain');
+    expect(json).toContain('Ether Mail');
+    expect(json).toContain('Message Fields');
+    expect(json).toContain('Hello, Bob!');
+    expect(json).toContain('0x1234');
+  });
 });
 
 describe('TransactionDetailScreen – crypto-psbt result', () => {

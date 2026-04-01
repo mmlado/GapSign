@@ -1,4 +1,5 @@
 import { RLP } from '@ethereumjs/rlp';
+import { formatEther, formatGwei } from 'viem';
 
 import { DATA_TYPE_LABELS } from '../types';
 
@@ -30,16 +31,24 @@ function bufToBigInt(b: Uint8Array): bigint {
 }
 
 function weiToEth(wei: bigint): string {
-  if (wei === 0n) return '0';
-  const eth = Number(wei) / 1e18;
-  if (eth < 0.000001) return wei.toString() + ' wei';
-  return eth.toPrecision(6).replace(/\.?0+$/, '') + ' ETH';
+  if (wei === 0n) {
+    return '0';
+  }
+
+  const eth = formatEther(wei);
+  if (Number(eth) < 0.000001) {
+    return `${wei.toString()} wei`;
+  }
+
+  return `${eth} ETH`;
 }
 
 function weiToGwei(wei: bigint): string {
-  if (wei === 0n) return '0';
-  const gwei = Number(wei) / 1e9;
-  return gwei.toPrecision(4).replace(/\.?0+$/, '') + ' Gwei';
+  if (wei === 0n) {
+    return '0';
+  }
+
+  return `${formatGwei(wei)} Gwei`;
 }
 
 function toAddress(b: Uint8Array): string | undefined {
