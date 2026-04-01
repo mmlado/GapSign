@@ -40,6 +40,15 @@ export function prepareSignHash(
   if (dataType === 1 || dataType === 4) {
     return keccak_256(raw);
   }
+  if (dataType === 3) {
+    // EIP-191 personal_sign: keccak256("\x19Ethereum Signed Message:\n{len}{message}")
+    const prefix = `\x19Ethereum Signed Message:\n${raw.length}`;
+    const prefixBytes = new TextEncoder().encode(prefix);
+    const combined = new Uint8Array(prefixBytes.length + raw.length);
+    combined.set(prefixBytes);
+    combined.set(raw, prefixBytes.length);
+    return keccak_256(combined);
+  }
   return raw;
 }
 

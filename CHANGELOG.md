@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Fix Ethereum `crypto-hdkey` exports to include source fingerprints for Rabby compatibility
+- Fix SIWE / personal_sign (`dataType=3`) failing with Invalid MAC by applying EIP-191 prefix hash before signing
 - Fix PIN pad bottom key obscured by Android gesture navigation bar
 
 ## [0.7.0] - 2026-03-23
