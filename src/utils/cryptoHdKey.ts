@@ -1,26 +1,11 @@
-import {
-  CryptoHDKey,
-  CryptoKeypath,
-  PathComponent,
-} from '@keystonehq/bc-ur-registry';
+import { CryptoHDKey } from '@keystonehq/bc-ur-registry';
 import { UR, UREncoder } from '@ngraveio/bc-ur';
 
-import { compressPubKey, parseKeyFromTLV } from './hdKeyUtils';
-
-function derivationPathToKeypathNoFingerprint(
-  derivationPath: string,
-): CryptoKeypath {
-  const components = derivationPath
-    .split('/')
-    .slice(1)
-    .map(part => {
-      const hardened = part.endsWith("'");
-      const index = parseInt(hardened ? part.slice(0, -1) : part, 10);
-      return new PathComponent({ index, hardened });
-    });
-
-  return new CryptoKeypath(components, undefined, components.length);
-}
+import {
+  compressPubKey,
+  derivationPathToKeypath,
+  parseKeyFromTLV,
+} from './hdKeyUtils';
 
 /**
  * Parse the raw Keycard exportKey TLV response, encode it as a
@@ -35,6 +20,7 @@ function derivationPathToKeypathNoFingerprint(
 export function buildCryptoHdKeyUR(
   exportRespData: Uint8Array,
   derivationPath: string,
+  sourceFingerprint: number,
 ): string {
   const { pubKeyUncompressed, chainCode } = parseKeyFromTLV(exportRespData);
 
@@ -42,7 +28,7 @@ export function buildCryptoHdKeyUR(
     isMaster: false,
     key: compressPubKey(pubKeyUncompressed),
     chainCode: Buffer.from(chainCode),
-    origin: derivationPathToKeypathNoFingerprint(derivationPath),
+    origin: derivationPathToKeypath(derivationPath, sourceFingerprint),
     name: 'GapSign',
   });
 

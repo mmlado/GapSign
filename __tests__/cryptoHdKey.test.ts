@@ -68,6 +68,7 @@ PUB_KEY_UNCOMPRESSED[32] = 0x01; // x[31] = 1
 const CHAIN_CODE = new Uint8Array(32).fill(0xcc);
 
 const DERIVATION_PATH = "m/44'/60'/0'";
+const SOURCE_FINGERPRINT = 0xdeadbeef;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -81,7 +82,7 @@ describe('buildCryptoHdKeyUR', () => {
   });
 
   it('returns a ur:crypto-hdkey string', () => {
-    const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+    const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH, SOURCE_FINGERPRINT);
     expect(ur.toLowerCase()).toMatch(/^ur:crypto-hdkey\//);
   });
 
@@ -89,7 +90,11 @@ describe('buildCryptoHdKeyUR', () => {
     let decoded: Record<number, any>;
 
     beforeAll(() => {
-      const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+      );
       decoded = decodeUR(ur);
     });
 
@@ -117,6 +122,12 @@ describe('buildCryptoHdKeyUR', () => {
       expect(decoded[6]).toBeDefined();
     });
 
+    it('origin includes a source fingerprint', () => {
+      const origin = decoded[6];
+      const keypathMap = origin?.value ?? origin;
+      expect(keypathMap[2]).toBe(SOURCE_FINGERPRINT);
+    });
+
     it('key 9 (name) is "GapSign"', () => {
       expect(decoded[9]).toBe('GapSign');
     });
@@ -124,7 +135,11 @@ describe('buildCryptoHdKeyUR', () => {
 
   describe('derivation path encoding', () => {
     it("encodes m/44'/60'/0' with correct depth", () => {
-      const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH);
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+      );
       const decoded = decodeUR(ur);
       // The origin (key 6) is a CBOR tagged value (tag 304).
       // cbor-sync decodes tags as {tag, value} or unwraps them — check depth field (key 3).
@@ -135,7 +150,7 @@ describe('buildCryptoHdKeyUR', () => {
     });
 
     it('encodes a non-hardened path correctly', () => {
-      const ur = buildCryptoHdKeyUR(tlvData, 'm/0/1');
+      const ur = buildCryptoHdKeyUR(tlvData, 'm/0/1', SOURCE_FINGERPRINT);
       const decoded = decodeUR(ur);
       const origin = decoded[6];
       const keypathMap = origin?.value ?? origin;
@@ -145,7 +160,11 @@ describe('buildCryptoHdKeyUR', () => {
 
   it('throws when TLV data is malformed', () => {
     expect(() =>
-      buildCryptoHdKeyUR(new Uint8Array([0x00, 0x00]), DERIVATION_PATH),
+      buildCryptoHdKeyUR(
+        new Uint8Array([0x00, 0x00]),
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+      ),
     ).toThrow();
   });
 });

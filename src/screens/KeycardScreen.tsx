@@ -221,7 +221,7 @@ export default function KeycardScreen({
     if (
       !result ||
       !(
-        result instanceof Uint8Array ||
+        'exportRespData' in result ||
         'descriptors' in result ||
         'keys' in result
       )

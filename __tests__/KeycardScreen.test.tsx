@@ -26,6 +26,10 @@ jest.mock('../src/utils/cryptoAccount', () => ({
   pubKeyFingerprint: jest.fn(),
 }));
 
+jest.mock('../src/utils/cryptoHdKey', () => ({
+  buildCryptoHdKeyUR: jest.fn(),
+}));
+
 jest.mock('../src/utils/cryptoMultiAccounts', () => ({
   buildCryptoMultiAccountsUR: jest.fn(() => 'ur:crypto-multi-accounts/mock'),
   exportKeysForBitget: jest.fn(),
@@ -109,6 +113,15 @@ const btcExportRoute = {
   params: {
     operation: 'export_key',
     derivationPath: "m/84'/0'/0'",
+  },
+  key: 'Keycard',
+  name: 'Keycard',
+} as any;
+
+const ethExportRoute = {
+  params: {
+    operation: 'export_key',
+    derivationPath: "m/44'/60'/0'",
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -276,6 +289,36 @@ describe('KeycardScreen', () => {
         masterFingerprint: 1,
         descriptors: [],
       });
+      expect(navigation.reset).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses crypto-hdkey URs for ethereum wallet export with fingerprinted export result', async () => {
+      const { buildCryptoHdKeyUR } = require('../src/utils/cryptoHdKey') as {
+        buildCryptoHdKeyUR: jest.Mock;
+      };
+      buildCryptoHdKeyUR.mockReturnValue('UR:CRYPTO-HDKEY/...');
+
+      mockUseKeycardOperation.mockReturnValue({
+        ...hookMock('done'),
+        result: {
+          exportRespData: new Uint8Array([1, 2, 3]),
+          sourceFingerprint: 0xdeadbeef,
+        },
+      });
+      await act(async () => {
+        ReactTestRenderer.create(
+          <KeycardScreen route={ethExportRoute} navigation={navigation} />,
+        );
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(800);
+      });
+
+      expect(buildCryptoHdKeyUR).toHaveBeenCalledWith(
+        new Uint8Array([1, 2, 3]),
+        "m/44'/60'/0'",
+        0xdeadbeef,
+      );
       expect(navigation.reset).toHaveBeenCalledTimes(1);
     });
   });
