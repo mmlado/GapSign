@@ -25,6 +25,7 @@ export default function useNFCSession(
   phaseRef.current = phase;
   const disconnectedRef = useRef(false);
   const realErrorRef = useRef(false);
+  const inFlightRef = useRef(false);
 
   const handleCardConnected = useCallback(async () => {
     if (phaseRef.current !== 'nfc' && phaseRef.current !== 'error') {
@@ -33,12 +34,16 @@ export default function useNFCSession(
       );
       return;
     }
+    if (inFlightRef.current) {
+      return;
+    }
     if (phaseRef.current === 'error') {
       // User re-tapped after an error — reset stale error state and retry.
       realErrorRef.current = false;
       setPhase('nfc');
     }
     console.log('[Keycard] Card connected');
+    inFlightRef.current = true;
     try {
       setStatus('Selecting applet...');
       const channel = new RNKeycard.NFCCardChannel();
@@ -65,6 +70,8 @@ export default function useNFCSession(
       console.log(`[Keycard] Error: ${e.message}`, e);
       setStatus(e.message);
       setPhase('error');
+    } finally {
+      inFlightRef.current = false;
     }
   }, [onCardConnected]);
 

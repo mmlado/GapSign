@@ -178,6 +178,30 @@ describe('useNFCSession', () => {
       expect(latestHook.phase).toBe('done');
     });
 
+    it('ignores a second card connected event while an operation is in flight', async () => {
+      await mountHook();
+      let resolveFirst!: () => void;
+      const firstOpPromise = new Promise<void>(resolve => {
+        resolveFirst = resolve;
+      });
+      mockOnCardConnected.mockImplementationOnce(() => firstOpPromise);
+      await act(async () => {
+        latestHook.startNFC();
+      });
+      // Fire first connection — onCardConnected is now in flight (pending)
+      // Fire second connection immediately after; it should be ignored
+      await act(async () => {
+        capturedOnConnected?.(); // intentionally not awaited — starts the in-flight op
+        await capturedOnConnected?.(); // second tap: should be blocked by inFlightRef
+      });
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(1);
+      // Resolve the first operation and confirm it completes normally
+      await act(async () => {
+        resolveFirst();
+      });
+      expect(latestHook.phase).toBe('done');
+    });
+
     it('handles card connected when phase is nfc', async () => {
       await mountHook();
       await act(async () => {
