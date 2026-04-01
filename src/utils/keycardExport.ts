@@ -16,7 +16,10 @@ import {
 } from './cryptoMultiAccounts';
 
 export type ExportKeyResult =
-  | Uint8Array
+  | {
+      exportRespData: Uint8Array;
+      sourceFingerprint: number;
+    }
   | BitcoinCryptoAccount
   | BitgetExportResult;
 
@@ -44,8 +47,12 @@ export function buildExportUr(
   result: ExportKeyResult,
   derivationPath: string,
 ): string {
-  if (result instanceof Uint8Array) {
-    return buildCryptoHdKeyUR(result, derivationPath);
+  if ('exportRespData' in result) {
+    return buildCryptoHdKeyUR(
+      result.exportRespData,
+      derivationPath,
+      result.sourceFingerprint,
+    );
   }
   if ('keys' in result) {
     return buildCryptoMultiAccountsUR(result);
@@ -63,9 +70,18 @@ export async function exportKeyForWallet(
   }
 
   if (!isBitcoinPath(derivationPath)) {
+    const parentPath = derivationPath.split('/').slice(0, -1).join('/') || 'm';
+    const parentResp = await cmdSet.exportKey(0, true, parentPath, false);
+    parentResp.checkOK();
+
     const resp = await cmdSet.exportExtendedKey(0, derivationPath, false);
     resp.checkOK();
-    return resp.data;
+    return {
+      exportRespData: resp.data,
+      sourceFingerprint: pubKeyFingerprint(
+        parsePublicKeyFromTLV(parentResp.data),
+      ),
+    };
   }
 
   const rootResp = await cmdSet.exportKey(0, true, 'm', false);
