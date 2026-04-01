@@ -1,9 +1,11 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
-import theme from '../theme';
+
 import type { EthSignRequest } from '../types';
-import { getTxLabel, parseTx } from '../utils/txParser';
+import theme from '../theme';
 import InfoRow from './InfoRow';
+import { parseEip712Summary } from '../utils/eip712';
+import { getTxLabel, parseTx } from '../utils/txParser';
 
 const CHAIN_NAMES: Record<number, string> = {
   1: 'Ethereum Mainnet',
@@ -35,6 +37,8 @@ export default function EthSignRequestDetail({
 }) {
   const typeLabel = getTxLabel(request.signData, request.dataType);
   const tx = parseTx(request.signData, request.dataType);
+  const eip712 =
+    request.dataType === 2 ? parseEip712Summary(request.signData) : null;
 
   return (
     <>
@@ -97,8 +101,47 @@ export default function EthSignRequestDetail({
         </View>
       )}
 
+      {eip712?.primaryType && (
+        <View style={styles.row}>
+          <InfoRow label="Primary type" value={eip712.primaryType} />
+        </View>
+      )}
+
+      {Object.keys(eip712?.domain ?? {}).length > 0 && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text variant="labelMedium" style={styles.sectionHeaderText}>
+              EIP-712 Domain
+            </Text>
+          </View>
+          {Object.entries(eip712!.domain).map(([key, value]) => (
+            <View key={`domain-${key}`} style={styles.row}>
+              <InfoRow label={key} value={value} />
+            </View>
+          ))}
+        </>
+      )}
+
+      {Object.keys(eip712?.message ?? {}).length > 0 && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text variant="labelMedium" style={styles.sectionHeaderText}>
+              Message Fields
+            </Text>
+          </View>
+          {Object.entries(eip712!.message).map(([key, value]) => (
+            <View key={`message-${key}`} style={styles.row}>
+              <InfoRow label={key} value={value} />
+            </View>
+          ))}
+        </>
+      )}
+
       <View style={styles.row}>
-        <InfoRow label="Data" value={tx?.data ?? request.signData} />
+        <InfoRow
+          label="Data"
+          value={eip712?.rawJson ?? tx?.data ?? request.signData}
+        />
       </View>
 
       {request.origin && (
@@ -126,5 +169,11 @@ const styles = StyleSheet.create({
   },
   row: {
     paddingVertical: 8,
+  },
+  sectionHeader: {
+    paddingTop: 8,
+  },
+  sectionHeaderText: {
+    color: theme.colors.onSurfaceVariant,
   },
 });

@@ -186,7 +186,12 @@ export default function KeycardScreen({
   }, [result, params, navigateToSignResult]);
 
   const handleBtcSignDone = useCallback(() => {
-    if (!result || !('psbtHex' in result)) {
+    if (
+      !result ||
+      !('psbtHex' in result) ||
+      typeof result.psbtHex !== 'string' ||
+      result.psbtHex.length === 0
+    ) {
       return;
     }
     navigateToSignResult(buildBtcResultUR(result.psbtHex));

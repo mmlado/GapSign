@@ -41,7 +41,8 @@
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.23.0",
     "react-native-svg": "^15.15.3",
-    "react-native-vector-icons": "^10.3.0"
+    "react-native-vector-icons": "^10.3.0",
+    "viem": "^2.47.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

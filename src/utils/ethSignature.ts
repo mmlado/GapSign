@@ -1,6 +1,7 @@
 /* eslint-disable no-bitwise */
 import { ETHSignature } from '@keystonehq/bc-ur-registry-eth';
 import * as secp from '@noble/secp256k1';
+import { hexToBytes } from 'viem';
 import Keycard from 'keycard-sdk';
 
 // ── Keycard TLV tags ─────────────────────────────────────────────────────────
@@ -17,14 +18,6 @@ const V_BASE_LEGACY = 27; // EIP-712 / personal_sign: v = 27 + recId
 const V_BASE_EIP155 = 35; // legacy EIP-155 tx:        v = 35 + 2*chainId + recId
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
-}
 
 function derIntTo32(arr: Uint8Array): Uint8Array {
   const stripped = arr[0] === 0x00 ? arr.slice(1) : arr;
@@ -107,7 +100,11 @@ export function buildEthSignatureUR(
   requestId: string | undefined,
   txType?: number,
 ): string {
-  const tlv = new Keycard.BERTLV(hexToBytes(signRespDataHex));
+  const tlv = new Keycard.BERTLV(
+    hexToBytes(
+      signRespDataHex.startsWith('0x') ? signRespDataHex : `0x${signRespDataHex}`,
+    ),
+  );
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);
   const pubKeyRaw = tlv.readPrimitive(TLV_PUB_KEY);
   tlv.enterConstructed(TLV_ECDSA_TEMPLATE);
