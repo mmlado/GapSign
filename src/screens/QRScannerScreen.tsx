@@ -17,13 +17,14 @@ import { Text, Button, ActivityIndicator, Icon } from 'react-native-paper';
 import { Camera } from 'react-native-camera-kit';
 import type { OnReadCodeData } from 'react-native-camera-kit/src/CameraProps';
 import { URDecoder } from '@ngraveio/bc-ur';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import theme from '../theme';
 import { handleUR } from '../utils/ur';
 import type { QRScannerScreenProps } from '../navigation/types';
 
 export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Scan transaction QR' });
@@ -137,12 +138,14 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
 
   return (
     <View style={styles.fullscreen}>
-      <Camera
-        style={StyleSheet.absoluteFill}
-        scanBarcode
-        onReadCode={onCodeScanned}
-        showFrame={false}
-      />
+      {isFocused && (
+        <Camera
+          style={StyleSheet.absoluteFill}
+          scanBarcode
+          onReadCode={onCodeScanned}
+          showFrame={false}
+        />
+      )}
 
       <View style={styles.viewfinderContainer}>
         <View style={styles.viewfinder}>

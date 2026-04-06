@@ -53,10 +53,12 @@ jest.mock('@ngraveio/bc-ur', () => ({
 }));
 
 // useFocusEffect — call the callback immediately (simulates screen focus).
+// useIsFocused — returns true by default so the Camera renders.
 jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (cb: () => void) => {
     require('react').useEffect(cb, []);
   },
+  useIsFocused: () => true,
 }));
 
 const mockHandleUR = jest.fn();
@@ -114,7 +116,7 @@ describe('QRScannerScreen', () => {
       );
     });
 
-    it('registers onReadCode on the Camera', async () => {
+    it('registers onReadCode on the Camera when focused', async () => {
       await renderScreen();
       expect(typeof capturedOnReadCode).toBe('function');
     });

@@ -12,6 +12,9 @@ import { URDecoder } from '@ngraveio/bc-ur';
 import { handleUR } from '../src/utils/ur';
 import { DATA_TYPE_LABELS } from '../src/types';
 
+const VALID_EIP1559_TX_HEX =
+  '02e80180843b9aca008504a817c8008252089400000000000000000000000000000000000000010180c0';
+
 // ---------------------------------------------------------------------------
 // Helper: build CBOR bytes from a properly encoded EthSignRequest UR
 // ---------------------------------------------------------------------------
@@ -110,14 +113,14 @@ describe('handleUR', () => {
   });
 
   it('parses a minimal eth-sign-request (signData + dataType only)', () => {
-    const cbor = buildCbor('deadbeef', 1, "m/44'/60'/0'/0");
+    const cbor = buildCbor('deadbeef', 3, "m/44'/60'/0'/0");
     const result = handleUR('eth-sign-request', cbor);
 
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       const { request } = result;
       expect(request.signData).toBe('deadbeef');
-      expect(request.dataType).toBe(1);
+      expect(request.dataType).toBe(3);
       expect(request.requestId).toBeUndefined();
       expect(request.chainId).toBeUndefined();
       expect(request.address).toBeUndefined();
@@ -127,7 +130,7 @@ describe('handleUR', () => {
   });
 
   it('parses a full eth-sign-request with all optional fields', () => {
-    const cbor = buildCbor('aabbccdd', 4, "m/44'/60'/0'/0", {
+    const cbor = buildCbor(VALID_EIP1559_TX_HEX, 4, "m/44'/60'/0'/0", {
       uuid: 'b3281a82-950d-4076-934b-1aa8b4f87492',
       chainId: 1,
       address: '0xabcdef1234567890abcdef1234567890abcdef12',
@@ -138,7 +141,7 @@ describe('handleUR', () => {
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
       const { request } = result;
-      expect(request.signData).toBe('aabbccdd');
+      expect(request.signData).toBe(VALID_EIP1559_TX_HEX);
       expect(request.dataType).toBe(4);
       expect(request.chainId).toBe(1);
       expect(request.requestId).toBe('b3281a82950d4076934b1aa8b4f87492');
@@ -149,6 +152,22 @@ describe('handleUR', () => {
       expect(request.derivationPath).toBe("m/44'/60'/0'/0");
     }
   });
+
+  it('returns an error for an eth-sign-request with malformed EIP-1559 RLP', () => {
+    const shiftedFieldsFromQrkitDemo =
+      '02e80180843b9aca008504a817c800825208940000000000000000000000000000000000000000010180c0';
+    const cbor = buildCbor(shiftedFieldsFromQrkitDemo, 4, "m/44'/60'/0'/0/0", {
+      uuid: 'b3281a82-950d-4076-934b-1aa8b4f87492',
+      address: '0xa786ec7488a340964fc4a0367144436beb7904ce',
+      origin: 'QRKit Demo',
+    });
+
+    const result = handleUR('eth-sign-request', cbor);
+    expect(result.kind).toBe('error');
+    if (result.kind === 'error') {
+      expect(result.message).toMatch(/Failed to parse sign request/);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -157,7 +176,7 @@ describe('handleUR', () => {
 
 describe('parseEthSignRequest – derivation paths', () => {
   it('formats hardened components with apostrophes', () => {
-    const cbor = buildCbor('00', 1, "m/44'/60'/0'");
+    const cbor = buildCbor('00', 3, "m/44'/60'/0'");
     const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
@@ -166,7 +185,7 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('formats non-hardened components without apostrophes', () => {
-    const cbor = buildCbor('00', 1, 'm/0/1');
+    const cbor = buildCbor('00', 3, 'm/0/1');
     const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {
@@ -175,7 +194,7 @@ describe('parseEthSignRequest – derivation paths', () => {
   });
 
   it('formats a mixed hardened/non-hardened path (standard Ethereum path)', () => {
-    const cbor = buildCbor('00', 1, "m/44'/60'/0'/0/0");
+    const cbor = buildCbor('00', 3, "m/44'/60'/0'/0/0");
     const result = handleUR('eth-sign-request', cbor);
     expect(result.kind).toBe('eth-sign-request');
     if (result.kind === 'eth-sign-request') {

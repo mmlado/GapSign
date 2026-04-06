@@ -76,7 +76,9 @@ export function parseEip712Summary(signDataHex: string): Eip712Summary | null {
       domain: isJsonObject(parsed.domain) ? parsed.domain : {},
       message: isJsonObject(parsed.message) ? parsed.message : {},
       primaryType:
-        typeof parsed.primaryType === 'string' ? parsed.primaryType : 'EIP712Domain',
+        typeof parsed.primaryType === 'string'
+          ? parsed.primaryType
+          : 'EIP712Domain',
       types: isJsonObject(parsed.types) ? parsed.types : {},
     });
 
