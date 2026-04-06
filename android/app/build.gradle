@@ -82,8 +82,8 @@ android {
         applicationId "com.gapsign"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 700
-        versionName "0.7.0"
+        versionCode 800
+        versionName "0.8.0"
     }
     signingConfigs {
         debug {
