@@ -102,7 +102,9 @@ export function buildEthSignatureUR(
 ): string {
   const tlv = new Keycard.BERTLV(
     hexToBytes(
-      signRespDataHex.startsWith('0x') ? signRespDataHex : `0x${signRespDataHex}`,
+      (signRespDataHex.startsWith('0x')
+        ? signRespDataHex
+        : `0x${signRespDataHex}`) as `0x${string}`,
     ),
   );
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);

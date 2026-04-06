@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import { parseBtcSignRequest } from './btcMessage';
 import { parseCryptoPsbtRequest } from './btcPsbt';
+import { validateEthTransactionSignData } from './txParser';
 
 function parseEthSignRequest(cbor: Buffer): EthSignRequestType {
   const parsed = EthSignRequest.fromCBOR(cbor);
@@ -15,12 +16,16 @@ function parseEthSignRequest(cbor: Buffer): EthSignRequestType {
   const address = (parsed as any).getSignRequestAddress?.() as
     | Buffer
     | undefined;
+  const signData = Buffer.isBuffer(signDataBuf)
+    ? signDataBuf.toString('hex')
+    : String(signDataBuf);
+  const dataType = parsed.getDataType() ?? 1;
+
+  validateEthTransactionSignData(signData, dataType);
 
   return {
-    signData: Buffer.isBuffer(signDataBuf)
-      ? signDataBuf.toString('hex')
-      : String(signDataBuf),
-    dataType: parsed.getDataType() ?? 1,
+    signData,
+    dataType,
     requestId: requestIdBuf
       ? Buffer.isBuffer(requestIdBuf)
         ? requestIdBuf.toString('hex')

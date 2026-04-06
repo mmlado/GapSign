@@ -64,6 +64,34 @@ function buildEIP2930TxHex({
   return Buffer.from(bytes).toString('hex');
 }
 
+function buildEIP1559TxHex({
+  chainId = 1n,
+  nonce = 0n,
+  maxPriorityFeePerGas = 1_000_000_000n,
+  maxFeePerGas = 20_000_000_000n,
+  gasLimit = 21000n,
+  to = '0x0000000000000000000000000000000000000001',
+  value = 1n,
+  data = new Uint8Array(0),
+  accessList = [],
+} = {}): string {
+  const rlp = RLP.encode([
+    bigIntToMinBytes(chainId),
+    bigIntToMinBytes(nonce),
+    bigIntToMinBytes(maxPriorityFeePerGas),
+    bigIntToMinBytes(maxFeePerGas),
+    bigIntToMinBytes(gasLimit),
+    hexToBytes(to),
+    bigIntToMinBytes(value),
+    data,
+    accessList,
+  ]);
+  const bytes = new Uint8Array(1 + rlp.length);
+  bytes[0] = 0x02;
+  bytes.set(rlp, 1);
+  return Buffer.from(bytes).toString('hex');
+}
+
 // ---------------------------------------------------------------------------
 // parseTx
 // ---------------------------------------------------------------------------
@@ -124,6 +152,25 @@ describe('parseTx', () => {
       const hex = buildEIP2930TxHex({ nonce: 7n });
       const tx = parseTx(hex, 1);
       expect(tx?.nonce).toBe(7);
+    });
+  });
+
+  describe('EIP-1559 (dataType=4, 0x02 prefix)', () => {
+    it('parses a valid type-2 transaction with an empty access list', () => {
+      const tx = parseTx(buildEIP1559TxHex(), 4);
+      expect(tx?.to).toBe('0x0000000000000000000000000000000000000001');
+      expect(tx?.value).toBe('1 wei');
+      expect(tx?.data).toBeUndefined();
+      expect(tx?.fees.kind).toBe('eip1559');
+      if (tx?.fees.kind === 'eip1559') {
+        expect(tx.fees.gasLimit).toBe('21000');
+      }
+    });
+
+    it('rejects a type-2 transaction whose access list is encoded as bytes', () => {
+      const shiftedFieldsFromQrkitDemo =
+        '02e80180843b9aca008504a817c800825208940000000000000000000000000000000000000000010180c0';
+      expect(parseTx(shiftedFieldsFromQrkitDemo, 4)).toBeNull();
     });
   });
 
