@@ -136,7 +136,7 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
             autoCorrect={false}
             spellCheck={false}
             placeholder="Enter your recovery phrase"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={theme.colors.onSurfacePlaceholder}
           />
           {wordError && <Text style={styles.errorText}>{wordError}</Text>}
           {phraseError && <Text style={styles.errorText}>{phraseError}</Text>}
@@ -151,7 +151,7 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
           value={passphrase}
           onChangeText={setPassphrase}
           placeholder="Passphrase (optional)"
-          placeholderTextColor="rgba(255,255,255,0.3)"
+          placeholderTextColor={theme.colors.onSurfacePlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#919191',
+    borderColor: theme.colors.outline,
     overflow: 'hidden',
   },
   segment: {
@@ -197,56 +197,56 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   segmentActive: {
-    backgroundColor: '#474747',
+    backgroundColor: theme.colors.surfaceSelected,
   },
   segmentDivider: {
     width: 1,
-    backgroundColor: '#919191',
+    backgroundColor: theme.colors.outline,
   },
   segmentText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: theme.colors.onSurfaceSubtle,
     fontSize: 14,
     fontWeight: '600',
   },
   segmentActiveText: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
   },
   inputWrapper: {
     gap: 6,
   },
   wordInput: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: theme.colors.surfaceVariant,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     borderBottomWidth: 3,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: theme.colors.onSurface,
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 4,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 16,
     minHeight: 128,
     textAlignVertical: 'top',
   },
   errorText: {
-    color: '#E95460',
+    color: theme.colors.error,
     fontSize: 13,
   },
   wordCountText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: theme.colors.onSurfaceDisabled,
     fontSize: 12,
     textAlign: 'right',
   },
   passphraseInput: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: theme.colors.surfaceVariant,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     borderBottomWidth: 3,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: theme.colors.onSurface,
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 4,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 16,
     height: 52,
   },

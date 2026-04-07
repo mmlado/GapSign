@@ -16,7 +16,7 @@ export default function BtcPsbtDetail({ psbtHex }: { psbtHex: string }) {
   } catch (e: any) {
     return (
       <View style={styles.errorContainer}>
-        <Icon source="alert-circle" size={48} color="#cf6679" />
+        <Icon source="alert-circle" size={48} color={theme.colors.negative} />
         <Text variant="titleMedium" style={styles.errorTitleRed}>
           Invalid PSBT
         </Text>
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   errorTitleRed: {
-    color: '#cf6679',
+    color: theme.colors.negative,
   },
   errorMessage: {
     color: theme.colors.onSurface,

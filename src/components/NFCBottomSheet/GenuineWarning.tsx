@@ -23,7 +23,7 @@ export default function GenuineWarning({ onCancel, onProceed }: Props) {
       ]}
     >
       <View style={styles.content}>
-        <Icons.exclamation width={64} height={64} color="#E95460" />
+        <Icons.exclamation width={64} height={64} color={theme.colors.error} />
         <Text variant="headlineSmall" style={styles.title}>
           Unverified Keycard
         </Text>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   title: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -86,6 +86,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   proceedText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: theme.colors.onSurfaceDisabled,
   },
 });

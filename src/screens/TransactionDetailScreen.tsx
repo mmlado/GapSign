@@ -99,7 +99,11 @@ export default function TransactionDetailScreen({
 
         {result.kind === 'error' && (
           <View style={styles.errorContainer}>
-            <Icon source="alert-circle" size={48} color="#cf6679" />
+            <Icon
+              source="alert-circle"
+              size={48}
+              color={theme.colors.negative}
+            />
             <Text variant="titleMedium" style={styles.errorTitleRed}>
               Scan Error
             </Text>
@@ -156,7 +160,7 @@ const styles = StyleSheet.create({
     color: theme.colors.onSurfaceVariant,
   },
   errorTitleRed: {
-    color: '#cf6679',
+    color: theme.colors.negative,
   },
   errorMessage: {
     color: theme.colors.onSurface,

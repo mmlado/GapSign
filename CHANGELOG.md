@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add Ledger Live and Ledger Legacy export via `crypto-hdkey` with EIP-4527 `source` and `children` fields
 
+### Changed
+
+- Centralize all colors in `theme.ts`; replace hardcoded hex strings throughout components and screens with theme tokens
+
 ## [0.8.0] - 2026-04-06
 
 ### Added

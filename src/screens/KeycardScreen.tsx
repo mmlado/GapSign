@@ -5,6 +5,7 @@ import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { KeycardScreenProps } from '../navigation/types';
+import theme from '../theme';
 
 import NFCBottomSheet from '../components/NFCBottomSheet';
 
@@ -295,6 +296,6 @@ export default function KeycardScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: theme.colors.background,
   },
 });

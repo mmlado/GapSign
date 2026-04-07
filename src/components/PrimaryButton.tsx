@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 import { Text } from 'react-native-paper';
 
+import theme from '../theme';
+
 type Props = {
   label: string;
   onPress: () => void;
@@ -22,7 +24,7 @@ export default function PrimaryButton({
     onPress();
   }, [onPress]);
 
-  const contentColor = disabled ? '#1D1B20' : '#ffffff';
+  const contentColor = disabled ? '#1D1B20' : theme.colors.onSurface;
 
   return (
     <Pressable
@@ -47,7 +49,7 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#FF6400',
+    backgroundColor: theme.colors.primary,
     borderRadius: 20,
     overflow: 'hidden',
     alignItems: 'center',

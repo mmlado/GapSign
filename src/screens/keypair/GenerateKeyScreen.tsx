@@ -96,7 +96,7 @@ export default function GenerateKeyScreen({
                   value={passphrase}
                   onChangeText={setPassphrase}
                   placeholder="Enter passphrase "
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor={theme.colors.onSurfacePlaceholder}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     marginBottom: 12,
   },
   description: {
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.colors.onSurfaceVariant,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   wordIndex: {
-    color: 'rgba(255,255,255,0.4)',
+    color: theme.colors.onSurfaceDisabled,
     fontSize: 13,
     width: 22,
     textAlign: 'right',
   },
   wordText: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 15,
     fontWeight: '500',
   },
@@ -179,15 +179,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   passphraseLabel: {
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.colors.onSurfaceVariant,
     fontSize: 14,
   },
   passphraseInput: {
-    backgroundColor: '#2A2438',
+    backgroundColor: theme.colors.surfacePassphrase,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 15,
     fontFamily: 'Inter',
   },
