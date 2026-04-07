@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add Ledger Live and Ledger Legacy export via `crypto-hdkey` with EIP-4527 `source` and `children` fields
+
 ## [0.8.0] - 2026-04-06
 
 ### Added

@@ -84,6 +84,48 @@ describe('ExportKeyScreen', () => {
       });
     });
 
+    it('navigates to Keycard with source "account.ledger_live" when Ledger Live is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = renderer.root.findAll(
+        (node: any) => typeof node.props.onPress === 'function',
+      );
+      const pressable = pressables.find(
+        node =>
+          node.findAll((n: any) => n.props.children === 'Ledger Live').length >
+          0,
+      )!;
+      expect(pressable).toBeDefined();
+      await act(async () => {
+        pressable.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: "m/44'/60'/0'",
+        source: 'account.ledger_live',
+      });
+    });
+
+    it('navigates to Keycard with source "account.ledger_legacy" when Ledger Legacy is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = renderer.root.findAll(
+        (node: any) => typeof node.props.onPress === 'function',
+      );
+      const pressable = pressables.find(
+        node =>
+          node.findAll((n: any) => n.props.children === 'Ledger Legacy')
+            .length > 0,
+      )!;
+      expect(pressable).toBeDefined();
+      await act(async () => {
+        pressable.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: "m/44'/60'/0'",
+        source: 'account.ledger_legacy',
+      });
+    });
+
     it('navigates to Keycard with derivationPath "bitget" when Bitget is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = renderer.root.findAll(

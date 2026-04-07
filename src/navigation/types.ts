@@ -30,6 +30,7 @@ export type KeycardParams =
   | {
       operation: 'export_key';
       derivationPath: string;
+      source?: string;
     };
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 

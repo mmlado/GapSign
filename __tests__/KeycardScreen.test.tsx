@@ -318,6 +318,7 @@ describe('KeycardScreen', () => {
         new Uint8Array([1, 2, 3]),
         "m/44'/60'/0'",
         0xdeadbeef,
+        undefined,
       );
       expect(navigation.reset).toHaveBeenCalledTimes(1);
     });

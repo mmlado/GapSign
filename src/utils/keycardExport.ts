@@ -55,12 +55,14 @@ export function prepareSignHash(
 export function buildExportUr(
   result: ExportKeyResult,
   derivationPath: string,
+  source?: string,
 ): string {
   if ('exportRespData' in result) {
     return buildCryptoHdKeyUR(
       result.exportRespData,
       derivationPath,
       result.sourceFingerprint,
+      source,
     );
   }
   if ('keys' in result) {
