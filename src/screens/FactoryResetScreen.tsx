@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { DashboardAction, FactoryResetSreenProps } from '../navigation/types';
+
+import theme from '../theme';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -91,7 +93,7 @@ export default function FactoryResetScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flex: 1,
@@ -103,7 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   description: {
-    color: 'rgba(255,255,255,0.6)',
+    color: theme.colors.onSurfaceMuted,
     fontSize: 15,
     lineHeight: 22,
   },
@@ -121,24 +123,24 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: theme.colors.onSurfaceMuted,
     marginTop: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxChecked: {
-    borderColor: '#FF6400',
-    backgroundColor: '#FF6400',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   checkboxInner: {
     width: 10,
     height: 10,
     borderRadius: 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.onSurface,
   },
   checkboxLabel: {
     flex: 1,
-    color: 'rgba(255,255,255,0.6)',
+    color: theme.colors.onSurfaceMuted,
     fontSize: 14,
     lineHeight: 20,
   },

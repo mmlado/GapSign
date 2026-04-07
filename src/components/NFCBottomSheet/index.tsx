@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, BackHandler, Modal, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import theme from '../../theme';
 import PinPad from '../PinPad';
 import GenuineWarning from './GenuineWarning';
 import NFCSheet from './NFCSheet';
@@ -109,10 +110,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: theme.colors.overlay,
   },
   sheet: {
-    backgroundColor: '#1e1e1e',
+    backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 24,

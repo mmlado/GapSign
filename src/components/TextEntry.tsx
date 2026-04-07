@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Keyboard, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
+import theme from '../theme';
 import PrimaryButton from './PrimaryButton';
 
 type TextEntryProps = {
@@ -65,7 +66,7 @@ export default function TextEntry({
           }}
           secureTextEntry
           autoFocus
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor={theme.colors.onSurfaceDisabled}
           placeholder="Pairing secret"
         />
         <Text style={[styles.error, !error && styles.errorHidden]}>
@@ -94,18 +95,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: theme.colors.surfaceVariant,
     borderBottomWidth: 3,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: theme.colors.onSurface,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   error: {
-    color: '#BA434D',
+    color: theme.colors.errorDark,
     fontSize: 12,
     lineHeight: 16,
     letterSpacing: 0.4,

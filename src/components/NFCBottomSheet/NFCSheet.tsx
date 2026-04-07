@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
+import theme from '../../theme';
 import { Icons } from '../../assets/icons';
 import type { NFCVariant } from './index';
 
@@ -87,7 +88,7 @@ export default function NFCSheet({ variant, status, onCancel }: Props) {
       {variant !== 'success' && (
         <Pressable
           style={styles.cancelButton}
-          android_ripple={{ color: 'rgba(187,134,252,0.15)' }}
+          android_ripple={{ color: theme.colors.secondaryRipple }}
           onPress={onCancel}
         >
           <Text variant="labelLarge" style={styles.cancelText}>
@@ -110,10 +111,10 @@ const styles = StyleSheet.create({
   pulseRing: {
     position: 'absolute',
     borderWidth: 1.5,
-    borderColor: '#bb86fc',
+    borderColor: theme.colors.secondary,
   },
   title: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontWeight: '600',
     marginBottom: 8,
   },
@@ -129,6 +130,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
   cancelText: {
-    color: '#bb86fc',
+    color: theme.colors.secondary,
   },
 });

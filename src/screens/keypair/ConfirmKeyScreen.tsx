@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   description: {
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.colors.onSurfaceVariant,
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 32,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   slotActive: {
     borderWidth: 3,
-    borderColor: '#C6C6C6',
+    borderColor: theme.colors.outlineActive,
   },
   slotFilled: {},
   slotIcon: {
@@ -228,17 +228,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   slotFilledText: {
-    color: '#1C8A80',
+    color: theme.colors.success,
   },
   slotWrong: {
     borderWidth: 3,
-    borderColor: '#E95460',
+    borderColor: theme.colors.error,
   },
   slotWrongText: {
-    color: '#BA434D',
+    color: theme.colors.errorDark,
   },
   slotLabel: {
-    color: 'rgba(255,255,255,0.6)',
+    color: theme.colors.onSurfaceMuted,
     fontSize: 15,
     fontWeight: '500',
     lineHeight: 15 * 1.45,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   slotWord: {
     flex: 1,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 15,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: '#4A4459',
+    backgroundColor: theme.colors.surfaceChoice,
     height: 52,
     justifyContent: 'center',
   },
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   choiceText: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontFamily: 'Inter',
     fontWeight: '500',
     fontSize: 15,

@@ -72,6 +72,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 15 * 1.45,
     letterSpacing: -0.135,
-    color: '#ffffff',
+    color: theme.colors.onSurface,
   },
 });

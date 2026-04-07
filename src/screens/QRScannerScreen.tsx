@@ -173,7 +173,7 @@ const CORNER_WIDTH = 3;
 const styles = StyleSheet.create({
   fullscreen: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.cameraBackground,
   },
   centered: {
     flex: 1,
@@ -247,12 +247,12 @@ const styles = StyleSheet.create({
     width: 335,
     height: 16,
     borderRadius: 24,
-    backgroundColor: '#FFFFFF1A',
+    backgroundColor: theme.colors.progressTrack,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 24,
-    backgroundColor: '#1C8A80',
+    backgroundColor: theme.colors.success,
   },
 });

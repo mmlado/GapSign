@@ -11,6 +11,7 @@ import type {
 import { useChangeSecret } from '../../hooks/keycard/useChangeSecret';
 import { useConfirmedEntry } from '../../hooks/useConfirmedEntry';
 
+import theme from '../../theme';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PinPad from '../../components/PinPad';
 import TextEntry from '../../components/TextEntry';
@@ -156,6 +157,6 @@ export default function ChangeSecretScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: theme.colors.background,
   },
 });

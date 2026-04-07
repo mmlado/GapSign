@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+
+import theme from '../theme';
 import { Icons } from '../assets/icons';
 
 function Caret() {
@@ -124,7 +126,7 @@ export default function PinPad({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flex: 1,
@@ -138,18 +140,18 @@ const styles = StyleSheet.create({
   },
   pinField: {
     width: '66%',
-    backgroundColor: '#2d2d2d',
+    backgroundColor: theme.colors.surfaceVariant,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
     borderBottomWidth: 3,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: theme.colors.onSurface,
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 4,
     gap: 4,
   },
   pinFieldLabel: {
-    color: 'rgba(255,255,255,0.7)',
+    color: theme.colors.onSurfaceVariant,
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '400',
@@ -161,18 +163,18 @@ const styles = StyleSheet.create({
     height: 24,
   },
   pinFieldText: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontSize: 16,
     letterSpacing: 4,
   },
   caret: {
     width: 1,
     height: 18,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.onSurface,
     marginLeft: 1,
   },
   error: {
-    color: '#BA434D',
+    color: theme.colors.errorDark,
     fontWeight: '400',
     fontSize: 12,
     lineHeight: 16,
@@ -198,7 +200,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 4,
     borderRadius: 6,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: theme.colors.surfaceElevated,
     boxShadow: '0px 1px 0px 0px rgba(0, 0, 0, 0.27)',
   },
   padKeyEmpty: {
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   padKeyText: {
-    color: '#ffffff',
+    color: theme.colors.onSurface,
     fontFamily: 'Roboto',
     fontWeight: '400',
     fontSize: 30,

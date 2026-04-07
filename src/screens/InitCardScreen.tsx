@@ -14,6 +14,7 @@ import { DashboardAction, InitCardScreenProps } from '../navigation/types';
 import { useInitCard } from '../hooks/keycard/useInitCard';
 import { useConfirmedEntry } from '../hooks/useConfirmedEntry';
 
+import theme from '../theme';
 import ConfirmPrompt from '../components/ConfirmPropmpt';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import PinPad from '../components/PinPad';
@@ -192,6 +193,6 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: theme.colors.background,
   },
 });
