@@ -131,10 +131,15 @@ export function parseBtcSignRequest(cbor: Buffer): BtcSignRequest {
     throw new Error('Missing btc-sign-request derivation path.');
   }
 
+  const normalizedDataType = Number(dataType ?? BTC_MESSAGE_DATA_TYPE);
+  if (normalizedDataType !== BTC_MESSAGE_DATA_TYPE) {
+    throw new Error('Unsupported btc-sign-request data type.');
+  }
+
   return {
     requestId: formatRequestId(requestId),
     signDataHex: signData.toString('hex'),
-    dataType: Number(dataType ?? BTC_MESSAGE_DATA_TYPE),
+    dataType: normalizedDataType,
     derivationPath: `m/${derivationPath}`,
     address: addresses?.[0],
     origin,

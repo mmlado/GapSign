@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Centralize all colors in `theme.ts`; replace hardcoded hex strings throughout components and screens with theme tokens
 
+### Fixed
+
+- Reject unsupported `btc-sign-request` data types instead of treating them as legacy Bitcoin messages
+
 ## [0.8.0] - 2026-04-06
 
 ### Added
