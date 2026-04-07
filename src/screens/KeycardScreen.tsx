@@ -5,8 +5,11 @@ import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { KeycardScreenProps } from '../navigation/types';
+
 import NFCBottomSheet from '../components/NFCBottomSheet';
+
 import { useKeycardOperation } from '../hooks/keycard/useKeycardOperation';
+
 import {
   buildBtcSignatureUR,
   hashBitcoinMessage,
@@ -220,6 +223,7 @@ export default function KeycardScreen({
   const handleExportKeyDone = useCallback(() => {
     if (
       !result ||
+      ArrayBuffer.isView(result) ||
       !(
         'exportRespData' in result ||
         'descriptors' in result ||
@@ -231,7 +235,8 @@ export default function KeycardScreen({
     navigateToExportResult(
       buildExportUr(
         result,
-        (params as { derivationPath: string }).derivationPath,
+        (params as { derivationPath: string; source?: string }).derivationPath,
+        (params as { derivationPath: string; source?: string }).source,
       ),
     );
   }, [result, params, navigateToExportResult]);

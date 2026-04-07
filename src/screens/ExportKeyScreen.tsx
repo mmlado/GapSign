@@ -54,6 +54,24 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
           derivationPath: 'bitget',
         }),
     },
+    {
+      label: 'Ledger Live',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: "m/44'/60'/0'",
+          source: 'account.ledger_live',
+        }),
+    },
+    {
+      label: 'Ledger Legacy',
+      onPress: () =>
+        navigation.navigate('Keycard', {
+          operation: 'export_key',
+          derivationPath: "m/44'/60'/0'",
+          source: 'account.ledger_legacy',
+        }),
+    },
   ];
 
   return (

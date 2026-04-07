@@ -158,6 +158,51 @@ describe('buildCryptoHdKeyUR', () => {
     });
   });
 
+  describe('source / note field', () => {
+    it('encodes the source string in key 10 (note) when provided', () => {
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+        'account.ledger_live',
+      );
+      const decoded = decodeUR(ur);
+      expect(decoded[10]).toBe('account.ledger_live');
+    });
+
+    it('encodes a children keypath in key 7 for account.ledger_legacy', () => {
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+        'account.ledger_legacy',
+      );
+      const decoded = decodeUR(ur);
+      expect(decoded[7]).toBeDefined();
+    });
+
+    it('omits key 7 (children) for non-legacy sources', () => {
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+        'account.ledger_live',
+      );
+      const decoded = decodeUR(ur);
+      expect(decoded[7]).toBeUndefined();
+    });
+
+    it('omits key 10 (note) when source is not provided', () => {
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        DERIVATION_PATH,
+        SOURCE_FINGERPRINT,
+      );
+      const decoded = decodeUR(ur);
+      expect(decoded[10]).toBeUndefined();
+    });
+  });
+
   it('throws when TLV data is malformed', () => {
     expect(() =>
       buildCryptoHdKeyUR(

@@ -1,4 +1,8 @@
-import { CryptoHDKey } from '@keystonehq/bc-ur-registry';
+import {
+  CryptoHDKey,
+  CryptoKeypath,
+  PathComponent,
+} from '@keystonehq/bc-ur-registry';
 import { UR, UREncoder } from '@ngraveio/bc-ur';
 
 import {
@@ -6,6 +10,8 @@ import {
   derivationPathToKeypath,
   parseKeyFromTLV,
 } from './hdKeyUtils';
+
+const LEDGER_LEGACY_SOURCE = 'account.ledger_legacy';
 
 /**
  * Parse the raw Keycard exportKey TLV response, encode it as a
@@ -21,6 +27,7 @@ export function buildCryptoHdKeyUR(
   exportRespData: Uint8Array,
   derivationPath: string,
   sourceFingerprint: number,
+  source?: string,
 ): string {
   const { pubKeyUncompressed, chainCode } = parseKeyFromTLV(exportRespData);
 
@@ -30,6 +37,12 @@ export function buildCryptoHdKeyUR(
     chainCode: Buffer.from(chainCode),
     origin: derivationPathToKeypath(derivationPath, sourceFingerprint),
     name: 'GapSign',
+    ...(source !== undefined && { note: source }),
+    ...(source === LEDGER_LEGACY_SOURCE && {
+      children: new CryptoKeypath([
+        new PathComponent({ index: undefined, hardened: false }),
+      ]),
+    }),
   });
 
   const cbor = hdKey.toCBOR();
