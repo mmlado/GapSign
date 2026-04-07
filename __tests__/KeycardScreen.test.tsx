@@ -1,7 +1,8 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import KeycardScreen from '../src/screens/KeycardScreen';
+
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import KeycardScreen from '../src/screens/KeycardScreen';
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -417,9 +418,34 @@ describe('KeycardScreen', () => {
   });
 
   describe('BTC message sign navigation', () => {
-    it('calls execute for a btc message sign operation', async () => {
+    it('signs the legacy Bitcoin message hash with the requested path', async () => {
+      const { hashBitcoinMessage } = require('../src/utils/btcMessage') as {
+        hashBitcoinMessage: jest.Mock;
+      };
+      const hash = new Uint8Array(32).fill(0xab);
+      hashBitcoinMessage.mockReturnValue(hash);
+      const checkOK = jest.fn();
+      const signWithPath = jest.fn().mockResolvedValue({
+        checkOK,
+        data: new Uint8Array([1, 2, 3]),
+      });
+
       await renderScreen('pin_entry', btcMessageSignRoute);
+
       expect(mockExecute).toHaveBeenCalledTimes(1);
+      const signOperation = mockExecute.mock.calls[0][0];
+      const result = await signOperation({ signWithPath });
+
+      expect(hashBitcoinMessage).toHaveBeenCalledWith(
+        btcMessageSignRoute.params.signDataHex,
+      );
+      expect(signWithPath).toHaveBeenCalledWith(
+        hash,
+        btcMessageSignRoute.params.derivationPath,
+        false,
+      );
+      expect(checkOK).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(new Uint8Array([1, 2, 3]));
     });
 
     it('navigates to QRResult after btc message sign completes', async () => {

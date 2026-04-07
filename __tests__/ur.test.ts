@@ -52,6 +52,7 @@ function buildBtcSignRequestCbor(
   opts: {
     xfp?: string;
     uuid?: string;
+    dataType?: number;
     address?: string;
     origin?: string;
   } = {},
@@ -79,7 +80,7 @@ function buildBtcSignRequestCbor(
       RegistryTypes.UUID.getTag(),
     ),
     2: Buffer.from(message, 'utf8'),
-    3: 1,
+    3: opts.dataType ?? 1,
     4: [keypathItem],
   };
 
@@ -263,6 +264,19 @@ describe('handleUR – btc-sign-request', () => {
     expect(result.kind).toBe('error');
     if (result.kind === 'error') {
       expect(result.message).toMatch(/Failed to parse BTC sign request/);
+    }
+  });
+
+  it('returns an error for unsupported btc-sign-request data types', () => {
+    const cbor = buildBtcSignRequestCbor('hello btc', "m/84'/0'/0'/0/3", {
+      dataType: 2,
+    });
+
+    const result = handleUR('btc-sign-request', cbor);
+
+    expect(result.kind).toBe('error');
+    if (result.kind === 'error') {
+      expect(result.message).toMatch(/Unsupported btc-sign-request data type/);
     }
   });
 });
