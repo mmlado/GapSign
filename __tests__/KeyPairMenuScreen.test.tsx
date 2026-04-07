@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+
 import KeyPairMenuScreen, {
   dashboardEntry,
 } from '../src/screens/keypair/KeyPairMenuScreen';
@@ -72,10 +73,15 @@ describe('KeyPairMenuScreen', () => {
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Import recovery phrase');
     });
+
+    it('renders the "Verify recovery phrase" menu entry', async () => {
+      const renderer = await renderScreen();
+      expect(toJson(renderer)).toContain('Verify recovery phrase');
+    });
   });
 
   describe('navigation', () => {
-    it('navigates to ImportKey when "Import recovery phrase" is pressed', async () => {
+    it('navigates to Mnemonic when "Import recovery phrase" is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = getActivePressables(renderer);
       const entry = pressables.find(p =>
@@ -84,7 +90,21 @@ describe('KeyPairMenuScreen', () => {
       await act(async () => {
         entry!.props.onPress();
       });
-      expect(navigation.navigate).toHaveBeenCalledWith('ImportKey');
+      expect(navigation.navigate).toHaveBeenCalledWith('Mnemonic');
+    });
+
+    it('navigates to Mnemonic with verify mode when "Verify recovery phrase" is pressed', async () => {
+      const renderer = await renderScreen();
+      const pressables = getActivePressables(renderer);
+      const entry = pressables.find(p =>
+        extractText(p).includes('Verify recovery phrase'),
+      );
+      await act(async () => {
+        entry!.props.onPress();
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('Mnemonic', {
+        mode: 'verify',
+      });
     });
 
     it('navigates to KeySize when "Generate new key pair" is pressed', async () => {
@@ -102,7 +122,7 @@ describe('KeyPairMenuScreen', () => {
 
   describe('dashboardEntry', () => {
     it('has the correct label', () => {
-      expect(dashboardEntry.label).toBe('Add Keypair');
+      expect(dashboardEntry.label).toBe('Keypair');
     });
 
     it('navigates to KeyPairMenu when invoked', () => {

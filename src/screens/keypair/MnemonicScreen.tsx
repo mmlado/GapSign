@@ -6,6 +6,8 @@ import {
   useState,
 } from 'react';
 import {
+  Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,24 +19,43 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
 
-import { ImportKeyScreenProps } from '../../navigation/types';
+import { MnemonicScreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
+import { Icons } from '../../assets/icons';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
-import { Icons } from '../../assets/icons';
 
 import { useLoadKey } from '../../hooks/keycard/useLoadKey';
+import { useVerifyMnemonic } from '../../hooks/keycard/useVerifyMnemonic';
 
-const TOAST = 'Key pair has been added to Keycard';
-
-export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
+export default function MnemonicScreen({
+  navigation,
+  route,
+}: MnemonicScreenProps) {
+  const mode = route.params?.mode ?? 'import';
   const insets = useSafeAreaInsets();
   const [wordCount, setWordCount] = useState<12 | 24>(12);
   const [input, setInput] = useState('');
   const [passphrase, setPassphrase] = useState('');
   const [wordError, setWordError] = useState<string | null>(null);
   const [phraseError, setPhraseError] = useState<string | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      e => setKeyboardHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardHeight(0),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const words = useMemo(
     () =>
@@ -45,8 +66,10 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
     [input],
   );
 
-  const keycard = useLoadKey(words, passphrase || undefined);
-  const { phase, start, cancel } = keycard;
+  const loadKey = useLoadKey(words, passphrase || undefined);
+  const verifyMnemonic = useVerifyMnemonic(words, passphrase || undefined);
+  const keycard = mode === 'verify' ? verifyMnemonic : loadKey;
+  const { phase, result, start, cancel } = keycard;
 
   const handleTextChange = useCallback((text: string) => {
     setInput(text);
@@ -73,17 +96,41 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
   }, [cancel]);
 
   useEffect(() => {
-    if (phase === 'done') {
-      navigation.navigate('Dashboard', { toast: TOAST });
+    if (phase !== 'done') {
+      return;
     }
-  }, [phase, navigation]);
+    if (mode === 'verify') {
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'Dashboard',
+            params: {
+              toast:
+                result === 'match'
+                  ? 'Recovery phrase matches'
+                  : 'Recovery phrase does not match',
+            },
+          },
+        ],
+      });
+    } else {
+      navigation.navigate('Dashboard', {
+        toast: 'Key pair has been added to Keycard',
+      });
+    }
+  }, [phase, result, mode, navigation]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       title:
-        phase === 'pin_entry' ? 'Enter Keycard PIN' : 'Import recovery phrase',
+        phase === 'pin_entry'
+          ? 'Enter Keycard PIN'
+          : mode === 'verify'
+          ? 'Verify recovery phrase'
+          : 'Import recovery phrase',
     });
-  }, [navigation, phase]);
+  }, [navigation, phase, mode]);
 
   const isComplete = words.length === wordCount;
 
@@ -157,9 +204,14 @@ export default function ImportKeyScreen({ navigation }: ImportKeyScreenProps) {
         />
       </ScrollView>
 
-      <View style={styles.buttonContainer}>
+      <View
+        style={[
+          styles.buttonContainer,
+          keyboardHeight > 0 && { paddingBottom: keyboardHeight + 8 },
+        ]}
+      >
         <PrimaryButton
-          label="Continue"
+          label={mode === 'verify' ? 'Verify' : 'Continue'}
           icon={Icons.nfcActivate}
           onPress={handleContinue}
           disabled={!isComplete}
