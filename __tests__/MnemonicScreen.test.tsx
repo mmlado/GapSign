@@ -1,7 +1,8 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import ImportKeyScreen from '../src/screens/keypair/ImportKeyScreen';
+
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import MnemonicScreen from '../src/screens/keypair/MnemonicScreen';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -31,9 +32,14 @@ const mockStart = jest.fn();
 const mockCancel = jest.fn();
 const mockSubmitPin = jest.fn();
 const mockUseLoadKey = jest.fn();
+const mockUseVerifyMnemonic = jest.fn();
 
 jest.mock('../src/hooks/keycard/useLoadKey', () => ({
   useLoadKey: (...args: any[]) => mockUseLoadKey(...args),
+}));
+
+jest.mock('../src/hooks/keycard/useVerifyMnemonic', () => ({
+  useVerifyMnemonic: (...args: any[]) => mockUseVerifyMnemonic(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -49,14 +55,21 @@ const VALID_24 =
 
 const navigation = {
   navigate: jest.fn(),
+  reset: jest.fn(),
   setOptions: jest.fn(),
 } as any;
 
-const route = { key: 'ImportKey', name: 'ImportKey' } as any;
+const route = { key: 'Mnemonic', name: 'Mnemonic', params: undefined } as any;
+const routeVerify = {
+  key: 'Mnemonic',
+  name: 'Mnemonic',
+  params: { mode: 'verify' },
+} as any;
 
-function hookMock(phase = 'idle') {
+function hookMock(phase = 'idle', result: string | null = null) {
   return {
     phase,
+    result,
     status: '',
     pinError: null,
     start: mockStart,
@@ -67,10 +80,11 @@ function hookMock(phase = 'idle') {
 
 async function renderScreen(phase = 'idle') {
   mockUseLoadKey.mockReturnValue(hookMock(phase));
+  mockUseVerifyMnemonic.mockReturnValue(hookMock(phase));
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
-      <ImportKeyScreen navigation={navigation} route={route} />,
+      <MnemonicScreen navigation={navigation} route={route} />,
     );
   });
   return renderer;
@@ -120,14 +134,16 @@ function setInput(renderer: ReactTestRenderer.ReactTestRenderer, text: string) {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe('ImportKeyScreen', () => {
+describe('MnemonicScreen', () => {
   beforeEach(() => {
     navigation.navigate.mockClear();
+    navigation.reset.mockClear();
     navigation.setOptions.mockClear();
     mockStart.mockClear();
     mockCancel.mockClear();
     MockNFCBottomSheet.mockClear();
     mockUseLoadKey.mockReturnValue(hookMock());
+    mockUseVerifyMnemonic.mockReturnValue(hookMock());
   });
 
   describe('layout', () => {
@@ -307,7 +323,7 @@ describe('ImportKeyScreen', () => {
   });
 
   describe('navigation', () => {
-    it('navigates to Dashboard with toast when phase is done', async () => {
+    it('navigates to Dashboard with toast when phase is done (import mode)', async () => {
       await renderScreen('done');
       expect(navigation.navigate).toHaveBeenCalledWith('Dashboard', {
         toast: 'Key pair has been added to Keycard',
@@ -317,6 +333,48 @@ describe('ImportKeyScreen', () => {
     it('does not navigate when phase is not done', async () => {
       await renderScreen('idle');
       expect(navigation.navigate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('verify mode', () => {
+    async function renderVerify(phase = 'idle', result: string | null = null) {
+      mockUseLoadKey.mockReturnValue(hookMock(phase));
+      mockUseVerifyMnemonic.mockReturnValue(hookMock(phase, result));
+      let renderer!: ReactTestRenderer.ReactTestRenderer;
+      await act(async () => {
+        renderer = ReactTestRenderer.create(
+          <MnemonicScreen navigation={navigation} route={routeVerify} />,
+        );
+      });
+      return renderer;
+    }
+
+    it('shows "Verify" button label', async () => {
+      const renderer = await renderVerify();
+      expect(JSON.stringify(renderer.toJSON())).toContain('Verify');
+    });
+
+    it('resets to Dashboard with match toast', async () => {
+      await renderVerify('done', 'match');
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [
+          { name: 'Dashboard', params: { toast: 'Recovery phrase matches' } },
+        ],
+      });
+    });
+
+    it('resets to Dashboard with mismatch toast', async () => {
+      await renderVerify('done', 'mismatch');
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [
+          {
+            name: 'Dashboard',
+            params: { toast: 'Recovery phrase does not match' },
+          },
+        ],
+      });
     });
   });
 

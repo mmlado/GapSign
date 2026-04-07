@@ -1,5 +1,5 @@
-import React from 'react';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
+import React from 'react';
 
 import theme from '../theme';
 import type { RootStackParamList } from './types';
@@ -22,9 +22,9 @@ import AddressesMenuScreen from '../screens/address/AddressMenuScreen';
 // Key pair screens
 import ConfirmKeyScreen from '../screens/keypair/ConfirmKeyScreen';
 import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
-import ImportKeyScreen from '../screens/keypair/ImportKeyScreen';
 import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
 import KeySizeScreen from '../screens/keypair/KeySizeScreen';
+import MnemonicScreen from '../screens/keypair/MnemonicScreen';
 
 // Secrets screens
 import ChangeSecretScreen from '../screens/secrets/ChangeSecretScreen';
@@ -90,8 +90,8 @@ export const routes: Route[] = [
     options: defaultHeaderOptions,
   },
   {
-    name: 'ImportKey',
-    component: ImportKeyScreen,
+    name: 'Mnemonic',
+    component: MnemonicScreen,
     options: defaultHeaderOptions,
   },
 

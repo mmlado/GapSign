@@ -208,7 +208,7 @@ function bitcoinDescriptorPlan(path: string): BitcoinDescriptorPlan[] {
   ];
 }
 
-function parsePublicKeyFromTLV(data: Uint8Array): Uint8Array {
+export function parsePublicKeyFromTLV(data: Uint8Array): Uint8Array {
   const tlv = new Keycard.BERTLV(data);
   tlv.enterConstructed(TLV_KEY_TEMPLATE);
   return tlv.readPrimitive(TLV_PUB_KEY);

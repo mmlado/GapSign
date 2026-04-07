@@ -49,7 +49,7 @@ export type RootStackParamList = {
   KeySize: undefined;
   GenerateKey: { size: 12 | 24; passphrase?: boolean };
   ConfirmKey: { words: string[]; passphrase?: string };
-  ImportKey: undefined;
+  Mnemonic: { mode?: 'import' | 'verify' } | undefined;
   FactoryReset: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
@@ -94,9 +94,9 @@ export type ExportKeyScreenProps = NativeStackScreenProps<
   'ExportKey'
 >;
 
-export type ImportKeyScreenProps = NativeStackScreenProps<
+export type MnemonicScreenProps = NativeStackScreenProps<
   RootStackParamList,
-  'ImportKey'
+  'Mnemonic'
 >;
 
 export type FactoryResetSreenProps = NativeStackScreenProps<

@@ -9,7 +9,7 @@ import theme from '../../theme';
 import Menu from '../../components/Menu';
 
 export const dashboardEntry: DashboardAction = {
-  label: 'Add Keypair',
+  label: 'Keypair',
   navigate: nav => nav.navigate('KeyPairMenu'),
 };
 
@@ -19,11 +19,15 @@ export default function KeyPairMenuScreen({
   const entries = [
     {
       label: 'Import recovery phrase',
-      onPress: () => navigation.navigate('ImportKey'),
+      onPress: () => navigation.navigate('Mnemonic'),
     },
     {
       label: 'Generate new key pair',
       onPress: () => navigation.navigate('KeySize'),
+    },
+    {
+      label: 'Verify recovery phrase',
+      onPress: () => navigation.navigate('Mnemonic', { mode: 'verify' }),
     },
   ];
   return (
