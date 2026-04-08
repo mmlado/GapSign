@@ -1,8 +1,8 @@
 /* eslint-disable no-bitwise */
 import { ETHSignature } from '@keystonehq/bc-ur-registry-eth';
 import * as secp from '@noble/secp256k1';
-import { hexToBytes } from 'viem';
 import Keycard from 'keycard-sdk';
+import { hexToBytes } from 'viem';
 
 // ── Keycard TLV tags ─────────────────────────────────────────────────────────
 const TLV_SIGNATURE_TEMPLATE = 0xa0;
@@ -12,8 +12,6 @@ const TLV_INTEGER = 0x02;
 
 // ── secp256k1 / Ethereum ─────────────────────────────────────────────────────
 const SCALAR_BYTES = 32;
-const PUBKEY_PREFIX_EVEN = 0x02;
-const PUBKEY_PREFIX_ODD = 0x03;
 const V_BASE_LEGACY = 27; // EIP-712 / personal_sign: v = 27 + recId
 const V_BASE_EIP155 = 35; // legacy EIP-155 tx:        v = 35 + 2*chainId + recId
 
@@ -27,17 +25,6 @@ function derIntTo32(arr: Uint8Array): Uint8Array {
   const padded = new Uint8Array(SCALAR_BYTES);
   padded.set(stripped, SCALAR_BYTES - stripped.length);
   return padded;
-}
-
-function compressPubKey(uncompressed: Uint8Array): Uint8Array {
-  const x = uncompressed.slice(1, 1 + SCALAR_BYTES);
-  const y = uncompressed.slice(1 + SCALAR_BYTES, 1 + 2 * SCALAR_BYTES);
-  const prefix =
-    (y[SCALAR_BYTES - 1] & 1) === 0 ? PUBKEY_PREFIX_EVEN : PUBKEY_PREFIX_ODD;
-  const compressed = new Uint8Array(1 + SCALAR_BYTES);
-  compressed[0] = prefix;
-  compressed.set(x, 1);
-  return compressed;
 }
 
 function uint8ArrayEqual(a: Uint8Array, b: Uint8Array): boolean {
@@ -113,7 +100,7 @@ export function buildEthSignatureUR(
   const r = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
   const s = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
 
-  const compressedPubKey = compressPubKey(pubKeyRaw);
+  const compressedPubKey = Keycard.CryptoUtils.compressPublicKey(pubKeyRaw);
   const compact = concat(r, s);
 
   let recId = -1;

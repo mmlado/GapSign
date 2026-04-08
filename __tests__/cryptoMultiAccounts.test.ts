@@ -6,6 +6,36 @@ import {
   type BitgetExportResult,
 } from '../src/utils/cryptoMultiAccounts';
 
+/* eslint-disable no-bitwise */
+// Mock keycard-sdk so tests work with synthetic (non-curve-valid) public keys
+jest.mock('keycard-sdk', () => ({
+  BIP32KeyPair: {
+    fromTLV: (data: Uint8Array) => {
+      let pos = 2;
+      if (data[1] === 0x81) pos = 3;
+      const pubLen = data[pos + 1];
+      const pubKey = data.slice(pos + 2, pos + 2 + pubLen);
+      pos += 2 + pubLen;
+      const chainLen = data[pos + 1];
+      const chainCode = data.slice(pos + 2, pos + 2 + chainLen);
+      return { publicKey: pubKey, chainCode };
+    },
+  },
+  CryptoUtils: {
+    compressPublicKey: (pub: Uint8Array) => {
+      const prefix = (pub[64] & 1) === 0 ? 0x02 : 0x03;
+      const out = new Uint8Array(33);
+      out[0] = prefix;
+      out.set(pub.slice(1, 33), 1);
+      return out;
+    },
+  },
+  BERTLV: jest.fn().mockImplementation(() => ({
+    enterConstructed: jest.fn(),
+    readPrimitive: jest.fn().mockReturnValue(new Uint8Array(65)),
+  })),
+}));
+
 // ---------------------------------------------------------------------------
 // TLV builder helpers (mirrors Keycard exportExtendedKey response)
 // ---------------------------------------------------------------------------

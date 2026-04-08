@@ -44,22 +44,20 @@ jest.mock('keycard-sdk/dist/mnemonic', () => ({
   Mnemonic: { toBinarySeed: (...args: any[]) => mockToBinarySeed(...args) },
 }));
 
+const mockFromTLV = jest.fn();
+
 jest.mock('keycard-sdk/dist/bip32key', () => ({
   BIP32KeyPair: {
     fromBinarySeed: (...args: any[]) => mockFromBinarySeed(...args),
+    fromTLV: (...args: any[]) => mockFromTLV(...args),
   },
 }));
 
-// Mock pubKeyFingerprint and parsePublicKeyFromTLV
+// Mock pubKeyFingerprint
 const mockPubKeyFingerprint = jest.fn();
-const mockParsePublicKeyFromTLV = jest.fn();
 
 jest.mock('../src/utils/cryptoAccount', () => ({
   pubKeyFingerprint: (...args: any[]) => mockPubKeyFingerprint(...args),
-}));
-
-jest.mock('../src/utils/keycardExport', () => ({
-  parsePublicKeyFromTLV: (...args: any[]) => mockParsePublicKeyFromTLV(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -96,7 +94,7 @@ describe('useVerifyMnemonic', () => {
     mockToBinarySeed.mockClear();
     mockFromBinarySeed.mockClear();
     mockPubKeyFingerprint.mockClear();
-    mockParsePublicKeyFromTLV.mockClear();
+    mockFromTLV.mockClear();
     capturedOperation = null;
     capturedOptions = null;
   });
@@ -121,7 +119,7 @@ describe('useVerifyMnemonic', () => {
 
     it('returns "match" when fingerprints match', async () => {
       const cardPubKey = new Uint8Array([4, 9, 8]);
-      mockParsePublicKeyFromTLV.mockReturnValue(cardPubKey);
+      mockFromTLV.mockReturnValue({ publicKey: cardPubKey });
       mockPubKeyFingerprint
         .mockReturnValueOnce(0xdeadbeef) // mnemonic fingerprint
         .mockReturnValueOnce(0xdeadbeef); // card fingerprint
@@ -142,7 +140,7 @@ describe('useVerifyMnemonic', () => {
 
     it('returns "mismatch" when fingerprints differ', async () => {
       const cardPubKey = new Uint8Array([4, 9, 8]);
-      mockParsePublicKeyFromTLV.mockReturnValue(cardPubKey);
+      mockFromTLV.mockReturnValue({ publicKey: cardPubKey });
       mockPubKeyFingerprint
         .mockReturnValueOnce(0x11111111) // mnemonic fingerprint
         .mockReturnValueOnce(0x22222222); // card fingerprint
@@ -159,7 +157,7 @@ describe('useVerifyMnemonic', () => {
     });
 
     it('passes passphrase to toBinarySeed', async () => {
-      mockParsePublicKeyFromTLV.mockReturnValue(new Uint8Array([4]));
+      mockFromTLV.mockReturnValue({ publicKey: new Uint8Array([4]) });
       mockPubKeyFingerprint.mockReturnValue(0);
 
       const cmdSet = {
@@ -179,7 +177,7 @@ describe('useVerifyMnemonic', () => {
     });
 
     it('uses empty string passphrase when none provided', async () => {
-      mockParsePublicKeyFromTLV.mockReturnValue(new Uint8Array([4]));
+      mockFromTLV.mockReturnValue({ publicKey: new Uint8Array([4]) });
       mockPubKeyFingerprint.mockReturnValue(0);
 
       const cmdSet = {

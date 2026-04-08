@@ -11,13 +11,12 @@ import {
 import { UR, UREncoder } from '@ngraveio/bc-ur';
 import { ripemd160 } from '@noble/hashes/legacy.js';
 import { sha256 } from '@noble/hashes/sha2.js';
+import Keycard from 'keycard-sdk';
 
 import {
   coinTypeFromPath,
-  compressPubKey,
   derivationPathToKeypath,
   numberToFingerprintBuffer,
-  parseExtendedKeyFromTLV,
 } from './hdKeyUtils';
 
 type ScriptType = 'wpkh' | 'sh-wpkh' | 'pkh' | 'wsh' | 'sh-wsh' | 'sh';
@@ -38,9 +37,7 @@ function buildHdKey(
   descriptor: BitcoinAccountDescriptor,
   masterFingerprint: number,
 ): CryptoHDKey {
-  const { pubKeyUncompressed, chainCode } = parseExtendedKeyFromTLV(
-    descriptor.exportRespData,
-  );
+  const parsed = Keycard.BIP32KeyPair.fromTLV(descriptor.exportRespData);
 
   const coinType = coinTypeFromPath(descriptor.derivationPath);
   const network =
@@ -50,8 +47,8 @@ function buildHdKey(
 
   return new CryptoHDKey({
     isMaster: false,
-    key: compressPubKey(pubKeyUncompressed),
-    chainCode: Buffer.from(chainCode),
+    key: Buffer.from(Keycard.CryptoUtils.compressPublicKey(parsed.publicKey)),
+    chainCode: Buffer.from(parsed.chainCode),
     origin: derivationPathToKeypath(
       descriptor.derivationPath,
       masterFingerprint,
@@ -97,7 +94,7 @@ function buildOutputDescriptor(
 }
 
 export function pubKeyFingerprint(uncompressedPubKey: Uint8Array): number {
-  const compressed = compressPubKey(uncompressedPubKey);
+  const compressed = Keycard.CryptoUtils.compressPublicKey(uncompressedPubKey);
   const hash160 = ripemd160(sha256(compressed));
   return (
     ((hash160[0] << 24) |

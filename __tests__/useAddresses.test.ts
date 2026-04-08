@@ -31,18 +31,20 @@ jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Mock parseExtendedKeyFromTLV
+// Mock BIP32KeyPair.extendedKey
 // ---------------------------------------------------------------------------
 
 const mockHDKey = {
   publicKey: new Uint8Array(33),
   chainCode: new Uint8Array(32),
 };
-const mockParseExtendedKeyFromTLV = jest.fn().mockReturnValue(mockHDKey);
+const mockExtendedKey = jest.fn().mockReturnValue(mockHDKey);
+
+jest.mock('keycard-sdk', () => ({
+  BIP32KeyPair: { extendedKey: (...args: any[]) => mockExtendedKey(...args) },
+}));
 
 jest.mock('../src/utils/hdAddress', () => ({
-  parseExtendedKeyFromTLV: (...args: any[]) =>
-    mockParseExtendedKeyFromTLV(...args),
   deriveAddresses: jest.fn(),
 }));
 
@@ -75,7 +77,7 @@ async function mountHook(coin: 'eth' | 'btc' = 'eth') {
 describe('useAddresses', () => {
   beforeEach(() => {
     mockExecute.mockClear();
-    mockParseExtendedKeyFromTLV.mockClear();
+    mockExtendedKey.mockClear();
     capturedOperation = null;
     capturedOptions = null;
   });
@@ -121,17 +123,17 @@ describe('useAddresses', () => {
       expect(mockCheckOK).toHaveBeenCalled();
     });
 
-    it('calls parseExtendedKeyFromTLV with the response data', async () => {
+    it('calls BIP32KeyPair.extendedKey with the response data', async () => {
       const data = new Uint8Array([1, 2, 3]);
       await runEthOperation({
         exportExtendedKey: jest
           .fn()
           .mockResolvedValue({ checkOK: jest.fn(), data }),
       });
-      expect(mockParseExtendedKeyFromTLV).toHaveBeenCalledWith(data);
+      expect(mockExtendedKey).toHaveBeenCalledWith(data);
     });
 
-    it('returns the HDKey from parseExtendedKeyFromTLV', async () => {
+    it('returns the HDKey from BIP32KeyPair.extendedKey', async () => {
       const result = await runEthOperation({
         exportExtendedKey: jest.fn().mockResolvedValue({
           checkOK: jest.fn(),

@@ -1,4 +1,3 @@
-/* eslint-disable no-bitwise */
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
 import { Psbt, Transaction, address, networks } from 'bitcoinjs-lib';
 import Keycard from 'keycard-sdk';
@@ -53,13 +52,6 @@ function derIntTo32(bytes: Uint8Array): Uint8Array {
   const padded = new Uint8Array(SCALAR_BYTES);
   padded.set(stripped, SCALAR_BYTES - stripped.length);
   return padded;
-}
-
-function compressPubKey(uncompressed: Uint8Array): Buffer {
-  const x = uncompressed.slice(1, 1 + SCALAR_BYTES);
-  const y = uncompressed.slice(1 + SCALAR_BYTES, 1 + 2 * SCALAR_BYTES);
-  const prefix = (y[SCALAR_BYTES - 1] & 1) === 0 ? 0x02 : 0x03;
-  return Buffer.concat([Buffer.from([prefix]), Buffer.from(x)]);
 }
 
 function toPsbt(psbtHex: string): Psbt {
@@ -179,7 +171,9 @@ function isChangeOutput(output: Psbt['data']['outputs'][number]): boolean {
 function parseKeycardSignature(data: Uint8Array): KeycardSignature {
   const tlv = new Keycard.BERTLV(data);
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);
-  const publicKey = compressPubKey(tlv.readPrimitive(TLV_PUB_KEY));
+  const publicKey = Buffer.from(
+    Keycard.CryptoUtils.compressPublicKey(tlv.readPrimitive(TLV_PUB_KEY)),
+  );
   tlv.enterConstructed(TLV_ECDSA_TEMPLATE);
   const r = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
   const s = derIntTo32(tlv.readPrimitive(TLV_INTEGER));

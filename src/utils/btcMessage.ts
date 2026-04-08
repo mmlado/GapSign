@@ -55,13 +55,6 @@ function derIntTo32(bytes: Uint8Array): Uint8Array {
   return padded;
 }
 
-function compressPubKey(uncompressed: Uint8Array): Buffer {
-  const x = uncompressed.slice(1, 1 + SCALAR_BYTES);
-  const y = uncompressed.slice(1 + SCALAR_BYTES, 1 + 2 * SCALAR_BYTES);
-  const prefix = y[SCALAR_BYTES - 1] % 2 === 0 ? 0x02 : 0x03;
-  return Buffer.concat([Buffer.from([prefix]), Buffer.from(x)]);
-}
-
 function formatRequestId(requestId: DataItem | Buffer | string): string {
   if (requestId instanceof DataItem) {
     return Buffer.from(requestId.getData()).toString('hex');
@@ -183,7 +176,9 @@ export function parseKeycardBtcMessageSignature(
   });
   const tlv = new Keycard.BERTLV(data);
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);
-  const publicKey = compressPubKey(tlv.readPrimitive(TLV_PUB_KEY));
+  const publicKey = Buffer.from(
+    Keycard.CryptoUtils.compressPublicKey(tlv.readPrimitive(TLV_PUB_KEY)),
+  );
   tlv.enterConstructed(TLV_ECDSA_TEMPLATE);
   const r = derIntTo32(tlv.readPrimitive(TLV_INTEGER));
   const s = derIntTo32(tlv.readPrimitive(TLV_INTEGER));

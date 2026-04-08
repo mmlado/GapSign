@@ -4,7 +4,6 @@ import { BIP32KeyPair } from 'keycard-sdk/dist/bip32key';
 import { Mnemonic } from 'keycard-sdk/dist/mnemonic';
 
 import { pubKeyFingerprint } from '../../utils/cryptoAccount';
-import { parsePublicKeyFromTLV } from '../../utils/keycardExport';
 import { useKeycardOperation } from './useKeycardOperation';
 
 export type VerifyMnemonicResult = 'match' | 'mismatch';
@@ -23,7 +22,7 @@ export function useVerifyMnemonic(words: string[], passphrase?: string) {
         const resp = await cmdSet.exportKey(0, true, 'm', false);
         resp.checkOK();
         const cardFingerprint = pubKeyFingerprint(
-          parsePublicKeyFromTLV(resp.data),
+          BIP32KeyPair.fromTLV(resp.data).publicKey,
         );
 
         return mnemonicFingerprint === cardFingerprint ? 'match' : 'mismatch';
