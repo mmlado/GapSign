@@ -4,9 +4,6 @@
  * @format
  */
 
-import 'react-native-get-random-values';
-import './shims';
-
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

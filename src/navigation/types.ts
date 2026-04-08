@@ -50,6 +50,7 @@ export type RootStackParamList = {
   GenerateKey: { size: 12 | 24; passphrase?: boolean };
   ConfirmKey: { words: string[]; passphrase?: string };
   Mnemonic: { mode?: 'import' | 'verify' } | undefined;
+  Slip39: { mode: 'generate' | 'import' | 'verify' };
   FactoryReset: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
@@ -97,6 +98,11 @@ export type ExportKeyScreenProps = NativeStackScreenProps<
 export type MnemonicScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'Mnemonic'
+>;
+
+export type Slip39ScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'Slip39'
 >;
 
 export type FactoryResetSreenProps = NativeStackScreenProps<

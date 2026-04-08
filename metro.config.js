@@ -1,4 +1,5 @@
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const path = require('path');
 
 /**
  * Metro configuration
@@ -8,6 +9,7 @@ const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
  */
 const defaultConfig = getDefaultConfig(__dirname);
 const { assetExts, sourceExts } = defaultConfig.resolver;
+const nodeLibs = require('node-libs-react-native');
 
 const config = {
   transformer: {
@@ -17,7 +19,10 @@ const config = {
     unstable_enablePackageExports: true,
     assetExts: assetExts.filter(ext => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg'],
-    extraNodeModules: require('node-libs-react-native'),
+    extraNodeModules: {
+      ...nodeLibs,
+      crypto: path.join(__dirname, 'src/shims/crypto.ts'),
+    },
   },
 };
 

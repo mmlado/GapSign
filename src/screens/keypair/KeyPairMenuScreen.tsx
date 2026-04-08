@@ -18,16 +18,28 @@ export default function KeyPairMenuScreen({
 }: KeyPairMenuScreenProps) {
   const entries = [
     {
-      label: 'Import recovery phrase',
-      onPress: () => navigation.navigate('Mnemonic'),
-    },
-    {
-      label: 'Generate new key pair',
+      label: 'Generate BIP39 key pair',
       onPress: () => navigation.navigate('KeySize'),
     },
     {
-      label: 'Verify recovery phrase',
+      label: 'Import BIP39 recovery phrase',
+      onPress: () => navigation.navigate('Mnemonic'),
+    },
+    {
+      label: 'Verify BIP39 recovery phrase',
       onPress: () => navigation.navigate('Mnemonic', { mode: 'verify' }),
+    },
+    {
+      label: 'Generate SLIP39 shares',
+      onPress: () => navigation.navigate('Slip39', { mode: 'generate' }),
+    },
+    {
+      label: 'Import SLIP39 shares',
+      onPress: () => navigation.navigate('Slip39', { mode: 'import' }),
+    },
+    {
+      label: 'Verify SLIP39 shares',
+      onPress: () => navigation.navigate('Slip39', { mode: 'verify' }),
     },
   ];
   return (
