@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add Ledger Live and Ledger Legacy export via `crypto-hdkey` with EIP-4527 `source` and `children` fields
 - Add mnemonic verification flow: enter recovery phrase, tap Keycard, confirm fingerprint match
+- Add SLIP39 Shamir share generation, import, and verification flows
 
 ### Changed
 

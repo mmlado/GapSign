@@ -25,6 +25,7 @@ import GenerateKeyScreen from '../screens/keypair/GenerateKeyScreen';
 import KeyPairMenuScreen from '../screens/keypair/KeyPairMenuScreen';
 import KeySizeScreen from '../screens/keypair/KeySizeScreen';
 import MnemonicScreen from '../screens/keypair/MnemonicScreen';
+import Slip39Screen from '../screens/keypair/Slip39Screen';
 
 // Secrets screens
 import ChangeSecretScreen from '../screens/secrets/ChangeSecretScreen';
@@ -77,7 +78,7 @@ export const routes: Route[] = [
   {
     name: 'KeySize',
     component: KeySizeScreen,
-    options: { ...defaultHeaderOptions, title: 'Generate new key pair' },
+    options: { ...defaultHeaderOptions, title: 'Generate BIP39 key pair' },
   },
   {
     name: 'GenerateKey',
@@ -92,6 +93,11 @@ export const routes: Route[] = [
   {
     name: 'Mnemonic',
     component: MnemonicScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'Slip39',
+    component: Slip39Screen,
     options: defaultHeaderOptions,
   },
 

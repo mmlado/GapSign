@@ -64,28 +64,32 @@ describe('KeyPairMenuScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders the "Generate new key pair" menu entry', async () => {
+    it('renders Generate BIP39 before Import BIP39, ahead of SLIP39 entries', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Generate new key pair');
+      const json = toJson(renderer);
+      expect(json.indexOf('Generate BIP39 key pair')).toBeLessThan(
+        json.indexOf('Import BIP39 recovery phrase'),
+      );
+      expect(json.indexOf('Import BIP39 recovery phrase')).toBeLessThan(
+        json.indexOf('Generate SLIP39 shares'),
+      );
+      expect(json).toContain('Verify BIP39 recovery phrase');
     });
 
-    it('renders the "Import recovery phrase" menu entry', async () => {
+    it('renders SLIP39 menu entries', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Import recovery phrase');
-    });
-
-    it('renders the "Verify recovery phrase" menu entry', async () => {
-      const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Verify recovery phrase');
+      expect(toJson(renderer)).toContain('Generate SLIP39 shares');
+      expect(toJson(renderer)).toContain('Import SLIP39 shares');
+      expect(toJson(renderer)).toContain('Verify SLIP39 shares');
     });
   });
 
   describe('navigation', () => {
-    it('navigates to Mnemonic when "Import recovery phrase" is pressed', async () => {
+    it('navigates to Mnemonic when "Import BIP39 recovery phrase" is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = getActivePressables(renderer);
       const entry = pressables.find(p =>
-        extractText(p).includes('Import recovery phrase'),
+        extractText(p).includes('Import BIP39 recovery phrase'),
       );
       await act(async () => {
         entry!.props.onPress();
@@ -93,11 +97,11 @@ describe('KeyPairMenuScreen', () => {
       expect(navigation.navigate).toHaveBeenCalledWith('Mnemonic');
     });
 
-    it('navigates to Mnemonic with verify mode when "Verify recovery phrase" is pressed', async () => {
+    it('navigates to Mnemonic with verify mode when "Verify BIP39 recovery phrase" is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = getActivePressables(renderer);
       const entry = pressables.find(p =>
-        extractText(p).includes('Verify recovery phrase'),
+        extractText(p).includes('Verify BIP39 recovery phrase'),
       );
       await act(async () => {
         entry!.props.onPress();
@@ -107,16 +111,33 @@ describe('KeyPairMenuScreen', () => {
       });
     });
 
-    it('navigates to KeySize when "Generate new key pair" is pressed', async () => {
+    it('navigates to KeySize when "Generate BIP39 key pair" is pressed', async () => {
       const renderer = await renderScreen();
       const pressables = getActivePressables(renderer);
       const entry = pressables.find(p =>
-        extractText(p).includes('Generate new key pair'),
+        extractText(p).includes('Generate BIP39 key pair'),
       );
       await act(async () => {
         entry!.props.onPress();
       });
       expect(navigation.navigate).toHaveBeenCalledWith('KeySize');
+    });
+
+    it('navigates to Slip39 generate/import/verify modes', async () => {
+      const renderer = await renderScreen();
+      const pressables = getActivePressables(renderer);
+
+      for (const [label, mode] of [
+        ['Generate SLIP39 shares', 'generate'],
+        ['Import SLIP39 shares', 'import'],
+        ['Verify SLIP39 shares', 'verify'],
+      ] as const) {
+        const entry = pressables.find(p => extractText(p).includes(label));
+        await act(async () => {
+          entry!.props.onPress();
+        });
+        expect(navigation.navigate).toHaveBeenCalledWith('Slip39', { mode });
+      }
     });
   });
 
