@@ -29,9 +29,6 @@ type BitcoinDescriptorPlan = {
   scriptType: BitcoinCryptoAccount['descriptors'][number]['scriptType'];
 };
 
-const TLV_KEY_TEMPLATE = 0xa1;
-const TLV_PUB_KEY = 0x80;
-
 export function prepareSignHash(
   signData: string,
   dataType: number | undefined,
@@ -90,7 +87,7 @@ export async function exportKeyForWallet(
     return {
       exportRespData: resp.data,
       sourceFingerprint: pubKeyFingerprint(
-        parsePublicKeyFromTLV(parentResp.data),
+        Keycard.BIP32KeyPair.fromTLV(parentResp.data).publicKey,
       ),
     };
   }
@@ -98,7 +95,7 @@ export async function exportKeyForWallet(
   const rootResp = await cmdSet.exportKey(0, true, 'm', false);
   rootResp.checkOK();
   const masterFingerprint = pubKeyFingerprint(
-    parsePublicKeyFromTLV(rootResp.data),
+    Keycard.BIP32KeyPair.fromTLV(rootResp.data).publicKey,
   );
 
   const descriptors: BitcoinCryptoAccount['descriptors'] = [];
@@ -122,7 +119,7 @@ export async function exportKeyForWallet(
       derivationPath: descriptor.derivationPath,
       exportRespData: keyResp.data,
       parentFingerprint: pubKeyFingerprint(
-        parsePublicKeyFromTLV(parentResp.data),
+        Keycard.BIP32KeyPair.fromTLV(parentResp.data).publicKey,
       ),
       scriptType: descriptor.scriptType,
     });
@@ -206,10 +203,4 @@ function bitcoinDescriptorPlan(path: string): BitcoinDescriptorPlan[] {
       scriptType: 'pkh',
     },
   ];
-}
-
-export function parsePublicKeyFromTLV(data: Uint8Array): Uint8Array {
-  const tlv = new Keycard.BERTLV(data);
-  tlv.enterConstructed(TLV_KEY_TEMPLATE);
-  return tlv.readPrimitive(TLV_PUB_KEY);
 }

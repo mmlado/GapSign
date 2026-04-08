@@ -1,6 +1,33 @@
 import { URRegistryDecoder } from '@keystonehq/bc-ur-registry';
 import { buildCryptoAccountUR } from '../src/utils/cryptoAccount';
 
+/* eslint-disable no-bitwise */
+// Mock keycard-sdk so tests work with synthetic (non-curve-valid) public keys
+jest.mock('keycard-sdk', () => ({
+  BIP32KeyPair: {
+    fromTLV: (data: Uint8Array) => {
+      // Minimal TLV parse: 0xa1 outer, then read 0x80 pubkey and 0x82 chainCode
+      let pos = 2; // skip 0xa1 + length
+      if (data[1] === 0x81) pos = 3;
+      const pubLen = data[pos + 1];
+      const pubKey = data.slice(pos + 2, pos + 2 + pubLen);
+      pos += 2 + pubLen;
+      const chainLen = data[pos + 1];
+      const chainCode = data.slice(pos + 2, pos + 2 + chainLen);
+      return { publicKey: pubKey, chainCode };
+    },
+  },
+  CryptoUtils: {
+    compressPublicKey: (pub: Uint8Array) => {
+      const prefix = (pub[64] & 1) === 0 ? 0x02 : 0x03;
+      const out = new Uint8Array(33);
+      out[0] = prefix;
+      out.set(pub.slice(1, 33), 1);
+      return out;
+    },
+  },
+}));
+
 function tlvEncode(tag: number, data: Uint8Array): Uint8Array {
   const len = data.length;
   const header =

@@ -11,10 +11,8 @@ import type { Commandset } from 'keycard-sdk/dist/commandset';
 
 import { pubKeyFingerprint } from './cryptoAccount';
 import {
-  compressPubKey,
   derivationPathToKeypath,
   numberToFingerprintBuffer,
-  parseKeyFromTLV,
 } from './hdKeyUtils';
 
 // Coin type 60 for Ethereum — not exported by bc-ur-registry's CryptoCoinInfoType
@@ -110,15 +108,13 @@ export async function exportKeysForBitget(
 
 export function buildCryptoMultiAccountsUR(result: BitgetExportResult): string {
   const hdKeys = result.keys.map((keyData, i) => {
-    const { pubKeyUncompressed, chainCode } = parseKeyFromTLV(
-      keyData.exportRespData,
-    );
+    const parsed = Keycard.BIP32KeyPair.fromTLV(keyData.exportRespData);
     const keySpec = BITGET_KEYS[i];
 
     return new CryptoHDKey({
       isMaster: false,
-      key: compressPubKey(pubKeyUncompressed),
-      chainCode: Buffer.from(chainCode),
+      key: Buffer.from(Keycard.CryptoUtils.compressPublicKey(parsed.publicKey)),
+      chainCode: Buffer.from(parsed.chainCode),
       origin: derivationPathToKeypath(
         keyData.derivationPath,
         result.masterFingerprint,

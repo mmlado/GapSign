@@ -1,6 +1,7 @@
 import { HDKey } from '@scure/bip32';
-import { parseExtendedKeyFromTLV } from '../../utils/hdAddress';
+import Keycard from 'keycard-sdk';
 import { useCallback } from 'react';
+
 import { useKeycardOperation } from './useKeycardOperation';
 
 const COIN_CONFIG = {
@@ -17,7 +18,7 @@ export function useAddresses(coin: 'eth' | 'btc') {
       async cmdSet => {
         const resp = await cmdSet.exportExtendedKey(0, path, false);
         resp.checkOK();
-        return parseExtendedKeyFromTLV(resp.data);
+        return Keycard.BIP32KeyPair.extendedKey(resp.data);
       },
       { requiresPin: true },
     );

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Centralize all colors in `theme.ts`; replace hardcoded hex strings throughout components and screens with theme tokens
+- Use `keycard-sdk` BIP32 helpers for exported key TLV parsing and public key compression
 
 ### Fixed
 
