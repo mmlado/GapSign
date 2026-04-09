@@ -4,6 +4,8 @@ import * as secp from '@noble/secp256k1';
 import Keycard from 'keycard-sdk';
 import { hexToBytes } from 'viem';
 
+import { ensureHexPrefix } from './hex';
+
 // ── Keycard TLV tags ─────────────────────────────────────────────────────────
 const TLV_SIGNATURE_TEMPLATE = 0xa0;
 const TLV_PUB_KEY = 0x80;
@@ -87,13 +89,7 @@ export function buildEthSignatureUR(
   requestId: string | undefined,
   txType?: number,
 ): string {
-  const tlv = new Keycard.BERTLV(
-    hexToBytes(
-      (signRespDataHex.startsWith('0x')
-        ? signRespDataHex
-        : `0x${signRespDataHex}`) as `0x${string}`,
-    ),
-  );
+  const tlv = new Keycard.BERTLV(hexToBytes(ensureHexPrefix(signRespDataHex)));
   tlv.enterConstructed(TLV_SIGNATURE_TEMPLATE);
   const pubKeyRaw = tlv.readPrimitive(TLV_PUB_KEY);
   tlv.enterConstructed(TLV_ECDSA_TEMPLATE);

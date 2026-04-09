@@ -1,28 +1,38 @@
 import { useCallback } from 'react';
-import { useKeycardOperation } from './useKeycardOperation';
-import { Mnemonic } from 'keycard-sdk/dist/mnemonic';
 import { BIP32KeyPair } from 'keycard-sdk/dist/bip32key';
+import { Mnemonic } from 'keycard-sdk/dist/mnemonic';
 
-export function useLoadKey(words: string[], passphrase?: string) {
+import { useKeycardOperation } from './useKeycardOperation';
+
+export function useLoadKey() {
   const keycard = useKeycardOperation<void>();
 
-  const start = useCallback(() => {
-    keycard.execute(
-      async cmdSet => {
-        const appInfo = cmdSet.applicationInfo;
-        if (appInfo?.hasMasterKey()) {
-          throw new Error('Card already has a key. Factory reset required.');
-        }
+  const start = useCallback(
+    (keyPair: BIP32KeyPair) => {
+      keycard.execute(
+        async cmdSet => {
+          const appInfo = cmdSet.applicationInfo;
+          if (appInfo?.hasMasterKey()) {
+            throw new Error('Card already has a key. Factory reset required.');
+          }
 
-        const phrase = words.join(' ');
-        const seed = Mnemonic.toBinarySeed(phrase, passphrase);
-        const keyPair = BIP32KeyPair.fromBinarySeed(seed);
-        const response = await cmdSet.loadBIP32KeyPair(keyPair);
-        response.checkOK();
-      },
-      { requiresPin: true },
-    );
-  }, [keycard, words, passphrase]);
+          const response = await cmdSet.loadBIP32KeyPair(keyPair);
+          response.checkOK();
+        },
+        { requiresPin: true },
+      );
+    },
+    [keycard],
+  );
 
   return { ...keycard, start };
+}
+
+export function deriveMnemonicKeyPair(
+  words: string[],
+  passphrase?: string,
+): BIP32KeyPair {
+  const phrase = words.join(' ');
+  const seed = Mnemonic.toBinarySeed(phrase, passphrase);
+  return BIP32KeyPair.fromBinarySeed(seed);
 }

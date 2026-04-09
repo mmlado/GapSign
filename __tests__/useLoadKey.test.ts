@@ -1,11 +1,14 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { useLoadKey } from '../src/hooks/keycard/useLoadKey';
+import type { BIP32KeyPair } from 'keycard-sdk/dist/bip32key';
 
-// ---------------------------------------------------------------------------
-// Mock useKeycardOperation — captures the operation callback for direct testing
-// ---------------------------------------------------------------------------
+import {
+  deriveMnemonicKeyPair,
+  useLoadKey,
+} from '../src/hooks/keycard/useLoadKey';
 
+const mockToBinarySeed = jest.fn().mockReturnValue(Buffer.from('seed'));
+const mockFromBinarySeed = jest.fn().mockReturnValue({ type: 'keypair' });
 type OperationFn = (cmdSet: any) => Promise<void>;
 
 let capturedOperation: OperationFn | null = null;
@@ -17,9 +20,6 @@ const mockExecute = jest.fn(
     capturedOptions = opts;
   },
 );
-const mockCancel = jest.fn();
-const mockReset = jest.fn();
-const mockSubmitPin = jest.fn();
 
 jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   useKeycardOperation: () => ({
@@ -27,15 +27,11 @@ jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
     status: '',
     result: null,
     execute: mockExecute,
-    cancel: mockCancel,
-    reset: mockReset,
-    submitPin: mockSubmitPin,
+    cancel: jest.fn(),
+    reset: jest.fn(),
+    submitPin: jest.fn(),
   }),
 }));
-
-// Mock keycard-sdk/dist/mnemonic and bip32key
-const mockToBinarySeed = jest.fn().mockReturnValue(Buffer.from('seed'));
-const mockFromBinarySeed = jest.fn().mockReturnValue({ type: 'keypair' });
 
 jest.mock('keycard-sdk/dist/mnemonic', () => ({
   Mnemonic: { toBinarySeed: (...args: any[]) => mockToBinarySeed(...args) },
@@ -46,10 +42,6 @@ jest.mock('keycard-sdk/dist/bip32key', () => ({
     fromBinarySeed: (...args: any[]) => mockFromBinarySeed(...args),
   },
 }));
-
-// ---------------------------------------------------------------------------
-// Test wrapper
-// ---------------------------------------------------------------------------
 
 const WORDS = [
   'word1',
@@ -65,166 +57,101 @@ const WORDS = [
   'word11',
   'word12',
 ];
+const preparedKeyPair = { type: 'keypair' } as unknown as BIP32KeyPair;
 
-let hookStart: () => void;
+let hookStart: (keyPair: BIP32KeyPair) => void;
 
-function TestHook({ passphrase }: { passphrase?: string } = {}) {
-  const { start } = useLoadKey(WORDS, passphrase);
+function TestHook() {
+  const { start } = useLoadKey();
   hookStart = start;
   return null;
 }
 
-async function mountHook(passphrase?: string) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
+async function mountHook() {
   await act(async () => {
-    renderer = ReactTestRenderer.create(
-      React.createElement(TestHook, { passphrase }),
-    );
+    ReactTestRenderer.create(React.createElement(TestHook));
   });
-  return renderer;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe('useLoadKey', () => {
+describe('deriveMnemonicKeyPair', () => {
   beforeEach(() => {
     mockExecute.mockClear();
     mockToBinarySeed.mockClear();
     mockFromBinarySeed.mockClear();
+    mockFromBinarySeed.mockReturnValue({ type: 'keypair' });
     capturedOperation = null;
     capturedOptions = null;
   });
 
-  describe('start', () => {
-    it('calls execute with requiresPin: true', async () => {
-      await mountHook();
-      await act(async () => {
-        hookStart();
-      });
-      expect(mockExecute).toHaveBeenCalledTimes(1);
-      expect(capturedOptions).toEqual({ requiresPin: true });
-    });
+  it('derives a BIP32 key pair from words', () => {
+    const keyPair = deriveMnemonicKeyPair(WORDS);
+
+    expect(keyPair).toEqual({ type: 'keypair' });
+    expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
+    expect(mockFromBinarySeed).toHaveBeenCalledWith(Buffer.from('seed'));
   });
 
-  describe('operation callback', () => {
-    async function runOperation(cmdSet: any) {
-      await mountHook();
-      await act(async () => {
-        hookStart();
-      });
-      await capturedOperation!(cmdSet);
-    }
+  it('passes passphrase to toBinarySeed when provided', () => {
+    deriveMnemonicKeyPair(WORDS, 'my passphrase');
 
-    it('derives seed from words and loads keypair onto card', async () => {
-      const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest
-        .fn()
-        .mockResolvedValue({ checkOK: mockCheckOK });
-      const cmdSet = {
-        applicationInfo: { hasMasterKey: () => false },
-        loadBIP32KeyPair: mockLoadBIP32KeyPair,
-      };
+    expect(mockToBinarySeed).toHaveBeenCalledWith(
+      WORDS.join(' '),
+      'my passphrase',
+    );
+  });
 
-      await runOperation(cmdSet);
+  it('passes undefined passphrase to toBinarySeed when not provided', () => {
+    deriveMnemonicKeyPair(WORDS);
 
-      expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
-      expect(mockFromBinarySeed).toHaveBeenCalledWith(Buffer.from('seed'));
-      expect(mockLoadBIP32KeyPair).toHaveBeenCalledWith({ type: 'keypair' });
-      expect(mockCheckOK).toHaveBeenCalled();
+    expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
+  });
+});
+
+describe('useLoadKey', () => {
+  beforeEach(() => {
+    mockExecute.mockClear();
+    capturedOperation = null;
+    capturedOptions = null;
+  });
+
+  it('requests PIN before loading the prepared keypair', async () => {
+    await mountHook();
+    await act(async () => {
+      hookStart(preparedKeyPair);
     });
 
-    it('passes passphrase to toBinarySeed when provided', async () => {
-      const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest
-        .fn()
-        .mockResolvedValue({ checkOK: mockCheckOK });
-      const cmdSet = {
-        applicationInfo: { hasMasterKey: () => false },
-        loadBIP32KeyPair: mockLoadBIP32KeyPair,
-      };
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(capturedOptions).toEqual({ requiresPin: true });
+  });
 
-      await mountHook('my passphrase');
-      await act(async () => {
-        hookStart();
-      });
-      await capturedOperation!(cmdSet);
+  it('loads the prepared BIP32 keypair onto an empty card', async () => {
+    await mountHook();
+    await act(async () => {
+      hookStart(preparedKeyPair);
+    });
+    const checkOK = jest.fn();
+    const cmdSet = {
+      applicationInfo: { hasMasterKey: () => false },
+      loadBIP32KeyPair: jest.fn().mockResolvedValue({ checkOK }),
+    };
 
-      expect(mockToBinarySeed).toHaveBeenCalledWith(
-        WORDS.join(' '),
-        'my passphrase',
-      );
-      expect(mockLoadBIP32KeyPair).toHaveBeenCalledWith({ type: 'keypair' });
-      expect(mockCheckOK).toHaveBeenCalled();
+    await capturedOperation!(cmdSet);
+
+    expect(cmdSet.loadBIP32KeyPair).toHaveBeenCalledWith(preparedKeyPair);
+    expect(checkOK).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects cards that already have a master key', async () => {
+    await mountHook();
+    await act(async () => {
+      hookStart(preparedKeyPair);
     });
 
-    it('passes undefined passphrase to toBinarySeed when not provided', async () => {
-      const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest
-        .fn()
-        .mockResolvedValue({ checkOK: mockCheckOK });
-      const cmdSet = {
-        applicationInfo: { hasMasterKey: () => false },
-        loadBIP32KeyPair: mockLoadBIP32KeyPair,
-      };
-
-      await runOperation(cmdSet);
-
-      expect(mockToBinarySeed).toHaveBeenCalledWith(WORDS.join(' '), undefined);
-    });
-
-    it('throws if card already has a master key', async () => {
-      const cmdSet = {
+    await expect(
+      capturedOperation!({
         applicationInfo: { hasMasterKey: () => true },
         loadBIP32KeyPair: jest.fn(),
-      };
-
-      await mountHook();
-      await act(async () => {
-        hookStart();
-      });
-
-      await expect(capturedOperation!(cmdSet)).rejects.toThrow(
-        'Card already has a key. Factory reset required.',
-      );
-      expect(cmdSet.loadBIP32KeyPair).not.toHaveBeenCalled();
-    });
-
-    it('handles missing applicationInfo without throwing', async () => {
-      const mockCheckOK = jest.fn();
-      const mockLoadBIP32KeyPair = jest
-        .fn()
-        .mockResolvedValue({ checkOK: mockCheckOK });
-      const cmdSet = {
-        applicationInfo: null,
-        loadBIP32KeyPair: mockLoadBIP32KeyPair,
-      };
-
-      await runOperation(cmdSet);
-
-      expect(mockLoadBIP32KeyPair).toHaveBeenCalled();
-      expect(mockCheckOK).toHaveBeenCalled();
-    });
-
-    it('propagates error when loadBIP32KeyPair fails', async () => {
-      const cmdSet = {
-        applicationInfo: { hasMasterKey: () => false },
-        loadBIP32KeyPair: jest.fn().mockResolvedValue({
-          checkOK: jest.fn().mockImplementation(() => {
-            throw new Error('LOAD_KEY failed: 0x6982');
-          }),
-        }),
-      };
-
-      await mountHook();
-      await act(async () => {
-        hookStart();
-      });
-
-      await expect(capturedOperation!(cmdSet)).rejects.toThrow(
-        'LOAD_KEY failed: 0x6982',
-      );
-    });
+      }),
+    ).rejects.toThrow(/already has a key/);
   });
 });

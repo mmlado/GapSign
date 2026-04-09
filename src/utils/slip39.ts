@@ -57,25 +57,17 @@ export function isSlip39Word(word: string): boolean {
   return WORD_LIST.includes(word.toLowerCase());
 }
 
-export function decodeSlip39ShareMetadata(share: string): Slip39ShareMetadata {
-  const normalized = normalizeSlip39Share(share);
-  const words = normalized.split(' ').filter(Boolean);
-  if (words.length !== SLIP39_SHARE_WORD_COUNT) {
-    throw new Error('SLIP39 shares must contain exactly 20 words.');
-  }
-
-  const indices = words.map(word => {
+function decodeShareIndices(words: string[]): number[] {
+  return words.map(word => {
     const index = WORD_LIST.indexOf(word);
     if (index === -1) {
       throw new Error(`"${word}" is not a valid SLIP39 word.`);
     }
     return index;
   });
+}
 
-  if (!Slip39.validateMnemonic(normalized)) {
-    throw new Error('Invalid SLIP39 share checksum.');
-  }
-
+function metadataFromIndices(indices: number[]): Slip39ShareMetadata {
   const idExpExt = decodeInt(indices.slice(0, ITERATION_EXP_WORDS_LENGTH));
   const identifier = idExpExt >> 5;
   const extendableBackupFlag = (idExpExt >> 4) & 1;
@@ -96,6 +88,38 @@ export function decodeSlip39ShareMetadata(share: string): Slip39ShareMetadata {
     memberIndex: groupParts[3],
     memberThreshold: groupParts[4] + 1,
   };
+}
+
+export function previewSlip39ShareMetadata(
+  share: string,
+): Slip39ShareMetadata | null {
+  const normalized = normalizeSlip39Share(share);
+  const words = normalized.split(' ').filter(Boolean);
+  if (words.length < 4) {
+    return null;
+  }
+
+  try {
+    return metadataFromIndices(decodeShareIndices(words.slice(0, 4)));
+  } catch {
+    return null;
+  }
+}
+
+export function decodeSlip39ShareMetadata(share: string): Slip39ShareMetadata {
+  const normalized = normalizeSlip39Share(share);
+  const words = normalized.split(' ').filter(Boolean);
+  if (words.length !== SLIP39_SHARE_WORD_COUNT) {
+    throw new Error('SLIP39 shares must contain exactly 20 words.');
+  }
+
+  const indices = decodeShareIndices(words);
+
+  if (!Slip39.validateMnemonic(normalized)) {
+    throw new Error('Invalid SLIP39 share checksum.');
+  }
+
+  return metadataFromIndices(indices);
 }
 
 export function getSlip39ShareProgress(shares: string[]): Slip39ShareProgress {

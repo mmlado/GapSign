@@ -32,14 +32,15 @@ const mockStart = jest.fn();
 const mockCancel = jest.fn();
 const mockSubmitPin = jest.fn();
 const mockUseLoadKey = jest.fn();
-const mockUseVerifyMnemonic = jest.fn();
+const mockUseVerifyFingerprint = jest.fn();
 
 jest.mock('../src/hooks/keycard/useLoadKey', () => ({
   useLoadKey: (...args: any[]) => mockUseLoadKey(...args),
+  deriveMnemonicKeyPair: jest.fn(() => ({ type: 'keypair' })),
 }));
 
-jest.mock('../src/hooks/keycard/useVerifyMnemonic', () => ({
-  useVerifyMnemonic: (...args: any[]) => mockUseVerifyMnemonic(...args),
+jest.mock('../src/hooks/keycard/useVerifyFingerprint', () => ({
+  useVerifyFingerprint: (...args: any[]) => mockUseVerifyFingerprint(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -80,7 +81,7 @@ function hookMock(phase = 'idle', result: string | null = null) {
 
 async function renderScreen(phase = 'idle') {
   mockUseLoadKey.mockReturnValue(hookMock(phase));
-  mockUseVerifyMnemonic.mockReturnValue(hookMock(phase));
+  mockUseVerifyFingerprint.mockReturnValue(hookMock(phase));
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -143,7 +144,7 @@ describe('MnemonicScreen', () => {
     mockCancel.mockClear();
     MockNFCBottomSheet.mockClear();
     mockUseLoadKey.mockReturnValue(hookMock());
-    mockUseVerifyMnemonic.mockReturnValue(hookMock());
+    mockUseVerifyFingerprint.mockReturnValue(hookMock());
   });
 
   describe('layout', () => {
@@ -302,20 +303,22 @@ describe('MnemonicScreen', () => {
       mockUseLoadKey.mockClear();
       const renderer = await renderScreen();
       await setInput(renderer, VALID_12);
-      expect(mockUseLoadKey).toHaveBeenCalledWith(
-        VALID_12.split(' '),
-        undefined,
-      );
+      expect(mockUseLoadKey).toHaveBeenCalled();
     });
 
-    it('passes passphrase to useLoadKey when entered', async () => {
-      mockUseLoadKey.mockClear();
+    it('passes passphrase to the local derivation helper when entered', async () => {
       const renderer = await renderScreen();
       await setInput(renderer, VALID_12);
       await act(async () => {
         getPassphraseInput(renderer).props.onChangeText('mysecret');
       });
-      expect(mockUseLoadKey).toHaveBeenCalledWith(
+      await act(async () => {
+        getContinueButton(renderer).props.onPress();
+      });
+      const { deriveMnemonicKeyPair } = jest.requireMock(
+        '../src/hooks/keycard/useLoadKey',
+      );
+      expect(deriveMnemonicKeyPair).toHaveBeenLastCalledWith(
         VALID_12.split(' '),
         'mysecret',
       );
@@ -339,7 +342,7 @@ describe('MnemonicScreen', () => {
   describe('verify mode', () => {
     async function renderVerify(phase = 'idle', result: string | null = null) {
       mockUseLoadKey.mockReturnValue(hookMock(phase));
-      mockUseVerifyMnemonic.mockReturnValue(hookMock(phase, result));
+      mockUseVerifyFingerprint.mockReturnValue(hookMock(phase, result));
       let renderer!: ReactTestRenderer.ReactTestRenderer;
       await act(async () => {
         renderer = ReactTestRenderer.create(
@@ -352,6 +355,20 @@ describe('MnemonicScreen', () => {
     it('shows "Verify" button label', async () => {
       const renderer = await renderVerify();
       expect(JSON.stringify(renderer.toJSON())).toContain('Verify');
+    });
+
+    it('derives a fingerprint locally and passes it to verify start', async () => {
+      const renderer = await renderVerify();
+      await setInput(renderer, VALID_12);
+      await act(async () => {
+        getPassphraseInput(renderer).props.onChangeText('mysecret');
+      });
+
+      await act(async () => {
+        getContinueButton(renderer).props.onPress();
+      });
+
+      expect(mockStart).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('resets to Dashboard with match toast', async () => {
