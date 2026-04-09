@@ -288,7 +288,9 @@ describe('Slip39Screen', () => {
     await act(async () => {
       getPressableByText(renderer, 'I saved this share')!.props.onPress();
     });
-    expect(toText(renderer)).toContain('Check a few words from the share');
+    expect(toText(renderer)).toContain(
+      'Confirm word positions in your backup share.',
+    );
     expect(toText(renderer)).not.toContain('1.very');
 
     await act(async () => {
@@ -314,6 +316,8 @@ describe('Slip39Screen', () => {
     await act(async () => {
       getPressableByText(renderer, 'Load to Keycard')!.props.onPress();
     });
+    expect(toText(renderer)).toContain('Preparing key material...');
+    expect(toText(renderer)).not.toContain('All shares are saved');
     await flushTimers();
     expect(mockStartLoad).toHaveBeenCalledTimes(1);
     expect(mockResetGenerate).toHaveBeenCalledTimes(1);

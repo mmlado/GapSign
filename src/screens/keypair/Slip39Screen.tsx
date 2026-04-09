@@ -342,6 +342,46 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
     setBackupStep('display');
   }, []);
 
+  if (
+    mode === 'generate' &&
+    backupStep === 'confirm' &&
+    currentGeneratedShare
+  ) {
+    return (
+      <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={styles.confirmContainer}>
+          <MnemonicBackupCheck
+            key={currentGeneratedShare}
+            words={currentGeneratedWords}
+            description="Confirm word positions in your backup share."
+            onComplete={handleBackupComplete}
+          />
+        </View>
+
+        <NFCBottomSheet nfc={activeKeycard} onCancel={handleCancel} />
+      </View>
+    );
+  }
+
+  if (isPreparingSlip39) {
+    return (
+      <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={styles.preparingContainer}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.progressText}>Preparing key material...</Text>
+            <Text style={styles.description}>
+              GapSign is combining your shares and deriving the key before it
+              asks you to tap the card.
+            </Text>
+          </View>
+        </View>
+
+        <NFCBottomSheet nfc={activeKeycard} onCancel={handleCancel} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
       <ScrollView
@@ -351,7 +391,13 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
       >
         <Text style={styles.description}>
           {mode === 'generate' && backupStep === 'confirm'
-            ? 'Check a few words from the share you just saved so you know the backup is correct.'
+            ? 'Confirm word positions in your backup share.'
+            : mode === 'generate' && generatedBackupComplete
+            ? 'All shares are saved. Enter the optional passphrase, then load the key pair to your Keycard.'
+            : mode === 'generate' && currentGeneratedShare
+            ? `Save share ${generatedShareIndex + 1} of ${
+                generatedShares.length
+              } before you continue.`
             : mode === 'generate'
             ? 'Choose how many backup shares you want, tap your Keycard, then save each share before loading the key onto the card.'
             : importComplete
@@ -415,26 +461,6 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
             <Text style={styles.progressText}>Creating SLIP39 shares...</Text>
           </View>
         )}
-
-        {mode !== 'generate' && isPreparingSlip39 && (
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.progressText}>Preparing key material...</Text>
-            <Text style={styles.description}>
-              GapSign is combining your shares and deriving the key before it
-              asks you to tap the card.
-            </Text>
-          </View>
-        )}
-
-        {mode === 'generate' &&
-          generatedShares.length === 0 &&
-          !isCreatingGeneratedShares && (
-            <PrimaryButton
-              label="Generate SLIP39 shares"
-              onPress={handleGenerateShares}
-            />
-          )}
 
         {!isPreparingSlip39 &&
           (generatedBackupComplete ||
@@ -501,28 +527,7 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
                   </View>
                 </View>
               </View>
-              <PrimaryButton
-                label={
-                  generatedShareIndex + 1 === generatedShares.length
-                    ? 'I saved the last share'
-                    : 'I saved this share'
-                }
-                onPress={handleGeneratedShareSaved}
-              />
             </View>
-          )}
-
-        {mode === 'generate' &&
-          backupStep === 'confirm' &&
-          currentGeneratedShare && (
-            <MnemonicBackupCheck
-              key={currentGeneratedShare}
-              words={currentGeneratedWords}
-              description={`Confirm share ${generatedShareIndex + 1}/${
-                generatedShares.length
-              } backup.`}
-              onComplete={handleBackupComplete}
-            />
           )}
 
         {mode === 'generate' && generatedBackupComplete && (
@@ -539,7 +544,25 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
           keyboardHeight > 0 && { paddingBottom: keyboardHeight + 8 },
         ]}
       >
-        {mode !== 'generate' && !importComplete && !isPreparingSlip39 ? (
+        {mode === 'generate' &&
+        generatedShares.length === 0 &&
+        !isCreatingGeneratedShares ? (
+          <PrimaryButton
+            label="Generate SLIP39 shares"
+            onPress={handleGenerateShares}
+          />
+        ) : mode === 'generate' &&
+          backupStep === 'display' &&
+          currentGeneratedShare ? (
+          <PrimaryButton
+            label={
+              generatedShareIndex + 1 === generatedShares.length
+                ? 'I saved the last share'
+                : 'I saved this share'
+            }
+            onPress={handleGeneratedShareSaved}
+          />
+        ) : mode !== 'generate' && !importComplete && !isPreparingSlip39 ? (
           <PrimaryButton
             label={isEnteringLastRequiredShare ? buttonLabel : 'Next share'}
             onPress={
@@ -554,7 +577,11 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
           <PrimaryButton
             label={buttonLabel}
             onPress={handleImportOrVerify}
-            icon={mode !== 'generate' ? Icons.nfcActivate : undefined}
+            icon={
+              generatedBackupComplete || mode !== 'generate'
+                ? Icons.nfcActivate
+                : undefined
+            }
             disabled={!isReady}
           />
         ) : null}
@@ -685,5 +712,15 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
+  },
+  confirmContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  preparingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
   },
 });
