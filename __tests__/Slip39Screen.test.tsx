@@ -10,6 +10,14 @@ const SHARE_2 =
   'very graduate academic agency dish traveler veteran facility hormone camera kind hearing debut carve either demand valuable diminish triumph treat';
 const INVALID_SHARE =
   'very graduate academic acid best smith recall exclude apart company amount junior alive believe withdraw alien company hospital payroll nope';
+const { generateSlip39SharesFromKeycardEntropy: realGenerateSlip39Shares } =
+  jest.requireActual(
+    '../src/utils/slip39',
+  ) as typeof import('../src/utils/slip39');
+const SINGLE_SHARE = realGenerateSlip39Shares(new Uint8Array([9, 8, 7, 6]), {
+  shareCount: 1,
+  threshold: 1,
+})[0];
 
 const mockStartLoad = jest.fn();
 const mockStartGenerate = jest.fn();
@@ -17,8 +25,8 @@ const mockStartVerify = jest.fn();
 const mockCancel = jest.fn();
 const mockResetGenerate = jest.fn();
 const mockUseGenerateSlip39Shares = jest.fn();
-const mockUseLoadSlip39 = jest.fn();
-const mockUseVerifySlip39 = jest.fn();
+const mockUseLoadKey = jest.fn();
+const mockUseVerifyFingerprint = jest.fn();
 const mockGenerateSlip39SharesFromKeycardEntropy = jest.fn();
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -40,12 +48,12 @@ jest.mock('../src/hooks/keycard/useGenerateSlip39Shares', () => ({
     mockUseGenerateSlip39Shares(...args),
 }));
 
-jest.mock('../src/hooks/keycard/useLoadSlip39', () => ({
-  useLoadSlip39: (...args: any[]) => mockUseLoadSlip39(...args),
+jest.mock('../src/hooks/keycard/useLoadKey', () => ({
+  useLoadKey: (...args: any[]) => mockUseLoadKey(...args),
 }));
 
-jest.mock('../src/hooks/keycard/useVerifySlip39', () => ({
-  useVerifySlip39: (...args: any[]) => mockUseVerifySlip39(...args),
+jest.mock('../src/hooks/keycard/useVerifyFingerprint', () => ({
+  useVerifyFingerprint: (...args: any[]) => mockUseVerifyFingerprint(...args),
 }));
 
 jest.mock('../src/utils/slip39', () => {
@@ -90,8 +98,10 @@ async function renderScreen(
     ...hookMock(mockStartGenerate, generatePhase, generateResult as any),
     reset: mockResetGenerate,
   });
-  mockUseLoadSlip39.mockReturnValue(hookMock(mockStartLoad, phase, result));
-  mockUseVerifySlip39.mockReturnValue(hookMock(mockStartVerify, phase, result));
+  mockUseLoadKey.mockReturnValue(hookMock(mockStartLoad, phase, result));
+  mockUseVerifyFingerprint.mockReturnValue(
+    hookMock(mockStartVerify, phase, result),
+  );
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
@@ -135,19 +145,6 @@ function getPressableByText(
     .find(node => extractText(node).includes(text));
 }
 
-async function addShare(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  share: string,
-) {
-  const input = getTextInputs(renderer)[0];
-  await act(async () => {
-    input.props.onChangeText(share);
-  });
-  await act(async () => {
-    getPressableByText(renderer, 'Add share')!.props.onPress();
-  });
-}
-
 describe('Slip39Screen', () => {
   beforeEach(() => {
     jest.useFakeTimers();
@@ -166,8 +163,8 @@ describe('Slip39Screen', () => {
     ]);
     MockNFCBottomSheet.mockClear();
     mockUseGenerateSlip39Shares.mockReturnValue(hookMock(mockStartGenerate));
-    mockUseLoadSlip39.mockReturnValue(hookMock());
-    mockUseVerifySlip39.mockReturnValue(hookMock(mockStartVerify));
+    mockUseLoadKey.mockReturnValue(hookMock());
+    mockUseVerifyFingerprint.mockReturnValue(hookMock(mockStartVerify));
     jest.spyOn(Math, 'random').mockReturnValue(0);
   });
 
@@ -179,33 +176,41 @@ describe('Slip39Screen', () => {
   it('adds shares until the SLIP39 threshold is reached', async () => {
     const renderer = await renderScreen('import');
 
-    expect(toText(renderer)).toContain('0/20 words');
-    await addShare(renderer, SHARE_1);
-    expect(toText(renderer)).toContain('1/2 shares added');
+    expect(toText(renderer)).toContain('Enter share 1.');
+    expect(toText(renderer)).not.toContain('SLIP39 passphrase');
+    await act(async () => {
+      getTextInputs(renderer)[0].props.onChangeText(SHARE_1);
+    });
+    expect(toText(renderer)).toContain('20/20 words');
+    await act(async () => {
+      getPressableByText(renderer, 'Next share')!.props.onPress();
+    });
+    expect(toText(renderer)).toContain('Enter share 2 of 2.');
+    expect(toText(renderer)).not.toContain(SHARE_1);
+    expect(getTextInputs(renderer)).toHaveLength(2);
+    expect(getTextInputs(renderer)[0].props.value).toBe('');
+    await act(async () => {
+      getTextInputs(renderer)[0].props.onChangeText(SHARE_2);
+    });
+    expect(getPressableByText(renderer, 'Import to Keycard')).toBeDefined();
 
-    await addShare(renderer, SHARE_2);
-
-    expect(toText(renderer)).toContain('2/2 shares added');
-    expect(toText(renderer)).toContain('Share threshold reached');
-    expect(getPressableByText(renderer, 'Add share')).toBeUndefined();
     await act(async () => {
       getPressableByText(renderer, 'Import to Keycard')!.props.onPress();
     });
+    await flushTimers();
+
     expect(mockStartLoad).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps Add share disabled until a 20-word SLIP39 share is entered', async () => {
+  it('enables Next share for a complete valid share', async () => {
     const renderer = await renderScreen('import');
 
-    expect(getPressableByText(renderer, 'Add share')!.props.disabled).toBe(
-      true,
-    );
     await act(async () => {
       getTextInputs(renderer)[0].props.onChangeText(SHARE_1);
     });
 
     expect(toText(renderer)).toContain('20/20 words');
-    expect(getPressableByText(renderer, 'Add share')!.props.disabled).toBe(
+    expect(getPressableByText(renderer, 'Next share')!.props.disabled).toBe(
       false,
     );
   });
@@ -218,9 +223,23 @@ describe('Slip39Screen', () => {
     });
 
     expect(toText(renderer)).toContain('"nope" is not a valid SLIP39 word');
-    expect(getPressableByText(renderer, 'Add share')!.props.disabled).toBe(
+    expect(getPressableByText(renderer, 'Next share')!.props.disabled).toBe(
       true,
     );
+  });
+
+  it('shows the passphrase field after four words when preview metadata indicates 1/1', async () => {
+    const renderer = await renderScreen('import');
+
+    await act(async () => {
+      getTextInputs(renderer)[0].props.onChangeText(
+        SINGLE_SHARE.split(' ').slice(0, 4).join(' '),
+      );
+    });
+
+    expect(toText(renderer)).toContain('Enter share 1 of 1.');
+    expect(getTextInputs(renderer)).toHaveLength(2);
+    expect(getPressableByText(renderer, 'Import to Keycard')).toBeDefined();
   });
 
   it('uses verify hook and reset toast in verify mode', async () => {
@@ -269,7 +288,7 @@ describe('Slip39Screen', () => {
     await act(async () => {
       getPressableByText(renderer, 'I saved this share')!.props.onPress();
     });
-    expect(toText(renderer)).toContain('Confirm the requested words');
+    expect(toText(renderer)).toContain('Check a few words from the share');
     expect(toText(renderer)).not.toContain('1.very');
 
     await act(async () => {
@@ -295,6 +314,7 @@ describe('Slip39Screen', () => {
     await act(async () => {
       getPressableByText(renderer, 'Load to Keycard')!.props.onPress();
     });
+    await flushTimers();
     expect(mockStartLoad).toHaveBeenCalledTimes(1);
     expect(mockResetGenerate).toHaveBeenCalledTimes(1);
   });

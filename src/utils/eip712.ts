@@ -1,5 +1,7 @@
 import { hexToString, stringToHex, validateTypedData } from 'viem';
 
+import { ensureHexPrefix } from './hex';
+
 type JsonValue =
   | string
   | number
@@ -23,7 +25,7 @@ function isJsonObject(value: unknown): value is JsonObject {
 
 function decodeUtf8(hex: string): string | null {
   try {
-    const normalizedHex = hex.startsWith('0x') ? hex : `0x${hex}`;
+    const normalizedHex = ensureHexPrefix(hex);
     const text = hexToString(normalizedHex);
     if (stringToHex(text).toLowerCase() !== normalizedHex.toLowerCase()) {
       return null;

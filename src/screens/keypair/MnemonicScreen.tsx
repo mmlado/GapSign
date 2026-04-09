@@ -7,9 +7,9 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MnemonicScreenProps } from '../../navigation/types';
 import theme from '../../theme';
@@ -19,8 +19,12 @@ import MnemonicWordEntry from '../../components/MnemonicWordEntry';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
 
-import { useLoadKey } from '../../hooks/keycard/useLoadKey';
-import { useVerifyMnemonic } from '../../hooks/keycard/useVerifyMnemonic';
+import {
+  deriveMnemonicKeyPair,
+  useLoadKey,
+} from '../../hooks/keycard/useLoadKey';
+import { useVerifyFingerprint } from '../../hooks/keycard/useVerifyFingerprint';
+import { deriveMnemonicFingerprint } from '../../hooks/keycard/useVerifyMnemonic';
 
 export default function MnemonicScreen({
   navigation,
@@ -50,10 +54,10 @@ export default function MnemonicScreen({
     };
   }, []);
 
-  const loadKey = useLoadKey(words, passphrase || undefined);
-  const verifyMnemonic = useVerifyMnemonic(words, passphrase || undefined);
-  const keycard = mode === 'verify' ? verifyMnemonic : loadKey;
-  const { phase, result, start, cancel } = keycard;
+  const loadKey = useLoadKey();
+  const verifyFingerprint = useVerifyFingerprint();
+  const keycard = mode === 'verify' ? verifyFingerprint : loadKey;
+  const { phase, result, cancel } = keycard;
 
   const handleTextChange = useCallback((text: string) => {
     setInput(text);
@@ -65,8 +69,14 @@ export default function MnemonicScreen({
       setPhraseError('Invalid recovery phrase');
       return;
     }
-    start();
-  }, [words, start]);
+    if (mode === 'verify') {
+      verifyFingerprint.start(
+        deriveMnemonicFingerprint(words, passphrase || undefined),
+      );
+      return;
+    }
+    loadKey.start(deriveMnemonicKeyPair(words, passphrase || undefined));
+  }, [loadKey, mode, passphrase, verifyFingerprint, words]);
 
   const handleCancel = useCallback(() => {
     cancel();

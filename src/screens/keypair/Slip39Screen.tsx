@@ -20,14 +20,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Slip39ScreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
+import { Icons } from '../../assets/icons';
 import MnemonicBackupCheck from '../../components/MnemonicBackupCheck';
 import MnemonicWordEntry from '../../components/MnemonicWordEntry';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
 
 import { useGenerateSlip39Shares } from '../../hooks/keycard/useGenerateSlip39Shares';
-import { useLoadSlip39 } from '../../hooks/keycard/useLoadSlip39';
-import { useVerifySlip39 } from '../../hooks/keycard/useVerifySlip39';
+import { useLoadKey } from '../../hooks/keycard/useLoadKey';
+import { useVerifyFingerprint } from '../../hooks/keycard/useVerifyFingerprint';
+import { pubKeyFingerprint } from '../../utils/cryptoAccount';
 import {
   SLIP39_MAX_SHARES,
   SLIP39_SHARE_WORD_COUNT,
@@ -36,6 +38,9 @@ import {
   getSlip39ShareProgress,
   isSlip39Word,
   normalizeSlip39Share,
+  previewSlip39ShareMetadata,
+  recoverSlip39Secret,
+  slip39SecretToKeyPair,
 } from '../../utils/slip39';
 
 function parseCount(value: string): number {
@@ -58,6 +63,7 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
   const [generatedShareIndex, setGeneratedShareIndex] = useState(0);
   const [isCreatingGeneratedShares, setIsCreatingGeneratedShares] =
     useState(false);
+  const [isPreparingSlip39, setIsPreparingSlip39] = useState(false);
   const [backupStep, setBackupStep] = useState<'display' | 'confirm'>(
     'display',
   );
@@ -85,17 +91,14 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
     parsedShareCount,
     parsedThreshold,
   );
-  const loadSlip39 = useLoadSlip39(operationShares, passphrase || undefined);
-  const verifySlip39 = useVerifySlip39(
-    operationShares,
-    passphrase || undefined,
-  );
-  const keycard = mode === 'verify' ? verifySlip39 : loadSlip39;
+  const loadKey = useLoadKey();
+  const verifyFingerprint = useVerifyFingerprint();
+  const keycard = mode === 'verify' ? verifyFingerprint : loadKey;
   const activeKeycard =
     mode === 'generate' && generatedShares.length === 0
       ? generateSlip39
       : keycard;
-  const { phase, result, start } = keycard;
+  const { phase, result } = keycard;
   const activePhase = activeKeycard.phase;
 
   const progress = useMemo(() => {
@@ -105,10 +108,21 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
 
     return getSlip39ShareProgress(operationShares);
   }, [operationShares]);
+  const previewMetadata = useMemo(
+    () => (mode !== 'generate' ? previewSlip39ShareMetadata(shareInput) : null),
+    [mode, shareInput],
+  );
 
   const canAddShare =
     shareInputWords.length === SLIP39_SHARE_WORD_COUNT && !shareWordError;
   const importComplete = mode !== 'generate' && (progress?.complete ?? false);
+  const nextShareIndex = (progress?.acceptedShares.length ?? 0) + 1;
+  const targetShareCount =
+    progress?.requiredShares ?? previewMetadata?.memberThreshold;
+  const isEnteringLastRequiredShare =
+    mode !== 'generate' &&
+    targetShareCount !== undefined &&
+    nextShareIndex >= targetShareCount;
   const generatedSharesReady = generatedShares.length > 0;
   const generatedBackupComplete =
     mode === 'generate' &&
@@ -125,28 +139,97 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
   const currentGeneratedWordHalf =
     currentGeneratedWords.length > 0 ? currentGeneratedWords.length / 2 : 0;
 
+  const commitShare = useCallback(() => {
+    const normalized = normalizeSlip39Share(shareInput);
+    if (!normalized) {
+      setShareError('Enter a SLIP39 share');
+      return;
+    }
+    const invalid = normalized.split(' ').find(word => !isSlip39Word(word));
+    if (invalid) {
+      setShareError(`"${invalid}" is not a valid SLIP39 word`);
+      return;
+    }
+
+    const nextShares = [...shares, normalized];
+    getSlip39ShareProgress(nextShares);
+    setShares(nextShares);
+    setShareInput('');
+    setShareInputWords([]);
+    setShareWordError(null);
+    setShareError(null);
+  }, [shareInput, shares]);
+
   const handleAddShare = useCallback(() => {
     try {
-      const normalized = normalizeSlip39Share(shareInput);
-      if (!normalized) {
-        setShareError('Enter a SLIP39 share');
-        return;
-      }
-      const invalid = normalized.split(' ').find(word => !isSlip39Word(word));
-      if (invalid) {
-        setShareError(`"${invalid}" is not a valid SLIP39 word`);
-        return;
-      }
-
-      const nextShares = [...shares, normalized];
-      getSlip39ShareProgress(nextShares);
-      setShares(nextShares);
-      setShareInput('');
-      setShareError(null);
+      commitShare();
     } catch (e: any) {
       setShareError(e.message);
     }
-  }, [shareInput, shares]);
+  }, [commitShare]);
+
+  const prepareAndStart = useCallback(
+    (sharesToRecover: string[]) => {
+      setIsPreparingSlip39(true);
+      setTimeout(() => {
+        try {
+          const secret = recoverSlip39Secret(sharesToRecover, passphrase ?? '');
+          const keyPair = slip39SecretToKeyPair(secret);
+          secret.fill(0);
+
+          setShareInput('');
+          setShareInputWords([]);
+          setShareWordError(null);
+          setShareError(null);
+
+          if (mode === 'verify') {
+            verifyFingerprint.start(pubKeyFingerprint(keyPair.publicKey));
+          } else {
+            loadKey.start(keyPair);
+          }
+        } catch (e: any) {
+          setShareError(e.message);
+        } finally {
+          setIsPreparingSlip39(false);
+        }
+      }, 0);
+    },
+    [loadKey, mode, passphrase, verifyFingerprint],
+  );
+
+  const handleImportOrVerify = useCallback(() => {
+    try {
+      if (mode !== 'generate' && !importComplete) {
+        const normalized = normalizeSlip39Share(shareInput);
+        if (!normalized) {
+          throw new Error('Enter a SLIP39 share');
+        }
+        const invalid = normalized.split(' ').find(word => !isSlip39Word(word));
+        if (invalid) {
+          throw new Error(`"${invalid}" is not a valid SLIP39 word`);
+        }
+
+        const nextShares = [...shares, normalized];
+        setShares(nextShares);
+        prepareAndStart(nextShares);
+        return;
+      }
+      if (mode === 'generate') {
+        prepareAndStart(operationShares);
+      } else if (importComplete) {
+        prepareAndStart(operationShares);
+      }
+    } catch (e: any) {
+      setShareError(e.message);
+    }
+  }, [
+    importComplete,
+    mode,
+    operationShares,
+    prepareAndStart,
+    shareInput,
+    shares,
+  ]);
 
   const handleGenerateShares = useCallback(() => {
     try {
@@ -156,14 +239,6 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
       setShareError(e.message);
     }
   }, [generateSlip39]);
-
-  const handleStart = useCallback(() => {
-    try {
-      start();
-    } catch (e: any) {
-      setShareError(e.message);
-    }
-  }, [start]);
 
   const handleCancel = useCallback(() => {
     activeKeycard.cancel();
@@ -276,10 +351,16 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
       >
         <Text style={styles.description}>
           {mode === 'generate' && backupStep === 'confirm'
-            ? 'Confirm the requested words from the SLIP39 share you just wrote down.'
+            ? 'Check a few words from the share you just saved so you know the backup is correct.'
             : mode === 'generate'
-            ? 'Choose how many SLIP39 shares to create, tap your Keycard for entropy, then write down every share before loading the key pair onto your Keycard.'
-            : 'Enter one 20-word SLIP39 share at a time. GapSign supports single-group SLIP39 sets, matching keycard-shell.'}
+            ? 'Choose how many backup shares you want, tap your Keycard, then save each share before loading the key onto the card.'
+            : importComplete
+            ? 'Everything is ready. Continue when you are done.'
+            : `Enter share ${
+                targetShareCount
+                  ? `${nextShareIndex} of ${targetShareCount}`
+                  : '1'
+              }. After the first share, GapSign will tell you how many are needed.`}
         </Text>
 
         {mode === 'generate' && !generatedSharesReady ? (
@@ -325,23 +406,24 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
               onWordErrorChange={setShareWordError}
               inputStyle={styles.shareInput}
             />
-            <PrimaryButton
-              label="Add share"
-              onPress={handleAddShare}
-              disabled={!canAddShare}
-            />
           </View>
-        ) : mode !== 'generate' ? (
-          <Text style={styles.progressText}>
-            Share threshold reached. Enter the optional passphrase, then
-            continue.
-          </Text>
         ) : null}
 
         {mode === 'generate' && isCreatingGeneratedShares && (
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.progressText}>Creating SLIP39 shares...</Text>
+          </View>
+        )}
+
+        {mode !== 'generate' && isPreparingSlip39 && (
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={styles.progressText}>Preparing key material...</Text>
+            <Text style={styles.description}>
+              GapSign is combining your shares and deriving the key before it
+              asks you to tap the card.
+            </Text>
           </View>
         )}
 
@@ -354,27 +436,32 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
             />
           )}
 
-        {(mode !== 'generate' || generatedBackupComplete) && (
-          <TextInput
-            style={styles.input}
-            value={passphrase}
-            onChangeText={setPassphrase}
-            placeholder="SLIP39 passphrase (optional)"
-            placeholderTextColor={theme.colors.onSurfacePlaceholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        )}
+        {!isPreparingSlip39 &&
+          (generatedBackupComplete ||
+            importComplete ||
+            isEnteringLastRequiredShare) && (
+            <TextInput
+              style={styles.input}
+              value={passphrase}
+              onChangeText={setPassphrase}
+              placeholder="SLIP39 passphrase (optional)"
+              placeholderTextColor={theme.colors.onSurfacePlaceholder}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          )}
 
         {mode === 'generate' && shareError && (
           <Text style={styles.errorText}>{shareError}</Text>
         )}
 
-        {progress && (
+        {progress && (mode === 'generate' || importComplete) && (
           <Text style={styles.progressText}>
             {mode === 'generate'
               ? `${progress.acceptedShares.length} shares generated, threshold ${progress.requiredShares}`
-              : `${progress.acceptedShares.length}/${progress.requiredShares} shares added`}
+              : importComplete
+              ? `Share threshold reached (${progress.acceptedShares.length}/${progress.requiredShares})`
+              : ''}
           </Text>
         )}
 
@@ -444,17 +531,6 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
             pair to your Keycard.
           </Text>
         )}
-
-        {mode !== 'generate' && operationShares.length > 0 && (
-          <View style={styles.shareList}>
-            {operationShares.map((share, index) => (
-              <View key={share} style={styles.shareCard}>
-                <Text style={styles.shareTitle}>Share {index + 1}</Text>
-                <Text style={styles.shareText}>{share}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </ScrollView>
 
       <View
@@ -463,13 +539,25 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
           keyboardHeight > 0 && { paddingBottom: keyboardHeight + 8 },
         ]}
       >
-        {showBottomButton && (
+        {mode !== 'generate' && !importComplete && !isPreparingSlip39 ? (
+          <PrimaryButton
+            label={isEnteringLastRequiredShare ? buttonLabel : 'Next share'}
+            onPress={
+              isEnteringLastRequiredShare
+                ? handleImportOrVerify
+                : handleAddShare
+            }
+            icon={isEnteringLastRequiredShare ? Icons.nfcActivate : undefined}
+            disabled={!canAddShare}
+          />
+        ) : showBottomButton && !isPreparingSlip39 ? (
           <PrimaryButton
             label={buttonLabel}
-            onPress={handleStart}
+            onPress={handleImportOrVerify}
+            icon={mode !== 'generate' ? Icons.nfcActivate : undefined}
             disabled={!isReady}
           />
-        )}
+        ) : null}
       </View>
 
       <NFCBottomSheet nfc={activeKeycard} onCancel={handleCancel} />

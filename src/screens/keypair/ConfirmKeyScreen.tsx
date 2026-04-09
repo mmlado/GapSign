@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,7 +8,10 @@ import theme from '../../theme';
 import MnemonicBackupCheck from '../../components/MnemonicBackupCheck';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 
-import { useLoadKey } from '../../hooks/keycard/useLoadKey';
+import {
+  deriveMnemonicKeyPair,
+  useLoadKey,
+} from '../../hooks/keycard/useLoadKey';
 
 export default function ConfirmKeyScreen({
   navigation,
@@ -16,8 +19,12 @@ export default function ConfirmKeyScreen({
 }: ConfirmKeySreenProps) {
   const insets = useSafeAreaInsets();
   const { words, passphrase } = route.params;
+  const keyPair = useMemo(
+    () => deriveMnemonicKeyPair(words, passphrase),
+    [passphrase, words],
+  );
 
-  const keycard = useLoadKey(words, passphrase);
+  const keycard = useLoadKey();
   const { phase, start, cancel } = keycard;
 
   const handleCancel = useCallback(() => {
@@ -49,7 +56,7 @@ export default function ConfirmKeyScreen({
       <MnemonicBackupCheck
         words={words}
         description="Confirm word positions in your recovery phrase."
-        onComplete={start}
+        onComplete={() => start(keyPair)}
       />
 
       <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />

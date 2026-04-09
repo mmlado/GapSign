@@ -32,6 +32,7 @@ const mockUseLoadKey = jest.fn();
 
 jest.mock('../src/hooks/keycard/useLoadKey', () => ({
   useLoadKey: () => mockUseLoadKey(),
+  deriveMnemonicKeyPair: jest.fn(() => ({ type: 'keypair' })),
 }));
 
 // ---------------------------------------------------------------------------

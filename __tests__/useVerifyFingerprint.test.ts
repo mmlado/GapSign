@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 
-import { useVerifySlip39 } from '../src/hooks/keycard/useVerifySlip39';
+import { useVerifyFingerprint } from '../src/hooks/keycard/useVerifyFingerprint';
 
 type OperationFn = (cmdSet: any) => Promise<any>;
 
@@ -14,12 +14,8 @@ const mockExecute = jest.fn(
     capturedOptions = opts;
   },
 );
-const mockRecoverSlip39Secret = jest.fn(() => new Uint8Array(16).fill(1));
-const mockSlip39SecretToKeyPair = jest.fn(() => ({
-  publicKey: new Uint8Array([4, 1, 2]),
-}));
 const mockPubKeyFingerprint = jest.fn();
-const mockParsePublicKeyFromTLV = jest.fn();
+const mockFromTLV = jest.fn();
 
 jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   useKeycardOperation: () => ({
@@ -33,23 +29,19 @@ jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   }),
 }));
 
-jest.mock('../src/utils/slip39', () => ({
-  recoverSlip39Secret: (...args: any[]) => mockRecoverSlip39Secret(...args),
-  slip39SecretToKeyPair: (...args: any[]) => mockSlip39SecretToKeyPair(...args),
-}));
-
 jest.mock('../src/utils/cryptoAccount', () => ({
   pubKeyFingerprint: (...args: any[]) => mockPubKeyFingerprint(...args),
 }));
 
-jest.mock('../src/utils/keycardExport', () => ({
-  parsePublicKeyFromTLV: (...args: any[]) => mockParsePublicKeyFromTLV(...args),
+jest.mock('keycard-sdk', () => ({
+  BIP32KeyPair: { fromTLV: (...args: any[]) => mockFromTLV(...args) },
 }));
 
-let hookStart: () => void;
+let hookStart: (expectedFingerprint: number) => void;
+const expectedFingerprint = 0xdeadbeef;
 
 function TestHook() {
-  const { start } = useVerifySlip39(['share one', 'share two'], 'secret');
+  const { start } = useVerifyFingerprint();
   hookStart = start;
   return null;
 }
@@ -60,13 +52,11 @@ async function mountHook() {
   });
 }
 
-describe('useVerifySlip39', () => {
+describe('useVerifyFingerprint', () => {
   beforeEach(() => {
     mockExecute.mockClear();
-    mockRecoverSlip39Secret.mockClear();
-    mockSlip39SecretToKeyPair.mockClear();
     mockPubKeyFingerprint.mockClear();
-    mockParsePublicKeyFromTLV.mockClear();
+    mockFromTLV.mockClear();
     capturedOperation = null;
     capturedOptions = null;
   });
@@ -74,45 +64,38 @@ describe('useVerifySlip39', () => {
   it('calls execute with requiresPin: true', async () => {
     await mountHook();
     await act(async () => {
-      hookStart();
+      hookStart(expectedFingerprint);
     });
 
-    expect(mockRecoverSlip39Secret).not.toHaveBeenCalled();
     expect(capturedOptions).toEqual({ requiresPin: true });
   });
 
   it('returns match when fingerprints match', async () => {
     const cardPubKey = new Uint8Array([4, 9, 8]);
-    mockParsePublicKeyFromTLV.mockReturnValue(cardPubKey);
-    mockPubKeyFingerprint
-      .mockReturnValueOnce(0xdeadbeef)
-      .mockReturnValueOnce(0xdeadbeef);
+    mockFromTLV.mockReturnValue({ publicKey: cardPubKey });
+    mockPubKeyFingerprint.mockReturnValueOnce(expectedFingerprint);
     const checkOK = jest.fn();
     const cmdSet = {
       exportKey: jest.fn().mockResolvedValue({ checkOK, data: cardPubKey }),
     };
     await mountHook();
     await act(async () => {
-      hookStart();
+      hookStart(expectedFingerprint);
     });
 
     const result = await capturedOperation!(cmdSet);
 
-    expect(mockRecoverSlip39Secret).toHaveBeenCalledWith(
-      ['share one', 'share two'],
-      'secret',
-    );
     expect(result).toBe('match');
     expect(cmdSet.exportKey).toHaveBeenCalledWith(0, true, 'm', false);
     expect(checkOK).toHaveBeenCalledTimes(1);
   });
 
   it('returns mismatch when fingerprints differ', async () => {
-    mockParsePublicKeyFromTLV.mockReturnValue(new Uint8Array([4, 9, 8]));
-    mockPubKeyFingerprint.mockReturnValueOnce(1).mockReturnValueOnce(2);
+    mockFromTLV.mockReturnValue({ publicKey: new Uint8Array([4, 9, 8]) });
+    mockPubKeyFingerprint.mockReturnValueOnce(2);
     await mountHook();
     await act(async () => {
-      hookStart();
+      hookStart(1);
     });
 
     const result = await capturedOperation!({

@@ -4,6 +4,7 @@ import {
   decodeSlip39ShareMetadata,
   generateSlip39SharesFromKeycardEntropy,
   getSlip39ShareProgress,
+  previewSlip39ShareMetadata,
   recoverSlip39Secret,
   slip39SecretFromKeycardEntropy,
   slip39SecretToKeyPair,
@@ -22,6 +23,18 @@ describe('slip39 utilities', () => {
     expect(metadata.groupThreshold).toBe(1);
     expect(metadata.groupIndex).toBe(0);
     expect(metadata.memberThreshold).toBe(2);
+  });
+
+  it('previews share metadata from the first four words', () => {
+    const metadata = previewSlip39ShareMetadata(
+      SHARES[0].split(' ').slice(0, 4).join(' '),
+    );
+
+    expect(metadata).toMatchObject({
+      groupThreshold: 1,
+      groupIndex: 0,
+      memberThreshold: 2,
+    });
   });
 
   it('tracks share progress using the first share threshold', () => {
