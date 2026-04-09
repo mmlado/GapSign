@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Centralize all colors in `theme.ts`; replace hardcoded hex strings throughout components and screens with theme tokens
 - Use `keycard-sdk` BIP32 helpers for exported key TLV parsing and public key compression
+- Replace deprecated dependencies: ESLint v8→v9 flat config, vector-icons→MDI per-family package, RecoverableSignature for eth signature TLV parsing
 
 ### Fixed
 

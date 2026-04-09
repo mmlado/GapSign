@@ -11,6 +11,7 @@ module.exports = {
   setupFilesAfterEnv: ['./jest.setup.js'],
   moduleNameMapper: {
     '\\.svg': '<rootDir>/__mocks__/svgMock.js',
+    '^@react-native-vector-icons/.*': '<rootDir>/__mocks__/vectorIconsMock.js',
     '^@noble/hashes/sha3$':
       '<rootDir>/node_modules/@noble/hashes/sha3.js',
 
