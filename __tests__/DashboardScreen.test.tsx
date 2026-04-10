@@ -1,5 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { Linking } from 'react-native';
+
 import DashboardScreen from '../src/screens/DashboardScreen';
 
 // ---------------------------------------------------------------------------
@@ -37,6 +39,18 @@ jest.mock('../src/navigation/dashboardActions', () => ({
   },
 }));
 
+const mockLoadBooleanPreference = jest.fn();
+const mockSaveBooleanPreference = jest.fn();
+
+jest.mock('../src/storage/preferencesStorage', () => ({
+  preferenceKeys: {
+    dashboardKeycardNoticeDismissed:
+      'preference_dashboard_keycard_notice_dismissed',
+  },
+  loadBooleanPreference: (...args: any[]) => mockLoadBooleanPreference(...args),
+  saveBooleanPreference: (...args: any[]) => mockSaveBooleanPreference(...args),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -71,7 +85,16 @@ describe('DashboardScreen', () => {
     navigation.navigate.mockClear();
     navigation.setParams.mockClear();
     mockDashboardActions.length = 0;
+    mockLoadBooleanPreference.mockReset();
+    mockSaveBooleanPreference.mockReset();
+    mockLoadBooleanPreference.mockResolvedValue(true);
+    mockSaveBooleanPreference.mockResolvedValue(undefined);
     focusCallback = null;
+    jest.spyOn(Linking, 'openURL').mockResolvedValue();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('static layout', () => {
@@ -202,6 +225,58 @@ describe('DashboardScreen', () => {
       expect(navigation.setParams).not.toHaveBeenCalled();
       // Snackbar renders null when not visible — message not in output
       expect(toJson(renderer)).not.toContain('Card initialized');
+    });
+  });
+
+  describe('keycard notice', () => {
+    it('shows the notice when it has not been dismissed', async () => {
+      mockLoadBooleanPreference.mockResolvedValue(false);
+      const renderer = await renderScreen();
+
+      expect(toJson(renderer)).toContain('Keycard required');
+      expect(toJson(renderer)).toContain('Buy a Keycard');
+      expect(toJson(renderer)).toContain('ShellSummer9746');
+      expect(toJson(renderer)).toContain('on purchases over');
+      expect(toJson(renderer)).toContain('$25');
+    });
+
+    it('hides the notice when it was already dismissed', async () => {
+      const renderer = await renderScreen();
+      expect(toJson(renderer)).not.toContain('Keycard required');
+    });
+
+    it('opens the purchase link in the browser', async () => {
+      mockLoadBooleanPreference.mockResolvedValue(false);
+      const renderer = await renderScreen();
+      const purchaseLink = renderer.root.find(
+        (node: any) => node.props.testID === 'dashboard-keycard-purchase-link',
+      );
+
+      await act(async () => {
+        purchaseLink.props.onPress();
+      });
+
+      expect(Linking.openURL).toHaveBeenCalledWith(
+        'https://get.keycard.tech/vuxxnf',
+      );
+    });
+
+    it('dismisses the notice and remembers that choice', async () => {
+      mockLoadBooleanPreference.mockResolvedValue(false);
+      const renderer = await renderScreen();
+      const closeButton = renderer.root.find(
+        (node: any) => node.props.testID === 'dashboard-keycard-notice-close',
+      );
+
+      await act(async () => {
+        closeButton.props.onPress();
+      });
+
+      expect(mockSaveBooleanPreference).toHaveBeenCalledWith(
+        'preference_dashboard_keycard_notice_dismissed',
+        true,
+      );
+      expect(toJson(renderer)).not.toContain('Keycard required');
     });
   });
 });
