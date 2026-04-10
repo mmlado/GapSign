@@ -5,6 +5,7 @@ import { Icons } from '../assets/icons';
 type Entry = {
   label: string;
   onPress: () => void;
+  requiresNfc?: boolean;
 };
 
 type Props = {
@@ -25,7 +26,17 @@ export default function Menu({ entries }: Props) {
             onPress={action.onPress}
           >
             <Text style={styles.itemLabel}>{action.label}</Text>
-            <Icons.chevronRight width={24} height={24} />
+            <View style={styles.trailingIcons}>
+              {action.requiresNfc ? (
+                <Icons.nfcActivate
+                  testID={`menu-nfc-indicator-${i}`}
+                  width={20}
+                  height={20}
+                  color={theme.colors.primary}
+                />
+              ) : null}
+              <Icons.chevronRight width={24} height={24} />
+            </View>
           </Pressable>
         ))}
       </View>
@@ -73,5 +84,10 @@ const styles = StyleSheet.create({
     lineHeight: 15 * 1.45,
     letterSpacing: -0.135,
     color: theme.colors.onSurface,
+  },
+  trailingIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });

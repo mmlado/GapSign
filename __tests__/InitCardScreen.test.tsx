@@ -313,7 +313,7 @@ describe('InitCardScreen', () => {
 
   describe('dashboardEntry', () => {
     it('has the correct label', () => {
-      expect(dashboardEntry.label).toBe('Initialize a Keycard');
+      expect(dashboardEntry.label).toBe('Initialize');
     });
 
     it('navigates to InitCard when invoked', () => {

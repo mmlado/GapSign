@@ -65,6 +65,20 @@ describe('AddressMenuScreen', () => {
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Bitcoin');
     });
+
+    it('shows the NFC indicator for both address entries', async () => {
+      const renderer = await renderScreen();
+      expect(
+        renderer.root.findAll(
+          (node: any) => node.props.testID === 'menu-nfc-indicator-0',
+        ),
+      ).toHaveLength(1);
+      expect(
+        renderer.root.findAll(
+          (node: any) => node.props.testID === 'menu-nfc-indicator-1',
+        ),
+      ).toHaveLength(1);
+    });
   });
 
   describe('navigation', () => {

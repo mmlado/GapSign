@@ -9,6 +9,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import ExportKeyScreen from '../screens/ExportKeyScreen';
 import FactoryResetScreen from '../screens/FactoryResetScreen';
 import InitCardScreen from '../screens/InitCardScreen';
+import KeycardMenuScreen from '../screens/KeycardMenuScreen';
 import KeycardScreen from '../screens/KeycardScreen';
 import QRResultScreen from '../screens/QRResultScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
@@ -54,6 +55,11 @@ export const routes: Route[] = [
 
   // Keycard operations
   {
+    name: 'KeycardMenu',
+    component: KeycardMenuScreen,
+    options: { ...defaultHeaderOptions, title: 'Keycard' },
+  },
+  {
     name: 'InitCard',
     component: InitCardScreen,
     options: defaultHeaderOptions,
@@ -66,7 +72,7 @@ export const routes: Route[] = [
   {
     name: 'ExportKey',
     component: ExportKeyScreen,
-    options: { ...defaultHeaderOptions, title: 'Chain selection' },
+    options: { ...defaultHeaderOptions, title: 'Connect software wallet' },
   },
 
   // Key pair flow

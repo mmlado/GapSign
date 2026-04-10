@@ -240,7 +240,7 @@ describe('FactoryResetScreen', () => {
 
   describe('dashboardEntry', () => {
     it('has the correct label', () => {
-      expect(dashboardEntry.label).toBe('Factory reset card');
+      expect(dashboardEntry.label).toBe('Factory reset');
     });
 
     it('navigates to FactoryReset when invoked', () => {

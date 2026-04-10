@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Add Keycard menu and NFC action indicators so every visible NFC-triggering action shows the `Icons.nfcActivate` marker
+
 ## [0.9.0] - 2026-04-09
 
 ### Added

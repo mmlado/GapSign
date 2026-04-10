@@ -63,6 +63,18 @@ describe('ExportKeyScreen', () => {
       const renderer = await renderScreen();
       expect(toJson(renderer)).toContain('Ethereum');
     });
+
+    it('shows the NFC indicator for every export option', async () => {
+      const renderer = await renderScreen();
+
+      for (const index of [0, 1, 2, 3, 4, 5, 6]) {
+        expect(
+          renderer.root.findAll(
+            (node: any) => node.props.testID === `menu-nfc-indicator-${index}`,
+          ),
+        ).toHaveLength(1);
+      }
+    });
   });
 
   describe('navigation', () => {

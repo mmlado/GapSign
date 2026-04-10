@@ -16,6 +16,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
   const entries = [
     {
       label: 'Ethereum',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -24,6 +25,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Bitcoin',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -32,6 +34,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Bitcoin Multisig',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -40,6 +43,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Bitcoin Testnet',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -48,6 +52,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Bitget',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -56,6 +61,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Ledger Live',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
@@ -65,6 +71,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     },
     {
       label: 'Ledger Legacy',
+      requiresNfc: true,
       onPress: () =>
         navigation.navigate('Keycard', {
           operation: 'export_key',
