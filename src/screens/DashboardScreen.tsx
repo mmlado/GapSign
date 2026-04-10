@@ -1,14 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { DashboardScreenProps } from '../navigation/types';
-import theme from '../theme';
-import PrimaryButton from '../components/PrimaryButton';
+import { Snackbar } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { Icons } from '../assets/icons';
 import { dashboardActions } from '../navigation/dashboardActions';
-import { Snackbar } from 'react-native-paper';
+import { DashboardScreenProps } from '../navigation/types';
+import theme from '../theme';
+
+import DashboardKeycardNotice from '../components/DashboardKeycardNotice';
 import Menu from '../components/Menu';
+import PrimaryButton from '../components/PrimaryButton';
 
 export default function DashboardScreen({
   navigation,
@@ -46,6 +49,8 @@ export default function DashboardScreen({
       ]}
     >
       <Menu entries={entries} />
+
+      <DashboardKeycardNotice />
 
       <View style={styles.actions}>
         <PrimaryButton

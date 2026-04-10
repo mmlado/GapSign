@@ -1,14 +1,19 @@
 import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { SvgProps } from 'react-native-svg';
 import { Text } from 'react-native-paper';
 
 import theme from '../theme';
 
+type ButtonIconProps = {
+  width?: number;
+  height?: number;
+  color?: string;
+};
+
 type Props = {
   label: string;
   onPress: () => void;
-  icon?: React.FC<SvgProps>;
+  icon?: React.ComponentType<ButtonIconProps>;
   disabled?: boolean;
   testID?: string;
 };

@@ -4,6 +4,10 @@ export const PAIRING_PASSWORD = new Uint8Array([
   0x1e, 0x92, 0x48, 0x48, 0xbc, 0xf1,
 ]);
 
+export const KEYCARD_PURCHASE_URL = 'https://get.keycard.tech/vuxxnf';
+export const KEYCARD_PURCHASE_COUPON_CODE = 'ShellSummer9746';
+export const KEYCARD_PURCHASE_COUPON_MINIMUM = '$25';
+
 // Keycard CA public key — compressed secp256k1
 // Source: https://github.com/keycard-tech/keycard-shell/blob/master/app/storage/keys.c (_KEYCARD_CA_PUB)
 export const KEYCARD_CA_PUBLIC_KEY = new Uint8Array([
