@@ -21,10 +21,12 @@ export default function AddressesMenuScreen({
   const entries = [
     {
       label: 'Ethereum',
+      requiresNfc: true,
       onPress: () => navigation.navigate('AddressList', { coin: 'eth' }),
     },
     {
       label: 'Bitcoin',
+      requiresNfc: true,
       onPress: () => navigation.navigate('AddressList', { coin: 'btc' }),
     },
   ];

@@ -11,7 +11,7 @@ import { useFactoryReset } from '../hooks/keycard/useFactoryReset';
 import { Icons } from '../assets/icons';
 
 export const dashboardEntry: DashboardAction = {
-  label: 'Factory reset card',
+  label: 'Factory reset',
   navigate: nav => nav.navigate('FactoryReset'),
 };
 

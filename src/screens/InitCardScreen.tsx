@@ -20,7 +20,7 @@ import NFCBottomSheet from '../components/NFCBottomSheet';
 import PinPad from '../components/PinPad';
 
 export const dashboardEntry: DashboardAction = {
-  label: 'Initialize a Keycard',
+  label: 'Initialize',
   navigate: nav => nav.navigate('InitCard'),
 };
 
