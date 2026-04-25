@@ -1,0 +1,1 @@
+Add Bitcoin PSBT and BIP-322 message signing. Add Bitget multi-account export, EIP-2930 Ethereum transaction signing, and decoded EIP-712 review. Fix Rabby crypto-hdkey exports, SIWE/personal_sign hashing, malformed Ethereum sign request validation, scanner camera focus handling, and Android PIN pad spacing.

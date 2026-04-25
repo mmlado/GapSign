@@ -1,0 +1,1 @@
+Air-gapped hardware wallet companion for Ethereum and Bitcoin signing

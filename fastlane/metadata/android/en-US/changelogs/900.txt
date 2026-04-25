@@ -1,0 +1,1 @@
+Add Ledger Live and Ledger Legacy export. Add mnemonic verification plus SLIP39 share generation, import, and verification. Centralize theme colors, move exported key parsing to keycard-sdk BIP32 helpers, update deprecated dependencies, and reject unsupported Bitcoin sign request data types.

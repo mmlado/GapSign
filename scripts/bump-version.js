@@ -56,6 +56,20 @@ fs.writeFileSync(
 );
 
 // ---------------------------------------------------------------------------
+// package-lock.json
+// ---------------------------------------------------------------------------
+
+const lockPath = path.join(ROOT, 'package-lock.json');
+if (fs.existsSync(lockPath)) {
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  lock.version = newVersion;
+  if (lock.packages && lock.packages['']) {
+    lock.packages[''].version = newVersion;
+  }
+  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+}
+
+// ---------------------------------------------------------------------------
 // android/app/build.gradle
 // ---------------------------------------------------------------------------
 
@@ -89,6 +103,16 @@ let changelog = fs.readFileSync(changelogPath, 'utf8');
 
 const prevMatch = changelog.match(/## \[(\d+\.\d+\.\d+)\]/);
 const prev = prevMatch ? prevMatch[1] : null;
+const unreleasedMatch = changelog.match(
+  /## \[Unreleased\]\n([\s\S]*?)(?=\n## \[\d+\.\d+\.\d+\])/,
+);
+const releaseNotes =
+  unreleasedMatch?.[1]
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('- '))
+    .map(line => line.replace(/^- /, ''))
+    .join(' ') || `Release ${newVersion}.`;
 
 changelog = changelog.replace(
   /^## \[Unreleased\]\n/m,
@@ -105,13 +129,39 @@ if (prev) {
 fs.writeFileSync(changelogPath, changelog);
 
 // ---------------------------------------------------------------------------
+// F-Droid metadata and Fastlane changelog
+// ---------------------------------------------------------------------------
+
+const fdroidMetadataPath = path.join(ROOT, 'fdroiddata-com.gapsign.yml');
+if (fs.existsSync(fdroidMetadataPath)) {
+  let fdroidMetadata = fs.readFileSync(fdroidMetadataPath, 'utf8');
+  fdroidMetadata = fdroidMetadata
+    .replace(/versionName: \d+\.\d+\.\d+/, `versionName: ${newVersion}`)
+    .replace(/versionCode: \d+/, `versionCode: ${versionCode}`)
+    .replace(/commit: v\d+\.\d+\.\d+/, `commit: v${newVersion}`)
+    .replace(/CurrentVersion: \d+\.\d+\.\d+/, `CurrentVersion: ${newVersion}`)
+    .replace(/CurrentVersionCode: \d+/, `CurrentVersionCode: ${versionCode}`);
+  fs.writeFileSync(fdroidMetadataPath, fdroidMetadata);
+}
+
+const fastlaneChangelogDir = path.join(
+  ROOT,
+  'fastlane/metadata/android/en-US/changelogs',
+);
+fs.mkdirSync(fastlaneChangelogDir, { recursive: true });
+fs.writeFileSync(
+  path.join(fastlaneChangelogDir, `${versionCode}.txt`),
+  `${releaseNotes}\n`,
+);
+
+// ---------------------------------------------------------------------------
 // Commit and push branch
 // ---------------------------------------------------------------------------
 
 const branch = `release/v${newVersion}`;
 execSync(`git checkout -b ${branch}`, { stdio: 'inherit' });
 execSync(
-  'git add package.json android/app/build.gradle ios/GapSign.xcodeproj/project.pbxproj CHANGELOG.md',
+  'git add package.json package-lock.json android/app/build.gradle ios/GapSign.xcodeproj/project.pbxproj CHANGELOG.md fdroiddata-com.gapsign.yml fastlane/metadata/android/en-US/changelogs',
   { stdio: 'inherit' },
 );
 execSync(`git commit -m "chore: bump version to ${newVersion}"`, {

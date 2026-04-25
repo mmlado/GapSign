@@ -17,6 +17,11 @@ react {
     //   The cli.js file which is the React Native CLI entrypoint. Default is ../../node_modules/react-native/cli.js
     // cliFile = file("../../node_modules/react-native/cli.js")
 
+    def fdroidNode = file("../../.fdroid-node/bin/node")
+    if (fdroidNode.exists()) {
+        nodeExecutableAndArgs = [fdroidNode.absolutePath]
+    }
+
     /* Variants */
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
@@ -72,6 +77,11 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+def hasReleaseSigning = releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -92,11 +102,13 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        release {
-            storeFile file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "debug.keystore")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "android"
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "androiddebugkey"
-            keyPassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "android"
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeystorePassword
+            }
         }
     }
     buildTypes {
@@ -104,7 +116,9 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.release
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs false
