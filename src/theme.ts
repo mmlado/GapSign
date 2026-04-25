@@ -9,6 +9,7 @@ const theme = {
     surface: '#1e1e1e',
     surfaceVariant: '#2d2d2d',
     surfaceElevated: '#2A2A2A',
+    surfaceList: '#FFFFFF0D',
     surfaceSelected: '#474747',
     surfaceChoice: '#4A4459',
     surfacePassphrase: '#2A2438',

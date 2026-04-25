@@ -59,6 +59,11 @@ export type RootStackParamList = {
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
   };
+  About: undefined;
+  LicenseDetail: {
+    packageName: string;
+    licenseType: string;
+  };
 };
 
 export type DashboardScreenProps = NativeStackScreenProps<
@@ -159,6 +164,16 @@ export type SecretsMenuScreenProps = NativeStackScreenProps<
 export type ChangeSecretScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'ChangeSecret'
+>;
+
+export type AboutScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'About'
+>;
+
+export type LicenseDetailScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'LicenseDetail'
 >;
 
 export type DashboardAction = {

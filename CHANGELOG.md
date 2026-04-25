@@ -6,10 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Changed
+### Added
 
-- Add Keycard menu and NFC action indicators so every visible NFC-triggering action shows the `Icons.nfcActivate` marker
-- Add a dismissible dashboard Keycard purchase notice
+- About screen with app description, Keycard link, contributors, and license list
+- Keycard menu and NFC action indicators so every visible NFC-triggering action shows the `Icons.nfcActivate` marker
+- Dismissible dashboard Keycard purchase notice
 
 ## [0.9.0] - 2026-04-09
 
