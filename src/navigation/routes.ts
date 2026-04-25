@@ -5,7 +5,9 @@ import theme from '../theme';
 import type { RootStackParamList } from './types';
 
 // Top-level screens
+import AboutScreen from '../screens/AboutScreen';
 import DashboardScreen from '../screens/DashboardScreen';
+import LicenseDetailScreen from '../screens/LicenseDetailScreen';
 import ExportKeyScreen from '../screens/ExportKeyScreen';
 import FactoryResetScreen from '../screens/FactoryResetScreen';
 import InitCardScreen from '../screens/InitCardScreen';
@@ -152,5 +154,17 @@ export const routes: Route[] = [
     name: 'QRResult',
     component: QRResultScreen,
     options: { ...defaultHeaderOptions, title: 'Show signature to the wallet' },
+  },
+
+  // About
+  {
+    name: 'About',
+    component: AboutScreen,
+    options: { ...defaultHeaderOptions, title: 'About' },
+  },
+  {
+    name: 'LicenseDetail',
+    component: LicenseDetailScreen,
+    options: defaultHeaderOptions,
   },
 ];

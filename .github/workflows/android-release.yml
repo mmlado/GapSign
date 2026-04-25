@@ -17,6 +17,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Fetch commits since previous release tag
+        run: |
+          git fetch --tags --depth=1
+          PREV=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed -n '2p')
+          if [ -n "$PREV" ]; then
+            git fetch origin --shallow-exclude="$PREV"
+          else
+            git fetch --unshallow
+          fi
+
       - name: Resolve release tag
         id: ver
         run: |
@@ -40,6 +50,9 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Regenerate contributors from git history
+        run: node scripts/generate-contributors.js
 
       - name: Install NDK
         run: echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.1.12297006"
