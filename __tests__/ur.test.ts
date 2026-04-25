@@ -62,7 +62,7 @@ function buildBtcSignRequestCbor(
     .split('/')
     .map(component => {
       const hardened = component.endsWith("'");
-      const index = Number.parseInt(component.replace("'", ''), 10);
+      const index = Number.parseInt(component.replace(/'/g, ''), 10);
       return new PathComponent({ index, hardened });
     });
   const keypath = new CryptoKeypath(

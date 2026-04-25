@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Keycard menu and NFC action indicators so every visible NFC-triggering action shows the `Icons.nfcActivate` marker
 - Dismissible dashboard Keycard purchase notice
 
+### Fixed
+
+- Update vulnerable transitive npm packages and require patched Active Support versions
+
 ## [0.9.0] - 2026-04-09
 
 ### Added
