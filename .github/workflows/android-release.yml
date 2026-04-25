@@ -70,6 +70,15 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
+      - name: Build unsigned release APK
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Upload unsigned release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gapsign-unsigned-${{ steps.ver.outputs.tag }}
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+
       - name: Decode keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
@@ -79,7 +88,7 @@ jobs:
           ANDROID_KEYSTORE_PATH: release.keystore
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: cd android && ./gradlew assembleRelease --no-daemon
+        run: cd android && ./gradlew clean assembleRelease --no-daemon
 
       - name: Create GitHub Release and upload APK
         uses: softprops/action-gh-release@v2

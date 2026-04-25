@@ -1,0 +1,1 @@
+Add software wallet connection flow with extended public key export over QR.

@@ -1,0 +1,1 @@
+Initial release. Scan Ethereum wallet QR requests, sign transactions with Keycard, and show the signed result as a QR code for scanning back into the wallet.

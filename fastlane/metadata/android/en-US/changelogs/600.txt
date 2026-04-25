@@ -1,0 +1,1 @@
+Add genuine Keycard verification, recovery phrase import with optional BIP39 passphrase, clearer wrong-PIN feedback, and NFC disconnect guidance. Fix address menu spacing and improve address list rendering performance.

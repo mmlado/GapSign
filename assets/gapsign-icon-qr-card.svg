@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="cardFace" x1="202" y1="170" x2="822" y2="854" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2d2d2d"/>
+      <stop offset="0.52" stop-color="#1e1e1e"/>
+      <stop offset="1" stop-color="#121212"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="260" y1="234" x2="764" y2="790" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e2e2e2"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="188" y1="188" x2="836" y2="836" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff8a3d"/>
+      <stop offset="1" stop-color="#ff6400"/>
+    </linearGradient>
+    <filter id="shadow" x="-18%" y="-18%" width="136%" height="136%">
+      <feDropShadow dx="0" dy="30" stdDeviation="30" flood-color="#000000" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="132" y="158" width="760" height="708" rx="128" fill="url(#cardFace)" stroke="url(#edge)" stroke-width="34"/>
+    <rect x="502" y="226" width="20" height="572" rx="10" fill="#ff6400" opacity="0.9"/>
+  </g>
+
+  <g fill="url(#accent)">
+    <path d="M604 226h170v170H604V226Zm52 52v66h66v-66h-66Z" fill-rule="evenodd"/>
+    <path d="M250 620h170v170H250V620Zm52 52v66h66v-66h-66Z" fill-rule="evenodd"/>
+    <rect x="250" y="438" width="54" height="54" rx="11"/>
+    <rect x="316" y="438" width="54" height="54" rx="11" opacity="0.45"/>
+    <rect x="250" y="506" width="54" height="54" rx="11"/>
+    <rect x="316" y="506" width="108" height="54" rx="11"/>
+    <rect x="604" y="438" width="54" height="54" rx="11"/>
+    <rect x="670" y="438" width="108" height="54" rx="11"/>
+    <rect x="604" y="506" width="54" height="54" rx="11"/>
+    <rect x="724" y="506" width="54" height="54" rx="11"/>
+    <rect x="604" y="574" width="54" height="54" rx="11"/>
+    <rect x="670" y="574" width="54" height="54" rx="11" opacity="0.45"/>
+    <rect x="670" y="642" width="108" height="54" rx="11"/>
+    <rect x="604" y="710" width="54" height="54" rx="11"/>
+    <rect x="724" y="710" width="54" height="54" rx="11"/>
+  </g>
+
+  <g transform="translate(250 226) rotate(45 85 85)" fill="none" stroke="#ff6400" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="52" cy="85" r="34"/>
+    <path d="M86 85h112"/>
+    <path d="M162 85v40"/>
+    <path d="M198 85v30"/>
+  </g>
+</svg>

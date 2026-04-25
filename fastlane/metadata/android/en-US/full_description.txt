@@ -1,0 +1,17 @@
+GapSign is an air-gapped hardware wallet companion app that works with a Keycard NFC smart card to sign Ethereum and Bitcoin transactions without ever connecting to the internet.
+
+Requires a Keycard hardware smart card (keycard.tech). The app communicates with the card over NFC — no USB, no Bluetooth, no internet.
+
+All communication happens through animated QR codes — your private keys never touch a networked device.
+
+Features:
+- Sign Ethereum transactions (legacy, EIP-1559, EIP-2930)
+- Sign EIP-712 typed data with decoded preview before approval
+- Sign personal messages (EIP-191 / SIWE)
+- Sign Bitcoin transactions via PSBT
+- Sign Bitcoin messages (BIP-322)
+- Export wallet keys to MetaMask, Rabby, Sparrow, BlueWallet, and Bitget via UR QR codes
+- Communicate with Keycard via NFC
+- Fully air-gapped — no internet permission, no network calls, no telemetry
+
+GapSign is free and open-source software.
