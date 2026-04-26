@@ -73,11 +73,11 @@ jobs:
       - name: Build unsigned release APK
         run: cd android && ./gradlew assembleRelease --no-daemon
 
-      - name: Upload unsigned release APK artifact
+      - name: Upload unsigned release APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: gapsign-unsigned-${{ steps.ver.outputs.tag }}
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          path: android/app/build/outputs/apk/release/app-*-release-unsigned.apk
 
       - name: Decode keystore
         run: |
@@ -90,9 +90,9 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: cd android && ./gradlew clean assembleRelease --no-daemon
 
-      - name: Create GitHub Release and upload APK
+      - name: Create GitHub Release and upload APKs
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          files: android/app/build/outputs/apk/release/app-release.apk
+          files: android/app/build/outputs/apk/release/app-*-release.apk
           generate_release_notes: true
