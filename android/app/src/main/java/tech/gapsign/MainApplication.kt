@@ -1,4 +1,4 @@
-package com.gapsign
+package tech.gapsign
 
 import android.app.Application
 import com.facebook.react.PackageList
