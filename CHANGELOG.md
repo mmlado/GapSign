@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Update vulnerable transitive npm packages and require patched Active Support versions
+- Fix QRResult screen showing "Show signature to the wallet" title during wallet key export flow
 
 ## [0.9.0] - 2026-04-09
 

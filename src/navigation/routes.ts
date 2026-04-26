@@ -153,7 +153,7 @@ export const routes: Route[] = [
   {
     name: 'QRResult',
     component: QRResultScreen,
-    options: { ...defaultHeaderOptions, title: 'Show signature to the wallet' },
+    options: defaultHeaderOptions,
   },
 
   // About
