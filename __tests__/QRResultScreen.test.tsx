@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+
 import QRResultScreen from '../src/screens/QRResultScreen';
 
 // ---------------------------------------------------------------------------
@@ -27,14 +28,18 @@ jest.mock('react-native-qrcode-svg', () => () => null);
 const SAMPLE_UR =
   'ur:eth-signature/oyadtpdagdndcawmgtfrkigrpmndutdnbtmkestlrfamjljkjkisdljzjljedrfgwzrd';
 
-async function renderScreen(urString: string, navigation?: object) {
+async function renderScreen(
+  urString: string,
+  title = 'Show signature to the wallet',
+  navigation?: object,
+) {
   let renderer!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     renderer = ReactTestRenderer.create(
       <QRResultScreen
         route={
           {
-            params: { urString },
+            params: { urString, title },
             key: 'QRResult',
             name: 'QRResult',
           } as any
@@ -69,12 +74,27 @@ describe('QRResultScreen', () => {
     expect(toJson(renderer)).toContain('Done');
   });
 
+  it('calls setOptions with the provided title', async () => {
+    const setOptions = jest.fn();
+    await renderScreen(SAMPLE_UR, 'Show key to the wallet', {
+      reset: jest.fn(),
+      setOptions,
+    });
+    expect(setOptions).toHaveBeenCalledWith({
+      title: 'Show key to the wallet',
+    });
+  });
+
   it('"Done" resets navigation to Dashboard', async () => {
     const reset = jest.fn();
-    const renderer = await renderScreen(SAMPLE_UR, {
-      reset,
-      setOptions: jest.fn(),
-    });
+    const renderer = await renderScreen(
+      SAMPLE_UR,
+      'Show signature to the wallet',
+      {
+        reset,
+        setOptions: jest.fn(),
+      },
+    );
 
     const pressable = renderer.root.find(
       (node: any) => typeof node.props.onPress === 'function',

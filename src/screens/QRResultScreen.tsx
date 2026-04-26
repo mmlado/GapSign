@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import AnimatedURQRCode from 'react-native-animated-ur-qr';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +15,12 @@ export default function QRResultScreen({
 }: QRResultScreenProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { urString } = route.params;
+  const { urString, title } = route.params;
+
+  useEffect(() => {
+    navigation.setOptions({ title });
+  }, [navigation, title]);
+
   const qrSize = width - QR_PADDING * 2 - 12 * 2;
 
   const handleDone = useCallback(() => {

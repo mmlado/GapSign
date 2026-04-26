@@ -58,6 +58,7 @@ export type RootStackParamList = {
   AddressDetail: { address: string; index: number };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
+    title: string;
   };
   About: undefined;
   LicenseDetail: {

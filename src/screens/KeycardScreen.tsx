@@ -151,7 +151,10 @@ export default function KeycardScreen({
         index: 1,
         routes: [
           { name: 'QRScanner' },
-          { name: 'QRResult', params: { urString } },
+          {
+            name: 'QRResult',
+            params: { urString, title: 'Show signature to the wallet' },
+          },
         ],
       });
     },
@@ -165,7 +168,10 @@ export default function KeycardScreen({
         routes: [
           { name: 'Dashboard' },
           { name: 'ExportKey' },
-          { name: 'QRResult', params: { urString } },
+          {
+            name: 'QRResult',
+            params: { urString, title: 'Show key to the wallet' },
+          },
         ],
       });
     },
