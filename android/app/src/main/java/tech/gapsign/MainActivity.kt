@@ -1,4 +1,4 @@
-package com.gapsign
+package tech.gapsign
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
