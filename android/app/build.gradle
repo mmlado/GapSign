@@ -62,7 +62,7 @@ react {
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 /**
  * The preferred build flavor of JavaScriptCore (JSC)
@@ -115,7 +115,7 @@ android {
         abi {
             enable true
             reset()
-            include "arm64-v8a", "armeabi-v7a", "x86_64", "x86"
+            include "arm64-v8a", "armeabi-v7a"
             universalApk true
         }
     }
@@ -129,6 +129,10 @@ android {
                 signingConfig signingConfigs.release
             }
             minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableProguardInReleaseBuilds
+            ndk {
+                abiFilters "arm64-v8a", "armeabi-v7a"
+            }
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs false
         }
