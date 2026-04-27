@@ -1,12 +1,56 @@
 import { RLP } from '@ethereumjs/rlp';
-import { formatEther, formatGwei } from 'viem';
+import { decodeFunctionData, erc20Abi, formatEther, formatGwei } from 'viem';
 
 import { DATA_TYPE_LABELS } from '../types';
+
+export type DecodedCall =
+  | { kind: 'erc20-transfer'; to: string; amount: bigint }
+  | { kind: 'erc20-transferFrom'; from: string; to: string; amount: bigint }
+  | { kind: 'erc20-approve'; spender: string; amount: bigint }
+  | { kind: 'unknown-call'; selector: string };
+
+export function decodeCalldata(dataHex: string): DecodedCall | null {
+  if (!dataHex || dataHex === '0x' || dataHex.replace('0x', '').length < 8) {
+    return null;
+  }
+  try {
+    const { functionName, args } = decodeFunctionData({
+      abi: erc20Abi,
+      data: dataHex as `0x${string}`,
+    });
+    if (functionName === 'transfer') {
+      return {
+        kind: 'erc20-transfer',
+        to: args[0] as string,
+        amount: args[1] as bigint,
+      };
+    }
+    if (functionName === 'transferFrom') {
+      return {
+        kind: 'erc20-transferFrom',
+        from: args[0] as string,
+        to: args[1] as string,
+        amount: args[2] as bigint,
+      };
+    }
+    if (functionName === 'approve') {
+      return {
+        kind: 'erc20-approve',
+        spender: args[0] as string,
+        amount: args[1] as bigint,
+      };
+    }
+  } catch {
+    // not an ERC-20 call
+  }
+  return { kind: 'unknown-call', selector: dataHex.slice(0, 10) };
+}
 
 export type ParsedTx = {
   to?: string;
   value?: string; // in ETH, e.g. "0.01"
   data?: string; // hex calldata
+  decodedCall?: DecodedCall;
   nonce?: number;
   fees: ParsedFees;
 };
@@ -88,14 +132,16 @@ function parseLegacy(bytes: Buffer): ParsedTx {
     );
   }
   const [nonce, gasPrice, gasLimit, to, value, data] = decoded;
+  const dataHex =
+    assertBytes(data, 'data').length > 0
+      ? bufToHex(assertBytes(data, 'data'))
+      : undefined;
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
     value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
-    data:
-      assertBytes(data, 'data').length > 0
-        ? bufToHex(assertBytes(data, 'data'))
-        : undefined,
+    data: dataHex,
+    decodedCall: dataHex ? decodeCalldata(dataHex) ?? undefined : undefined,
     fees: {
       kind: 'legacy',
       gasPrice: weiToGwei(bufToBigInt(assertBytes(gasPrice, 'gasPrice'))),
@@ -130,14 +176,18 @@ function parseEIP1559(bytes: Buffer): ParsedTx {
     accessList,
   ] = decoded;
   assertList(accessList, 'accessList');
+  const dataHexEip1559 =
+    assertBytes(data, 'data').length > 0
+      ? bufToHex(assertBytes(data, 'data'))
+      : undefined;
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
     value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
-    data:
-      assertBytes(data, 'data').length > 0
-        ? bufToHex(assertBytes(data, 'data'))
-        : undefined,
+    data: dataHexEip1559,
+    decodedCall: dataHexEip1559
+      ? decodeCalldata(dataHexEip1559) ?? undefined
+      : undefined,
     fees: {
       kind: 'eip1559',
       maxFeePerGas: weiToGwei(
@@ -165,14 +215,18 @@ function parseEIP2930(bytes: Buffer): ParsedTx {
   }
   const [, nonce, gasPrice, gasLimit, to, value, data, accessList] = decoded;
   assertList(accessList, 'accessList');
+  const dataHexEip2930 =
+    assertBytes(data, 'data').length > 0
+      ? bufToHex(assertBytes(data, 'data'))
+      : undefined;
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
     value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
-    data:
-      assertBytes(data, 'data').length > 0
-        ? bufToHex(assertBytes(data, 'data'))
-        : undefined,
+    data: dataHexEip2930,
+    decodedCall: dataHexEip2930
+      ? decodeCalldata(dataHexEip2930) ?? undefined
+      : undefined,
     fees: {
       kind: 'legacy',
       gasPrice: weiToGwei(bufToBigInt(assertBytes(gasPrice, 'gasPrice'))),

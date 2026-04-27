@@ -38,7 +38,11 @@ export default function DonationList({ onShowQR }: DonationListProps) {
               accessibilityRole="button"
               accessibilityLabel={`Copy ${label} donation address`}
             >
-              <Icons.copy width={20} height={20} color={theme.colors.onSurface} />
+              <Icons.copy
+                width={20}
+                height={20}
+                color={theme.colors.onSurface}
+              />
             </Pressable>
             <Pressable
               style={styles.iconButton}

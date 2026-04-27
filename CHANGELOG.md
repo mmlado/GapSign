@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review UI; show unlimited approval warning
+
 ## [1.0.3] - 2026-04-27
 
 ### Changed
