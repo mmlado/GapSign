@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Publish signed universal APKs and SHA256 checksums in GitHub releases
+- Reduce release APK size with minification, resource shrinking, and ARM-only release splits
 
 ## [1.0.2] - 2026-04-27
 

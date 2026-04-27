@@ -52,7 +52,7 @@ All communication with your watch-only wallet happens through animated QR codes 
 ## Requirements
 
 - Android 7.0+ (API 24)
-- A [Status Keycard](https://keycard.tech) NFC smart card
+- A [Status Keycard](https://get.keycard.tech/vuxxnf) NFC smart card (use code **ShellSummer9746** for a discount on orders over $25)
 
 ## Getting the app
 
