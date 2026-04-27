@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Publish signed universal APKs and SHA256 checksums in GitHub releases
+
 ## [1.0.2] - 2026-04-27
 
 - Downgrade @react-native-async-storage/async-storage to 1.24.0 to remove local maven repo incompatible with F-Droid build server

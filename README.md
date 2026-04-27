@@ -58,6 +58,30 @@ All communication with your watch-only wallet happens through animated QR codes 
 
 Download the latest APK from [Releases](../../releases) and sideload it onto your device.
 
+<p>
+  <a href="https://github.com/mmlado/GapSign/releases/latest">
+    <img src="https://github.com/machiav3lli/oandbackupx/raw/034b226cea5c1b30eb4f6a6f313e4dadcbb0ece4/badge_github.png" alt="Get it on GitHub" height="70" />
+  </a>
+  <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/mmlado/GapSign">
+    <img src="https://raw.githubusercontent.com/ImranR98/Obtainium/main/assets/graphics/badge_obtainium.png" alt="Get it on Obtainium" height="70" />
+  </a>
+</p>
+
+For most users, install the universal APK. ABI-specific split APKs are also attached to releases for smaller downloads on known device architectures.
+
+### Verification info
+
+- Package ID: `tech.gapsign`
+- SHA-256 hash of signing certificate: `A8:3C:11:4B:1F:42:01:DA:FB:D0:3E:22:1F:1C:29:28:EC:B5:2B:78:BD:A5:E9:3F:29:6F:ED:F2:29:8E:54:6B`
+- `SHA256SUMS.txt` is attached to each GitHub Release to verify APK file hashes.
+
+### Install with Obtainium
+
+1. Install [Obtainium](https://github.com/ImranR98/Obtainium).
+2. Add `https://github.com/mmlado/GapSign` as a GitHub app source.
+3. Use GitHub Releases as the update source.
+4. Select the universal APK from the latest release.
+
 > The APK is built automatically by GitHub Actions on every version tag. F-Droid distribution is coming.
 
 ## Building from source
