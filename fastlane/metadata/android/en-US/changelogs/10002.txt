@@ -1,0 +1,1 @@
+Downgrade @react-native-async-storage/async-storage to 1.24.0 to remove local maven repo incompatible with F-Droid build server
