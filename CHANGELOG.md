@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-04-27
+
 ### Changed
 
 - Publish signed universal APKs and SHA256 checksums in GitHub releases
@@ -132,7 +134,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/mmlado/GapSign/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/mmlado/GapSign/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/mmlado/GapSign/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mmlado/GapSign/compare/v0.9.0...v1.0.0
