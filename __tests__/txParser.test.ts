@@ -1,6 +1,6 @@
 import { RLP } from '@ethereumjs/rlp';
 
-import { getTxLabel, parseTx } from '../src/utils/txParser';
+import { decodeCalldata, getTxLabel, parseTx } from '../src/utils/txParser';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -210,5 +210,83 @@ describe('getTxLabel', () => {
 
   it('returns fallback for unknown dataType', () => {
     expect(getTxLabel('deadbeef', 99)).toBe('Unknown (99)');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// decodeCalldata
+// ---------------------------------------------------------------------------
+
+describe('decodeCalldata', () => {
+  const RECIPIENT = '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045';
+  const SPENDER = '0x1111111111111111111111111111111111111111';
+  const FROM = '0x2222222222222222222222222222222222222222';
+
+  const TRANSFER_HEX =
+    '0xa9059cbb000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa9604500000000000000000000000000000000000000000000000000000000000f4240';
+  const APPROVE_UNLIMITED_HEX =
+    '0x095ea7b30000000000000000000000001111111111111111111111111111111111111111ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const TRANSFER_FROM_HEX =
+    '0x23b872dd0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa9604500000000000000000000000000000000000000000000000000000000000001f4';
+
+  it('decodes ERC-20 transfer', () => {
+    const result = decodeCalldata(TRANSFER_HEX);
+    expect(result).toEqual({
+      kind: 'erc20-transfer',
+      to: RECIPIENT,
+      amount: 1000000n,
+    });
+  });
+
+  it('decodes ERC-20 transferFrom', () => {
+    const result = decodeCalldata(TRANSFER_FROM_HEX);
+    expect(result).toEqual({
+      kind: 'erc20-transferFrom',
+      from: FROM,
+      to: RECIPIENT,
+      amount: 500n,
+    });
+  });
+
+  it('decodes ERC-20 approve with unlimited allowance', () => {
+    const result = decodeCalldata(APPROVE_UNLIMITED_HEX);
+    expect(result).toEqual({
+      kind: 'erc20-approve',
+      spender: SPENDER,
+      amount: 2n ** 256n - 1n,
+    });
+  });
+
+  it('returns unknown-call with raw selector for unrecognised calldata', () => {
+    const result = decodeCalldata('0xdeadbeef' + '00'.repeat(32));
+    expect(result).toEqual({ kind: 'unknown-call', selector: '0xdeadbeef' });
+  });
+
+  it('returns null for empty calldata', () => {
+    expect(decodeCalldata('0x')).toBeNull();
+    expect(decodeCalldata('')).toBeNull();
+  });
+
+  it('parseTx includes decodedCall for ERC-20 transfer in legacy tx', () => {
+    // Build a legacy tx with ERC-20 transfer calldata
+    const toContract = Buffer.from(
+      'a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      'hex',
+    );
+    const calldata = Buffer.from(TRANSFER_HEX.replace('0x', ''), 'hex');
+    const encoded = RLP.encode([
+      Buffer.from([0x01]), // nonce
+      Buffer.from([0x09, 0xc4]), // gasPrice
+      Buffer.from([0x52, 0x08]), // gasLimit
+      toContract,
+      Buffer.alloc(0), // value = 0
+      calldata,
+    ]);
+    const tx = parseTx(Buffer.from(encoded).toString('hex'), 1);
+    expect(tx?.decodedCall).toEqual({
+      kind: 'erc20-transfer',
+      to: RECIPIENT,
+      amount: 1000000n,
+    });
   });
 });

@@ -3,6 +3,7 @@ import { Icon, Text } from 'react-native-paper';
 
 import type { EthSignRequest } from '../types';
 import theme from '../theme';
+import DecodedCallSection from './DecodedCallSection';
 import InfoRow from './InfoRow';
 import { parseEip712Summary } from '../utils/eip712';
 import { getTxLabel, parseTx } from '../utils/txParser';
@@ -68,7 +69,7 @@ export default function EthSignRequestDetail({
         </View>
       )}
 
-      {tx?.to && (
+      {tx?.to && !tx.decodedCall && (
         <View style={styles.row}>
           <InfoRow label="To" value={tx.to} />
         </View>
@@ -80,10 +81,14 @@ export default function EthSignRequestDetail({
         </View>
       )}
 
-      {tx?.value !== undefined && (
+      {tx?.value !== undefined && (tx.value !== '0' || !tx.decodedCall) && (
         <View style={styles.row}>
           <InfoRow label="Amount" value={tx.value} />
         </View>
+      )}
+
+      {tx?.decodedCall && (
+        <DecodedCallSection call={tx.decodedCall} tokenContract={tx.to} />
       )}
 
       {tx?.fees.kind === 'legacy' && (
@@ -137,12 +142,14 @@ export default function EthSignRequestDetail({
         </>
       )}
 
-      <View style={styles.row}>
-        <InfoRow
-          label="Data"
-          value={eip712?.rawJson ?? tx?.data ?? request.signData}
-        />
-      </View>
+      {(!tx?.decodedCall || tx.decodedCall.kind === 'unknown-call') && (
+        <View style={styles.row}>
+          <InfoRow
+            label="Data"
+            value={eip712?.rawJson ?? tx?.data ?? request.signData}
+          />
+        </View>
+      )}
 
       {request.origin && (
         <View style={styles.row}>

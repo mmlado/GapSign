@@ -107,7 +107,11 @@ describe('AddressDetailScreen', () => {
             {
               key: 'AddressDetail',
               name: 'AddressDetail',
-              params: { address: ETH_ADDRESS, index: 0, title: 'Ethereum donation' },
+              params: {
+                address: ETH_ADDRESS,
+                index: 0,
+                title: 'Ethereum donation',
+              },
             } as any
           }
         />,
