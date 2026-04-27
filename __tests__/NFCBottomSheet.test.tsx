@@ -1,5 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import type { NFCOperation } from '../src/components/NFCBottomSheet';
 
@@ -45,20 +45,9 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-async function renderSheet(nfc: NFCOperation, showOnDone?: boolean) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <NFCBottomSheet nfc={nfc} onCancel={onCancel} showOnDone={showOnDone} />,
-    );
-  });
-  return renderer;
-}
-
-function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) => typeof node.props.onPress === 'function',
-    { deep: true },
+function renderSheet(nfc: NFCOperation, showOnDone?: boolean) {
+  return render(
+    <NFCBottomSheet nfc={nfc} onCancel={onCancel} showOnDone={showOnDone} />,
   );
 }
 
@@ -68,55 +57,50 @@ function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
 
 describe('NFCBottomSheet', () => {
   describe('status text', () => {
-    it('renders the status string', async () => {
-      const renderer = await renderSheet(
-        makeNfc('nfc', { status: 'Waiting for card…' }),
-      );
-      expect(JSON.stringify(renderer.toJSON())).toContain('Waiting for card…');
+    it('renders the status string', () => {
+      renderSheet(makeNfc('nfc', { status: 'Waiting for card…' }));
+      expect(screen.getByText('Waiting for card…')).toBeTruthy();
     });
   });
 
   describe('Cancel button — phase nfc (scanning)', () => {
-    it('shows the Cancel button', async () => {
-      const renderer = await renderSheet(makeNfc('nfc'));
-      expect(JSON.stringify(renderer.toJSON())).toContain('Cancel');
+    it('shows the Cancel button', () => {
+      renderSheet(makeNfc('nfc'));
+      expect(screen.getByText('Cancel')).toBeTruthy();
     });
 
-    it('calls onCancel when Cancel is pressed', async () => {
-      const renderer = await renderSheet(makeNfc('nfc'));
-      const [cancelBtn] = getPressables(renderer);
-      await act(async () => {
-        cancelBtn.props.onPress();
-      });
+    it('calls onCancel when Cancel is pressed', () => {
+      renderSheet(makeNfc('nfc'));
+      fireEvent.press(screen.getByText('Cancel'));
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Cancel button — phase error', () => {
-    it('shows the Cancel button', async () => {
-      const renderer = await renderSheet(makeNfc('error'));
-      expect(JSON.stringify(renderer.toJSON())).toContain('Cancel');
+    it('shows the Cancel button', () => {
+      renderSheet(makeNfc('error'));
+      expect(screen.getByText('Cancel')).toBeTruthy();
     });
 
-    it('calls onCancel when Cancel is pressed', async () => {
-      const renderer = await renderSheet(makeNfc('error'));
-      const [cancelBtn] = getPressables(renderer);
-      await act(async () => {
-        cancelBtn.props.onPress();
-      });
+    it('calls onCancel when Cancel is pressed', () => {
+      renderSheet(makeNfc('error'));
+      fireEvent.press(screen.getByText('Cancel'));
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Cancel button — phase done with showOnDone', () => {
-    it('hides the Cancel button (success variant)', async () => {
-      const renderer = await renderSheet(makeNfc('done'), true);
-      expect(JSON.stringify(renderer.toJSON())).not.toContain('Cancel');
+    it('hides the Cancel button (success variant)', () => {
+      renderSheet(makeNfc('done'), true);
+      expect(screen.queryByText('Cancel')).toBeNull();
     });
 
-    it('has no pressable elements', async () => {
-      const renderer = await renderSheet(makeNfc('done'), true);
-      expect(getPressables(renderer)).toHaveLength(0);
+    it('has no pressable elements', () => {
+      renderSheet(makeNfc('done'), true);
+      const pressables = screen.UNSAFE_queryAllByType(
+        require('react-native').Pressable,
+      );
+      expect(pressables).toHaveLength(0);
     });
   });
 
@@ -127,108 +111,83 @@ describe('NFCBottomSheet', () => {
       onProceed.mockClear();
     });
 
-    it('shows the unverified title', async () => {
-      const renderer = await renderSheet(
+    it('shows the unverified title', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(JSON.stringify(renderer.toJSON())).toContain('Unverified Keycard');
+      expect(screen.getByText('Unverified Keycard')).toBeTruthy();
     });
 
-    it('shows warning body text', async () => {
-      const renderer = await renderSheet(
+    it('shows warning body text', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'could not be verified',
-      );
+      expect(screen.queryByText(/could not be verified/)).toBeTruthy();
     });
 
-    it('shows Cancel and Proceed Anyway buttons', async () => {
-      const renderer = await renderSheet(
+    it('shows Cancel and Proceed Anyway buttons', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      const json = JSON.stringify(renderer.toJSON());
-      expect(json).toContain('Cancel');
-      expect(json).toContain('Proceed Anyway');
+      expect(screen.getByText('Cancel')).toBeTruthy();
+      expect(screen.getByText('Proceed Anyway')).toBeTruthy();
     });
 
-    it('calls onCancel when Cancel is pressed', async () => {
-      const renderer = await renderSheet(
+    it('calls onCancel when Cancel is pressed', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      const cancelBtn = renderer.root.find(
-        (n: any) => n.props.testID === 'cancel-button',
-      );
-      await act(async () => {
-        cancelBtn.props.onPress();
-      });
+      fireEvent.press(screen.getByTestId('cancel-button'));
       expect(onCancel).toHaveBeenCalledTimes(1);
       expect(onProceed).not.toHaveBeenCalled();
     });
 
-    it('calls proceedWithNonGenuine when Proceed Anyway is pressed', async () => {
-      const renderer = await renderSheet(
+    it('calls proceedWithNonGenuine when Proceed Anyway is pressed', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      const proceedBtn = renderer.root.find(
-        (n: any) => n.props.testID === 'proceed-button',
-      );
-      await act(async () => {
-        proceedBtn.props.onPress();
-      });
+      fireEvent.press(screen.getByTestId('proceed-button'));
       expect(onProceed).toHaveBeenCalledTimes(1);
       expect(onCancel).not.toHaveBeenCalled();
     });
 
-    it('does not show the NFC icon area', async () => {
-      const renderer = await renderSheet(
+    it('does not show the NFC icon area', () => {
+      renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Tap your Keycard',
-      );
+      expect(screen.queryByText('Tap your Keycard')).toBeNull();
     });
   });
 
   describe('pin_entry phase', () => {
-    it('renders PinPad instead of the bottom sheet', async () => {
+    it('renders PinPad instead of the bottom sheet', () => {
       const submitPin = jest.fn();
-      const renderer = await renderSheet(makeNfc('pin_entry', { submitPin }));
-      expect(
-        renderer.root.findAll((n: any) => n.props.testID === 'pin-pad').length,
-      ).toBeGreaterThan(0);
+      renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(screen.getByTestId('pin-pad')).toBeTruthy();
     });
 
-    it('does not show the NFC sheet content', async () => {
+    it('does not show the NFC sheet content', () => {
       const submitPin = jest.fn();
-      const renderer = await renderSheet(makeNfc('pin_entry', { submitPin }));
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Tap your Keycard',
-      );
+      renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(screen.queryByText('Tap your Keycard')).toBeNull();
     });
   });
 
   describe('pulse rings', () => {
-    it('renders more animated views when scanning than when done+showOnDone', async () => {
-      function countViews(r: ReactTestRenderer.ReactTestRenderer) {
-        return r.root.findAll(() => true, { deep: true }).length;
-      }
-
-      const scanning = await renderSheet(makeNfc('nfc'));
-      const success = await renderSheet(makeNfc('done'), true);
-
-      expect(countViews(scanning)).toBeGreaterThan(countViews(success));
+    it('renders more elements when scanning than when done+showOnDone', () => {
+      const { toJSON: scanningJSON } = renderSheet(makeNfc('nfc'));
+      const { toJSON: successJSON } = renderSheet(makeNfc('done'), true);
+      const scanningCount = JSON.stringify(scanningJSON()).length;
+      const successCount = JSON.stringify(successJSON()).length;
+      expect(scanningCount).toBeGreaterThan(successCount);
     });
 
-    it('error has fewer elements than scanning (no pulse rings)', async () => {
-      function countViews(r: ReactTestRenderer.ReactTestRenderer) {
-        return r.root.findAll(() => true, { deep: true }).length;
-      }
-
-      const scanning = await renderSheet(makeNfc('nfc'));
-      const error = await renderSheet(makeNfc('error'));
-
-      expect(countViews(error)).toBeLessThan(countViews(scanning));
+    it('error has fewer elements than scanning (no pulse rings)', () => {
+      const { toJSON: scanningJSON } = renderSheet(makeNfc('nfc'));
+      const { toJSON: errorJSON } = renderSheet(makeNfc('error'));
+      const scanningCount = JSON.stringify(scanningJSON()).length;
+      const errorCount = JSON.stringify(errorJSON()).length;
+      expect(errorCount).toBeLessThan(scanningCount);
     });
   });
 });

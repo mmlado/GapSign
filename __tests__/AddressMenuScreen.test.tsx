@@ -1,6 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import { getActivePressables } from './testUtils';
+import React from 'react';
+import { act, render, screen, fireEvent } from '@testing-library/react-native';
 import AddressMenuScreen, {
   dashboardEntry,
 } from '../src/screens/address/AddressMenuScreen';
@@ -18,6 +17,17 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      nfcActivate: Icon,
+    },
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -25,14 +35,8 @@ jest.mock('react-native-paper', () => {
 const navigation = { navigate: jest.fn() } as any;
 const route = { key: 'AddressMenu', name: 'AddressMenu' } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <AddressMenuScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+function renderScreen() {
+  return render(<AddressMenuScreen navigation={navigation} route={route} />);
 }
 
 // ---------------------------------------------------------------------------
@@ -45,38 +49,28 @@ describe('AddressMenuScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders the "Ethereum" menu entry', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Ethereum');
+    it('renders the "Ethereum" menu entry', () => {
+      renderScreen();
+      expect(screen.getByText('Ethereum')).toBeTruthy();
     });
 
-    it('renders the "Bitcoin" menu entry', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Bitcoin');
+    it('renders the "Bitcoin" menu entry', () => {
+      renderScreen();
+      expect(screen.getByText('Bitcoin')).toBeTruthy();
     });
 
-    it('shows the NFC indicator for both address entries', async () => {
-      const renderer = await renderScreen();
-      expect(
-        renderer.root.findAll(
-          (node: any) => node.props.testID === 'menu-nfc-indicator-0',
-        ),
-      ).toHaveLength(1);
-      expect(
-        renderer.root.findAll(
-          (node: any) => node.props.testID === 'menu-nfc-indicator-1',
-        ),
-      ).toHaveLength(1);
+    it('shows the NFC indicator for both address entries', () => {
+      renderScreen();
+      expect(screen.getByTestId('menu-nfc-indicator-0')).toBeTruthy();
+      expect(screen.getByTestId('menu-nfc-indicator-1')).toBeTruthy();
     });
   });
 
   describe('navigation', () => {
     it('navigates to AddressList with coin=eth when Ethereum is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      // First entry is Ethereum
+      renderScreen();
       await act(async () => {
-        pressables[0].props.onPress();
+        fireEvent.press(screen.getByText('Ethereum'));
       });
       expect(navigation.navigate).toHaveBeenCalledWith('AddressList', {
         coin: 'eth',
@@ -84,11 +78,9 @@ describe('AddressMenuScreen', () => {
     });
 
     it('navigates to AddressList with coin=btc when Bitcoin is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      // Second entry is Bitcoin
+      renderScreen();
       await act(async () => {
-        pressables[1].props.onPress();
+        fireEvent.press(screen.getByText('Bitcoin'));
       });
       expect(navigation.navigate).toHaveBeenCalledWith('AddressList', {
         coin: 'btc',

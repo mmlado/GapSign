@@ -1,5 +1,6 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import ExportKeyScreen, {
   dashboardEntry,
 } from '../src/screens/ExportKeyScreen';
@@ -17,6 +18,17 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      nfcActivate: Icon,
+    },
+  };
+});
+
 // ExportKeyScreen imports dashboardActions for border-style calculation.
 jest.mock('../src/navigation/dashboardActions', () => ({
   dashboardActions: [{ label: 'Connect software wallet', navigate: jest.fn() }],
@@ -28,17 +40,13 @@ jest.mock('../src/navigation/dashboardActions', () => ({
 
 const navigation = { navigate: jest.fn() } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <ExportKeyScreen
-        navigation={navigation}
-        route={{ key: 'ExportKey', name: 'ExportKey' } as any}
-      />,
-    );
-  });
-  return renderer;
+function renderScreen() {
+  return render(
+    <ExportKeyScreen
+      navigation={navigation}
+      route={{ key: 'ExportKey', name: 'ExportKey' } as any}
+    />,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -51,61 +59,37 @@ describe('ExportKeyScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders without crashing', async () => {
-      await expect(renderScreen()).resolves.toBeDefined();
+    it('renders without crashing', () => {
+      expect(renderScreen()).toBeDefined();
     });
 
-    it('renders the Ethereum option', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Ethereum');
+    it('renders the Ethereum option', () => {
+      renderScreen();
+      expect(screen.getByText('Ethereum')).toBeTruthy();
     });
 
-    it('shows the NFC indicator for every export option', async () => {
-      const renderer = await renderScreen();
+    it('shows the NFC indicator for every export option', () => {
+      renderScreen();
 
       for (const index of [0, 1, 2, 3, 4, 5, 6]) {
-        expect(
-          renderer.root.findAll(
-            (node: any) => node.props.testID === `menu-nfc-indicator-${index}`,
-          ),
-        ).toHaveLength(1);
+        expect(screen.getByTestId(`menu-nfc-indicator-${index}`)).toBeTruthy();
       }
     });
   });
 
   describe('navigation', () => {
-    it('navigates to Keycard with export_key operation when Ethereum is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-      );
-      const pressable = pressables.find(
-        node =>
-          node.findAll((n: any) => n.props.children === 'Ethereum').length > 0,
-      )!;
-      await act(async () => {
-        pressable.props.onPress();
-      });
+    it('navigates to Keycard with export_key operation when Ethereum is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Ethereum'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: "m/44'/60'/0'",
       });
     });
 
-    it('navigates to Keycard with source "account.ledger_live" when Ledger Live is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-      );
-      const pressable = pressables.find(
-        node =>
-          node.findAll((n: any) => n.props.children === 'Ledger Live').length >
-          0,
-      )!;
-      expect(pressable).toBeDefined();
-      await act(async () => {
-        pressable.props.onPress();
-      });
+    it('navigates to Keycard with source "account.ledger_live" when Ledger Live is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Ledger Live'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: "m/44'/60'/0'",
@@ -113,20 +97,9 @@ describe('ExportKeyScreen', () => {
       });
     });
 
-    it('navigates to Keycard with source "account.ledger_legacy" when Ledger Legacy is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-      );
-      const pressable = pressables.find(
-        node =>
-          node.findAll((n: any) => n.props.children === 'Ledger Legacy')
-            .length > 0,
-      )!;
-      expect(pressable).toBeDefined();
-      await act(async () => {
-        pressable.props.onPress();
-      });
+    it('navigates to Keycard with source "account.ledger_legacy" when Ledger Legacy is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Ledger Legacy'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: "m/44'/60'/0'",
@@ -134,19 +107,9 @@ describe('ExportKeyScreen', () => {
       });
     });
 
-    it('navigates to Keycard with derivationPath "bitget" when Bitget is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-      );
-      const pressable = pressables.find(
-        node =>
-          node.findAll((n: any) => n.props.children === 'Bitget').length > 0,
-      )!;
-      expect(pressable).toBeDefined();
-      await act(async () => {
-        pressable.props.onPress();
-      });
+    it('navigates to Keycard with derivationPath "bitget" when Bitget is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Bitget'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: 'bitget',

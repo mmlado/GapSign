@@ -1,5 +1,5 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { render } from '@testing-library/react-native';
 
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import KeycardScreen from '../src/screens/KeycardScreen';
@@ -151,13 +151,15 @@ function hookMock(phase: string) {
 
 async function renderScreen(phase: string, route = signRoute) {
   mockUseKeycardOperation.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <KeycardScreen route={route} navigation={navigation} />,
-    );
-  });
-  return renderer;
+  const view = render(<KeycardScreen route={route} navigation={navigation} />);
+  await act(async () => {});
+  return view;
+}
+
+async function renderWithMockedHook(route = signRoute) {
+  const view = render(<KeycardScreen route={route} navigation={navigation} />);
+  await act(async () => {});
+  return view;
 }
 
 describe('KeycardScreen', () => {
@@ -236,11 +238,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: new Uint8Array([1, 2, 3]),
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={signRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(signRoute);
       expect(navigation.reset).not.toHaveBeenCalled();
     });
 
@@ -254,11 +252,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: new Uint8Array([1, 2, 3]),
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={signRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(signRoute);
       expect(navigation.reset).not.toHaveBeenCalled();
       await act(async () => {
         jest.advanceTimersByTime(800);
@@ -277,11 +271,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: { masterFingerprint: 1, descriptors: [] },
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={btcExportRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(btcExportRoute);
       await act(async () => {
         jest.advanceTimersByTime(800);
       });
@@ -306,11 +296,7 @@ describe('KeycardScreen', () => {
           sourceFingerprint: 0xdeadbeef,
         },
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={ethExportRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(ethExportRoute);
       await act(async () => {
         jest.advanceTimersByTime(800);
       });
@@ -356,11 +342,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: { masterFingerprint: 1, keys: [] },
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={bitgetExportRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(bitgetExportRoute);
       expect(navigation.reset).not.toHaveBeenCalled();
       await act(async () => {
         jest.advanceTimersByTime(800);
@@ -385,11 +367,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: { psbtHex: '70736274ff01000a0200000000000000000000' },
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={btcSignRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(btcSignRoute);
       expect(navigation.reset).not.toHaveBeenCalled();
       await act(async () => {
         jest.advanceTimersByTime(800);
@@ -405,11 +383,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: { psbtHex: undefined },
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={btcSignRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(btcSignRoute);
       await act(async () => {
         jest.advanceTimersByTime(800);
       });
@@ -453,11 +427,7 @@ describe('KeycardScreen', () => {
         ...hookMock('done'),
         result: new Uint8Array([1, 2, 3]),
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <KeycardScreen route={btcMessageSignRoute} navigation={navigation} />,
-        );
-      });
+      await renderWithMockedHook(btcMessageSignRoute);
       await act(async () => {
         jest.advanceTimersByTime(800);
       });

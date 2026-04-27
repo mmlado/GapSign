@@ -1,5 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import QRResultScreen from '../src/screens/QRResultScreen';
 
@@ -19,7 +19,7 @@ jest.mock('react-native-paper', () => {
   };
 });
 
-jest.mock('react-native-qrcode-svg', () => () => null);
+jest.mock('react-native-animated-ur-qr', () => () => null);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,32 +28,28 @@ jest.mock('react-native-qrcode-svg', () => () => null);
 const SAMPLE_UR =
   'ur:eth-signature/oyadtpdagdndcawmgtfrkigrpmndutdnbtmkestlrfamjljkjkisdljzjljedrfgwzrd';
 
-async function renderScreen(
+function renderScreen(
   urString: string,
   title = 'Show signature to the wallet',
   navigation?: object,
 ) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <QRResultScreen
-        route={
-          {
-            params: { urString, title },
-            key: 'QRResult',
-            name: 'QRResult',
-          } as any
-        }
-        navigation={
-          (navigation ?? {
-            reset: jest.fn(),
-            setOptions: jest.fn(),
-          }) as any
-        }
-      />,
-    );
-  });
-  return renderer;
+  return render(
+    <QRResultScreen
+      route={
+        {
+          params: { urString, title },
+          key: 'QRResult',
+          name: 'QRResult',
+        } as any
+      }
+      navigation={
+        (navigation ?? {
+          reset: jest.fn(),
+          setOptions: jest.fn(),
+        }) as any
+      }
+    />,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -61,18 +57,18 @@ async function renderScreen(
 // ---------------------------------------------------------------------------
 
 describe('QRResultScreen', () => {
-  it('renders without crashing', async () => {
-    await expect(renderScreen(SAMPLE_UR)).resolves.toBeDefined();
+  it('renders without crashing', () => {
+    expect(renderScreen(SAMPLE_UR)).toBeDefined();
   });
 
-  it('renders the "Done" button', async () => {
-    const renderer = await renderScreen(SAMPLE_UR);
-    expect(JSON.stringify(renderer.toJSON())).toContain('Done');
+  it('renders the "Done" button', () => {
+    renderScreen(SAMPLE_UR);
+    expect(screen.getByText('Done')).toBeTruthy();
   });
 
-  it('calls setOptions with the provided title', async () => {
+  it('calls setOptions with the provided title', () => {
     const setOptions = jest.fn();
-    await renderScreen(SAMPLE_UR, 'Show key to the wallet', {
+    renderScreen(SAMPLE_UR, 'Show key to the wallet', {
       reset: jest.fn(),
       setOptions,
     });
@@ -81,23 +77,14 @@ describe('QRResultScreen', () => {
     });
   });
 
-  it('"Done" resets navigation to Dashboard', async () => {
+  it('"Done" resets navigation to Dashboard', () => {
     const reset = jest.fn();
-    const renderer = await renderScreen(
-      SAMPLE_UR,
-      'Show signature to the wallet',
-      {
-        reset,
-        setOptions: jest.fn(),
-      },
-    );
-
-    const pressable = renderer.root.find(
-      (node: any) => typeof node.props.onPress === 'function',
-    );
-    await act(async () => {
-      pressable.props.onPress();
+    renderScreen(SAMPLE_UR, 'Show signature to the wallet', {
+      reset,
+      setOptions: jest.fn(),
     });
+
+    fireEvent.press(screen.getByText('Done'));
 
     expect(reset).toHaveBeenCalledWith({
       index: 0,

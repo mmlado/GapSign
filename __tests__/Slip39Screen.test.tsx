@@ -1,5 +1,6 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { TextInput } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import Slip39Screen from '../src/screens/keypair/Slip39Screen';
@@ -87,7 +88,7 @@ function route(mode: 'generate' | 'import' | 'verify') {
   return { key: 'Slip39', name: 'Slip39', params: { mode } } as any;
 }
 
-async function renderScreen(
+function renderScreen(
   mode: 'generate' | 'import' | 'verify' = 'import',
   phase = 'idle',
   result: string | null = null,
@@ -102,13 +103,7 @@ async function renderScreen(
   mockUseVerifyFingerprint.mockReturnValue(
     hookMock(mockStartVerify, phase, result),
   );
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <Slip39Screen navigation={navigation} route={route(mode)} />,
-    );
-  });
-  return renderer;
+  return render(<Slip39Screen navigation={navigation} route={route(mode)} />);
 }
 
 async function flushTimers() {
@@ -117,32 +112,19 @@ async function flushTimers() {
   });
 }
 
-function toText(r: ReactTestRenderer.ReactTestRenderer): string {
-  return extractText(r.toJSON());
+function getTextInputs() {
+  return screen.UNSAFE_getAllByType(TextInput);
 }
 
-function getTextInputs(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll((node: any) => node.type === 'TextInput', {
-    deep: true,
-  });
-}
-
-function extractText(node: any): string {
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
-}
-
-function getPressableByText(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  text: string,
-) {
-  return renderer.root
-    .findAll((node: any) => typeof node.props.onPress === 'function', {
-      deep: true,
-    })
-    .find(node => extractText(node).includes(text));
+function getPressableByText(text: string) {
+  let node: any = screen.getByText(text);
+  while (node) {
+    if (typeof node.props?.onPress === 'function') {
+      return node;
+    }
+    node = node.parent;
+  }
+  throw new Error(`No pressable found for ${text}`);
 }
 
 describe('Slip39Screen', () => {
@@ -174,28 +156,30 @@ describe('Slip39Screen', () => {
   });
 
   it('adds shares until the SLIP39 threshold is reached', async () => {
-    const renderer = await renderScreen('import');
+    renderScreen('import');
 
-    expect(toText(renderer)).toContain('Enter share 1.');
-    expect(toText(renderer)).not.toContain('SLIP39 passphrase');
+    expect(screen.getByText(/Enter share 1\./)).toBeTruthy();
+    expect(
+      screen.queryByPlaceholderText('SLIP39 passphrase (optional)'),
+    ).toBeNull();
     await act(async () => {
-      getTextInputs(renderer)[0].props.onChangeText(SHARE_1);
+      fireEvent.changeText(getTextInputs()[0], SHARE_1);
     });
-    expect(toText(renderer)).toContain('20/20 words');
+    expect(screen.getByText('20/20 words')).toBeTruthy();
     await act(async () => {
-      getPressableByText(renderer, 'Next share')!.props.onPress();
+      fireEvent.press(screen.getByText('Next share'));
     });
-    expect(toText(renderer)).toContain('Enter share 2 of 2.');
-    expect(toText(renderer)).not.toContain(SHARE_1);
-    expect(getTextInputs(renderer)).toHaveLength(2);
-    expect(getTextInputs(renderer)[0].props.value).toBe('');
+    expect(screen.getByText(/Enter share 2 of 2\./)).toBeTruthy();
+    expect(screen.queryByText(SHARE_1)).toBeNull();
+    expect(getTextInputs()).toHaveLength(2);
+    expect(getTextInputs()[0].props.value).toBe('');
     await act(async () => {
-      getTextInputs(renderer)[0].props.onChangeText(SHARE_2);
+      fireEvent.changeText(getTextInputs()[0], SHARE_2);
     });
-    expect(getPressableByText(renderer, 'Import to Keycard')).toBeDefined();
+    expect(getPressableByText('Import to Keycard')).toBeDefined();
 
     await act(async () => {
-      getPressableByText(renderer, 'Import to Keycard')!.props.onPress();
+      fireEvent.press(screen.getByText('Import to Keycard'));
     });
     await flushTimers();
 
@@ -203,43 +187,40 @@ describe('Slip39Screen', () => {
   });
 
   it('enables Next share for a complete valid share', async () => {
-    const renderer = await renderScreen('import');
+    renderScreen('import');
 
     await act(async () => {
-      getTextInputs(renderer)[0].props.onChangeText(SHARE_1);
+      fireEvent.changeText(getTextInputs()[0], SHARE_1);
     });
 
-    expect(toText(renderer)).toContain('20/20 words');
-    expect(getPressableByText(renderer, 'Next share')!.props.disabled).toBe(
-      false,
-    );
+    expect(screen.getByText('20/20 words')).toBeTruthy();
+    expect(getPressableByText('Next share').props.disabled).toBe(false);
   });
 
   it('shows an error for invalid completed SLIP39 words', async () => {
-    const renderer = await renderScreen('import');
+    renderScreen('import');
 
     await act(async () => {
-      getTextInputs(renderer)[0].props.onChangeText(INVALID_SHARE);
+      fireEvent.changeText(getTextInputs()[0], INVALID_SHARE);
     });
 
-    expect(toText(renderer)).toContain('"nope" is not a valid SLIP39 word');
-    expect(getPressableByText(renderer, 'Next share')!.props.disabled).toBe(
-      true,
-    );
+    expect(screen.getByText('"nope" is not a valid SLIP39 word')).toBeTruthy();
+    expect(getPressableByText('Next share').props.disabled).toBe(true);
   });
 
   it('shows the passphrase field after four words when preview metadata indicates 1/1', async () => {
-    const renderer = await renderScreen('import');
+    renderScreen('import');
 
     await act(async () => {
-      getTextInputs(renderer)[0].props.onChangeText(
+      fireEvent.changeText(
+        getTextInputs()[0],
         SINGLE_SHARE.split(' ').slice(0, 4).join(' '),
       );
     });
 
-    expect(toText(renderer)).toContain('Enter share 1 of 1.');
-    expect(getTextInputs(renderer)).toHaveLength(2);
-    expect(getPressableByText(renderer, 'Import to Keycard')).toBeDefined();
+    expect(screen.getByText(/Enter share 1 of 1\./)).toBeTruthy();
+    expect(getTextInputs()).toHaveLength(2);
+    expect(getPressableByText('Import to Keycard')).toBeDefined();
   });
 
   it('uses verify hook and reset toast in verify mode', async () => {
@@ -252,10 +233,10 @@ describe('Slip39Screen', () => {
   });
 
   it('starts Keycard entropy generation before showing generated shares', async () => {
-    const renderer = await renderScreen('generate');
+    renderScreen('generate');
 
     await act(async () => {
-      getPressableByText(renderer, 'Generate SLIP39 shares')!.props.onPress();
+      fireEvent.press(screen.getByText('Generate SLIP39 shares'));
     });
 
     expect(mockStartGenerate).toHaveBeenCalledTimes(1);
@@ -263,14 +244,8 @@ describe('Slip39Screen', () => {
 
   it('shows generated shares before loading them to the card', async () => {
     const entropy = new Uint8Array([1, 2, 3]);
-    const renderer = await renderScreen(
-      'generate',
-      'idle',
-      null,
-      'done',
-      entropy,
-    );
-    expect(toText(renderer)).toContain('Creating SLIP39 shares...');
+    renderScreen('generate', 'idle', null, 'done', entropy);
+    expect(screen.getByText('Creating SLIP39 shares...')).toBeTruthy();
     await flushTimers();
 
     expect(mockGenerateSlip39SharesFromKeycardEntropy).toHaveBeenCalledWith(
@@ -279,45 +254,45 @@ describe('Slip39Screen', () => {
     );
     expect(entropy).toEqual(new Uint8Array([0, 0, 0]));
 
-    expect(toText(renderer)).toContain('Share');
-    expect(toText(renderer)).toContain('1/2');
-    expect(toText(renderer)).not.toContain('2/2');
-    expect(toText(renderer)).toContain('1.very');
-    expect(toText(renderer)).toContain('20.lend');
-    expect(toText(renderer)).toContain('2 shares generated, threshold 2');
+    expect(screen.getByText('Share')).toBeTruthy();
+    expect(screen.getByText('1/2')).toBeTruthy();
+    expect(screen.queryByText('2/2')).toBeNull();
+    expect(screen.getByText('very')).toBeTruthy();
+    expect(screen.getByText('lend')).toBeTruthy();
+    expect(screen.getByText('2 shares generated, threshold 2')).toBeTruthy();
     await act(async () => {
-      getPressableByText(renderer, 'I saved this share')!.props.onPress();
+      fireEvent.press(screen.getByText('I saved this share'));
     });
-    expect(toText(renderer)).toContain(
-      'Confirm word positions in your backup share.',
-    );
-    expect(toText(renderer)).not.toContain('1.very');
+    expect(
+      screen.getByText('Confirm word positions in your backup share.'),
+    ).toBeTruthy();
+    expect(screen.queryByText('very')).toBeNull();
 
     await act(async () => {
-      getPressableByText(renderer, 'academic')!.props.onPress();
+      fireEvent.press(screen.getByText('academic'));
     });
-    expect(toText(renderer)).toContain('____');
+    expect(screen.getAllByText('____').length).toBeGreaterThan(0);
 
     for (const word of ['graduate', 'academic', 'acid', 'best']) {
       await act(async () => {
-        getPressableByText(renderer, word)!.props.onPress();
+        fireEvent.press(screen.getByText(word));
       });
     }
-    expect(toText(renderer)).toContain('2/2');
+    expect(screen.getByText('2/2')).toBeTruthy();
     await act(async () => {
-      getPressableByText(renderer, 'I saved the last share')!.props.onPress();
+      fireEvent.press(screen.getByText('I saved the last share'));
     });
     for (const word of ['graduate', 'academic', 'agency', 'dish']) {
       await act(async () => {
-        getPressableByText(renderer, word)!.props.onPress();
+        fireEvent.press(screen.getByText(word));
       });
     }
-    expect(toText(renderer)).toContain('All shares saved');
+    expect(screen.getByText(/All shares saved/)).toBeTruthy();
     await act(async () => {
-      getPressableByText(renderer, 'Load to Keycard')!.props.onPress();
+      fireEvent.press(screen.getByText('Load to Keycard'));
     });
-    expect(toText(renderer)).toContain('Preparing key material...');
-    expect(toText(renderer)).not.toContain('All shares are saved');
+    expect(screen.getByText('Preparing key material...')).toBeTruthy();
+    expect(screen.queryByText(/All shares are saved/)).toBeNull();
     await flushTimers();
     expect(mockStartLoad).toHaveBeenCalledTimes(1);
     expect(mockResetGenerate).toHaveBeenCalledTimes(1);

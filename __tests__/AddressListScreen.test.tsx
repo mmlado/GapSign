@@ -1,5 +1,7 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { FlatList } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+
 import AddressListScreen from '../src/screens/address/AddressListScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 
@@ -32,12 +34,6 @@ jest.mock('../src/utils/hdAddress', () => ({
   parseExtendedKeyFromTLV: jest.fn(),
   deriveAddresses: (...args: any[]) => mockDeriveAddresses(...args),
 }));
-
-// Mock PinPad
-jest.mock('../src/components/PinPad', () => jest.fn(() => null));
-import PinPad from '../src/components/PinPad';
-import { getActivePressables } from './testUtils';
-const MockPinPad = PinPad as jest.MockedFunction<typeof PinPad>;
 
 // Mock useAddresses
 const mockStart = jest.fn();
@@ -89,16 +85,13 @@ async function renderScreen(
   coin: 'eth' | 'btc' = 'eth',
 ) {
   mockUseAddresses.mockReturnValue(hookMock(phase, result));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <AddressListScreen navigation={navigation} route={makeRoute(coin)} />,
-    );
-  });
+  const view = render(
+    <AddressListScreen navigation={navigation} route={makeRoute(coin)} />,
+  );
   await act(async () => {
     jest.runAllTimers();
   });
-  return renderer;
+  return view;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +107,6 @@ describe('AddressListScreen', () => {
     mockCancel.mockClear();
     mockSubmitPin.mockClear();
     MockNFCBottomSheet.mockClear();
-    MockPinPad.mockClear();
     mockDeriveAddresses.mockClear();
     mockAccountKey.deriveChild.mockClear();
     navigation.goBack.mockClear();
@@ -204,19 +196,16 @@ describe('AddressListScreen', () => {
 
     it('renders the first batch of addresses', async () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('0xAddr'));
-      const renderer = await renderScreen('done', mockAccountKey);
-      expect(JSON.stringify(renderer.toJSON())).toContain('0xAddr0');
-      expect(JSON.stringify(renderer.toJSON())).toContain('0xAddr19');
+      await renderScreen('done', mockAccountKey);
+      expect(screen.getByText('0xAddr0')).toBeTruthy();
+      expect(screen.getByText('0xAddr9')).toBeTruthy();
     });
 
     it('loads more addresses starting at the next index on subsequent calls', async () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('0xAddr'));
-      const renderer = await renderScreen('done', mockAccountKey);
+      await renderScreen('done', mockAccountKey);
 
-      // Simulate onEndReached
-      const flatList = renderer.root.find(
-        (node: any) => typeof node.props.onEndReached === 'function',
-      );
+      const flatList = screen.UNSAFE_getByType(FlatList);
       await act(async () => {
         flatList.props.onEndReached();
       });
@@ -238,11 +227,10 @@ describe('AddressListScreen', () => {
   describe('row press', () => {
     it('navigates to AddressDetail with address and index when a row is pressed', async () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('0xAddr'));
-      const renderer = await renderScreen('done', mockAccountKey);
+      await renderScreen('done', mockAccountKey);
 
-      const pressables = getActivePressables(renderer);
       await act(async () => {
-        pressables[0].props.onPress();
+        fireEvent.press(screen.getByText('0xAddr0'));
       });
 
       expect(navigation.navigate).toHaveBeenCalledWith('AddressDetail', {
@@ -257,10 +245,7 @@ describe('AddressListScreen', () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('bc1q'));
       await renderScreen('done', mockAccountKey, 'btc');
       expect(mockDeriveAddresses).toHaveBeenCalled();
-      const rendered = JSON.stringify(
-        (await renderScreen('done', mockAccountKey, 'btc')).toJSON(),
-      );
-      expect(rendered).toContain('bc1q0');
+      expect(screen.getByText('bc1q0')).toBeTruthy();
     });
   });
 });

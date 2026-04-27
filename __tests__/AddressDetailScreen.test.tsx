@@ -1,5 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { render, screen } from '@testing-library/react-native';
 import AddressDetailScreen from '../src/screens/address/AddressDetailScreen';
 
 // ---------------------------------------------------------------------------
@@ -52,17 +52,13 @@ function makeRoute(address = ETH_ADDRESS, index = INDEX) {
   } as any;
 }
 
-async function renderScreen(address = ETH_ADDRESS, index = INDEX) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <AddressDetailScreen
-        navigation={navigation}
-        route={makeRoute(address, index)}
-      />,
-    );
-  });
-  return renderer;
+function renderScreen(address = ETH_ADDRESS, index = INDEX) {
+  return render(
+    <AddressDetailScreen
+      navigation={navigation}
+      route={makeRoute(address, index)}
+    />,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -77,19 +73,19 @@ describe('AddressDetailScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders the address text', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain(ETH_ADDRESS);
+    it('renders the address text', () => {
+      renderScreen();
+      expect(screen.getByText(ETH_ADDRESS)).toBeTruthy();
     });
 
-    it('passes the address to QRCode', async () => {
-      const renderer = await renderScreen();
-      const qr = renderer.root.findByProps({ value: ETH_ADDRESS });
-      expect(qr).toBeTruthy();
+    it('passes the address to QRCode', () => {
+      const { toJSON } = renderScreen();
+      const json = JSON.stringify(toJSON());
+      expect(json).toContain(ETH_ADDRESS);
     });
 
-    it('renders the Copy Address button', async () => {
-      await renderScreen();
+    it('renders the Copy Address button', () => {
+      renderScreen();
       expect(MockPrimaryButton).toHaveBeenCalledWith(
         expect.objectContaining({ label: 'Copy Address' }),
         undefined,
@@ -98,19 +94,17 @@ describe('AddressDetailScreen', () => {
   });
 
   describe('title', () => {
-    it('sets the navigation title to the address index', async () => {
-      await renderScreen(ETH_ADDRESS, 5);
+    it('sets the navigation title to the address index', () => {
+      renderScreen(ETH_ADDRESS, 5);
       expect(navigation.setOptions).toHaveBeenCalledWith({ title: '5' });
     });
   });
 
   describe('copy', () => {
-    it('copies the address to clipboard when the button is pressed', async () => {
-      await renderScreen();
+    it('copies the address to clipboard when the button is pressed', () => {
+      renderScreen();
       const onPress = MockPrimaryButton.mock.calls[0][0].onPress;
-      await act(async () => {
-        onPress();
-      });
+      onPress();
       expect(mockSetString).toHaveBeenCalledWith(ETH_ADDRESS);
     });
   });

@@ -1,6 +1,6 @@
-import React, { act } from 'react';
+import React from 'react';
 import { Linking } from 'react-native';
-import ReactTestRenderer from 'react-test-renderer';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 import AboutScreen from '../src/screens/AboutScreen';
 
@@ -20,77 +20,37 @@ const navigation = {
   navigate: jest.fn(),
 } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <AboutScreen navigation={navigation} route={{} as any} />,
-    );
-  });
-
-  return renderer;
-}
-
-function findText(renderer: ReactTestRenderer.ReactTestRenderer, text: string) {
-  return renderer.root.findAll(
-    (node: any) => node.type === 'Text' && node.props.children === text,
-  )[0];
-}
-
-function findNearestPressable(node: ReactTestRenderer.ReactTestInstance) {
-  let current: ReactTestRenderer.ReactTestInstance | null = node;
-
-  while (current) {
-    if (typeof current.props.onPress === 'function') {
-      return current;
-    }
-    current = current.parent;
-  }
-
-  throw new Error('No pressable parent found');
+function renderScreen() {
+  return render(<AboutScreen navigation={navigation} route={{} as any} />);
 }
 
 describe('AboutScreen', () => {
   beforeEach(() => {
     navigation.navigate.mockClear();
-    jest.spyOn(Linking, 'openURL').mockResolvedValue();
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('renders the app, Keycard, contributors, and license sections', async () => {
-    const renderer = await renderScreen();
-
-    expect(JSON.stringify(renderer.toJSON())).toContain('GapSign');
-    expect(JSON.stringify(renderer.toJSON())).toContain('Keycard required');
-    expect(JSON.stringify(renderer.toJSON())).toContain('Mladen Milankovic');
-    expect(JSON.stringify(renderer.toJSON())).toContain('Open-source licenses');
+  it('renders the app, Keycard, contributors, and license sections', () => {
+    renderScreen();
+    expect(screen.getAllByText('GapSign').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Keycard required/)).toBeTruthy();
+    expect(screen.getByText('Mladen Milankovic')).toBeTruthy();
+    expect(screen.getByText('Open-source licenses')).toBeTruthy();
   });
 
-  it('opens contributor GitHub profiles', async () => {
-    const renderer = await renderScreen();
-    const contributor = findText(renderer, 'Mladen Milankovic');
-    const pressable = findNearestPressable(contributor);
-
-    await act(async () => {
-      pressable.props.onPress();
-    });
-
+  it('opens contributor GitHub profiles', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('Mladen Milankovic'));
     expect(Linking.openURL).toHaveBeenCalledWith('https://github.com/mmlado');
   });
 
-  it('navigates to license details from a license row', async () => {
-    const renderer = await renderScreen();
-    const packageName = findText(renderer, '@ethereumjs/rlp');
-    const pressable = findNearestPressable(packageName);
-
-    await act(async () => {
-      pressable.props.onPress();
-    });
-
+  it('navigates to license details from a license row', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('@ethereumjs/rlp'));
     expect(navigation.navigate).toHaveBeenCalledWith('LicenseDetail', {
       packageName: '@ethereumjs/rlp',
       licenseType: 'MPL-2.0',

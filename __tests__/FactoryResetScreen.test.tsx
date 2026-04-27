@@ -1,10 +1,10 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import FactoryResetScreen, {
   dashboardEntry,
 } from '../src/screens/FactoryResetScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
-import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -60,15 +60,20 @@ function hookMock(phase: string) {
   };
 }
 
-async function renderScreen(phase = 'idle') {
+function renderScreen(phase = 'idle') {
   mockUseFactoryReset.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <FactoryResetScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+  return render(<FactoryResetScreen navigation={navigation} route={route} />);
+}
+
+function pressableForText(text: string | RegExp) {
+  let node: any = screen.getByText(text);
+  while (node) {
+    if (typeof node.props?.onPress === 'function') {
+      return node;
+    }
+    node = node.parent;
+  }
+  throw new Error(`No pressable found for ${String(text)}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -98,30 +103,26 @@ describe('FactoryResetScreen', () => {
       });
     });
 
-    it('shows the warning description', async () => {
-      const renderer = await renderScreen('idle');
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Factory reset permanently erases key pair',
-      );
+    it('shows the warning description', () => {
+      renderScreen('idle');
+      expect(
+        screen.getByText(/Factory reset permanently erases key pair/),
+      ).toBeTruthy();
     });
 
-    it('shows the backup checkbox label', async () => {
-      const renderer = await renderScreen('idle');
-      expect(JSON.stringify(renderer.toJSON())).toContain('I have a backup');
+    it('shows the backup checkbox label', () => {
+      renderScreen('idle');
+      expect(screen.getByText(/I have a backup/)).toBeTruthy();
     });
 
-    it('shows the "Factory reset Keycard" button', async () => {
-      const renderer = await renderScreen('idle');
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Factory reset Keycard',
-      );
+    it('shows the "Factory reset Keycard" button', () => {
+      renderScreen('idle');
+      expect(screen.getByText('Factory reset Keycard')).toBeTruthy();
     });
 
-    it('does not show the idle content when not idle', async () => {
-      const renderer = await renderScreen('nfc');
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Factory reset Keycard',
-      );
+    it('does not show the idle content when not idle', () => {
+      renderScreen('nfc');
+      expect(screen.queryByText('Factory reset Keycard')).toBeNull();
     });
   });
 
@@ -130,46 +131,25 @@ describe('FactoryResetScreen', () => {
   // -------------------------------------------------------------------------
 
   describe('button state', () => {
-    it('the reset button is disabled initially', async () => {
-      const renderer = await renderScreen('idle');
-      const button = renderer.root.find(
-        (node: any) =>
-          typeof node.props.onPress === 'function' &&
-          node.props.disabled === true,
+    it('the reset button is disabled initially', () => {
+      renderScreen('idle');
+      expect(pressableForText('Factory reset Keycard').props.disabled).toBe(
+        true,
       );
-      expect(button).toBeDefined();
     });
 
-    it('the reset button becomes active after checking the checkbox', async () => {
-      const renderer = await renderScreen('idle');
-
-      // Before checking: only the checkbox is active
-      expect(getActivePressables(renderer)).toHaveLength(1);
-
-      const checkbox = getActivePressables(renderer)[0];
-      await act(async () => {
-        checkbox.props.onPress();
-      });
-
-      // After checking: more pressables active than before (reset button unlocked)
-      expect(getActivePressables(renderer).length).toBeGreaterThan(1);
+    it('the reset button becomes active after checking the checkbox', () => {
+      renderScreen('idle');
+      fireEvent.press(screen.getByText(/I have a backup/));
+      expect(pressableForText('Factory reset Keycard').props.disabled).toBe(
+        false,
+      );
     });
 
-    it('calls start() when reset button is pressed after checking checkbox', async () => {
-      const renderer = await renderScreen('idle');
-
-      const checkbox = getActivePressables(renderer)[0];
-      await act(async () => {
-        checkbox.props.onPress();
-      });
-
-      const activePressables = getActivePressables(renderer);
-      // Last pressable is the reset button
-      const resetButton = activePressables[activePressables.length - 1];
-      await act(async () => {
-        resetButton.props.onPress();
-      });
-
+    it('calls start() when reset button is pressed after checking checkbox', () => {
+      renderScreen('idle');
+      fireEvent.press(screen.getByText(/I have a backup/));
+      fireEvent.press(screen.getByText('Factory reset Keycard'));
       expect(mockStart).toHaveBeenCalledTimes(1);
     });
   });

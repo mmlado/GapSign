@@ -1,32 +1,8 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
 
-import {
-  useConfirmedEntry,
-  UseConfirmedEntry,
-} from '../src/hooks/useConfirmedEntry';
+import { useConfirmedEntry } from '../src/hooks/useConfirmedEntry';
 
-// ---------------------------------------------------------------------------
-// Test wrapper
-// ---------------------------------------------------------------------------
-
-let latestHook: UseConfirmedEntry;
 const onComplete = jest.fn();
-
-function TestHook({ length }: { length?: number }) {
-  latestHook = useConfirmedEntry(onComplete, { length });
-  return null;
-}
-
-async function mountHook(length?: number) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      React.createElement(TestHook, { length }),
-    );
-  });
-  return renderer;
-}
 
 beforeEach(() => {
   onComplete.mockClear();
@@ -38,76 +14,78 @@ beforeEach(() => {
 
 describe('useConfirmedEntry', () => {
   describe('initial state', () => {
-    it('starts on the entry step', async () => {
-      await mountHook();
-      expect(latestHook.step).toBe('entry');
+    it('starts on the entry step', () => {
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
+      expect(result.current.step).toBe('entry');
     });
 
-    it('has no error initially', async () => {
-      await mountHook();
-      expect(latestHook.error).toBeUndefined();
+    it('has no error initially', () => {
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
+      expect(result.current.error).toBeUndefined();
     });
 
-    it('defaults length to 6', async () => {
-      await mountHook();
-      expect(latestHook.length).toBe(6);
+    it('defaults length to 6', () => {
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
+      expect(result.current.length).toBe(6);
     });
 
-    it('uses a custom length when provided', async () => {
-      await mountHook(12);
-      expect(latestHook.length).toBe(12);
+    it('uses a custom length when provided', () => {
+      const { result } = renderHook(() =>
+        useConfirmedEntry(onComplete, { length: 12 }),
+      );
+      expect(result.current.length).toBe(12);
     });
   });
 
   describe('handleEntry', () => {
     it('advances to confirm step', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
-      expect(latestHook.step).toBe('confirm');
+      expect(result.current.step).toBe('confirm');
     });
   });
 
   describe('handleConfirm', () => {
     it('calls onComplete when values match', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
       await act(async () => {
-        latestHook.handleConfirm('123456');
+        result.current.handleConfirm('123456');
       });
       expect(onComplete).toHaveBeenCalledWith('123456');
-      expect(latestHook.error).toBeUndefined();
+      expect(result.current.error).toBeUndefined();
     });
 
     it('sets error when values do not match', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
       await act(async () => {
-        latestHook.handleConfirm('999999');
+        result.current.handleConfirm('999999');
       });
       expect(onComplete).not.toHaveBeenCalled();
-      expect(latestHook.error).toBe("PINs don't match");
+      expect(result.current.error).toBe("PINs don't match");
     });
 
     it('does not clear the stored value on match (allows jumpToConfirm re-use)', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
       await act(async () => {
-        latestHook.handleConfirm('123456');
+        result.current.handleConfirm('123456');
       });
       // jumpToConfirm and confirm again — should still match
       await act(async () => {
-        latestHook.jumpToConfirm();
+        result.current.jumpToConfirm();
       });
       await act(async () => {
-        latestHook.handleConfirm('123456');
+        result.current.handleConfirm('123456');
       });
       expect(onComplete).toHaveBeenCalledTimes(2);
     });
@@ -115,102 +93,102 @@ describe('useConfirmedEntry', () => {
 
   describe('goBack', () => {
     it('returns false on the entry step (not handled)', async () => {
-      await mountHook();
-      let result!: boolean;
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
+      let returnVal!: boolean;
       await act(async () => {
-        result = latestHook.goBack();
+        returnVal = result.current.goBack();
       });
-      expect(result).toBe(false);
-      expect(latestHook.step).toBe('entry');
+      expect(returnVal).toBe(false);
+      expect(result.current.step).toBe('entry');
     });
 
     it('returns true and goes back to entry from confirm', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
-      let result!: boolean;
+      let returnVal!: boolean;
       await act(async () => {
-        result = latestHook.goBack();
+        returnVal = result.current.goBack();
       });
-      expect(result).toBe(true);
-      expect(latestHook.step).toBe('entry');
+      expect(returnVal).toBe(true);
+      expect(result.current.step).toBe('entry');
     });
 
     it('clears the error when going back', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
       await act(async () => {
-        latestHook.handleConfirm('999999'); // mismatch → error
+        result.current.handleConfirm('999999'); // mismatch → error
       });
       await act(async () => {
-        latestHook.goBack();
+        result.current.goBack();
       });
-      expect(latestHook.error).toBeUndefined();
+      expect(result.current.error).toBeUndefined();
     });
   });
 
   describe('jumpToConfirm', () => {
     it('moves to confirm step and clears error', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
-        latestHook.handleConfirm('999999'); // create error
+        result.current.handleEntry('123456');
+        result.current.handleConfirm('999999'); // create error
       });
       await act(async () => {
-        latestHook.goBack(); // back to entry
-        latestHook.jumpToConfirm();
+        result.current.goBack(); // back to entry
+        result.current.jumpToConfirm();
       });
-      expect(latestHook.step).toBe('confirm');
-      expect(latestHook.error).toBeUndefined();
+      expect(result.current.step).toBe('confirm');
+      expect(result.current.error).toBeUndefined();
     });
   });
 
   describe('clearError', () => {
     it('clears a mismatch error', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
-        latestHook.handleConfirm('999999');
+        result.current.handleEntry('123456');
+        result.current.handleConfirm('999999');
       });
-      expect(latestHook.error).toBeDefined();
+      expect(result.current.error).toBeDefined();
       await act(async () => {
-        latestHook.clearError();
+        result.current.clearError();
       });
-      expect(latestHook.error).toBeUndefined();
+      expect(result.current.error).toBeUndefined();
     });
   });
 
   describe('reset', () => {
     it('goes back to entry step with no error', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
-        latestHook.handleConfirm('999999');
+        result.current.handleEntry('123456');
+        result.current.handleConfirm('999999');
       });
       await act(async () => {
-        latestHook.reset();
+        result.current.reset();
       });
-      expect(latestHook.step).toBe('entry');
-      expect(latestHook.error).toBeUndefined();
+      expect(result.current.step).toBe('entry');
+      expect(result.current.error).toBeUndefined();
     });
 
     it('clears stored value so a subsequent confirm fails', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useConfirmedEntry(onComplete, {}));
       await act(async () => {
-        latestHook.handleEntry('123456');
+        result.current.handleEntry('123456');
       });
       await act(async () => {
-        latestHook.reset();
+        result.current.reset();
       });
       await act(async () => {
-        latestHook.handleEntry('654321');
-        latestHook.handleConfirm('123456'); // original value, should fail
+        result.current.handleEntry('654321');
+        result.current.handleConfirm('123456'); // original value, should fail
       });
       expect(onComplete).not.toHaveBeenCalled();
-      expect(latestHook.error).toBe("PINs don't match");
+      expect(result.current.error).toBe("PINs don't match");
     });
   });
 });

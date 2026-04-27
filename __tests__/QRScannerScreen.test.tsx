@@ -1,5 +1,6 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { render } from '@testing-library/react-native';
+
 import QRScannerScreen from '../src/screens/QRScannerScreen';
 
 // ---------------------------------------------------------------------------
@@ -77,13 +78,11 @@ function scan(value: string) {
 }
 
 async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <QRScannerScreen navigation={navigation} route={{} as any} />,
-    );
-  });
-  return renderer;
+  const view = render(
+    <QRScannerScreen navigation={navigation} route={{} as any} />,
+  );
+  await act(async () => {});
+  return view;
 }
 
 // ---------------------------------------------------------------------------

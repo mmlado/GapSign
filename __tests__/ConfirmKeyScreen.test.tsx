@@ -1,9 +1,9 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import ConfirmKeyScreen from '../src/screens/keypair/ConfirmKeyScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import PinPad from '../src/components/PinPad';
-import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -25,6 +25,17 @@ const MockNFCBottomSheet = NFCBottomSheet as jest.MockedFunction<
 
 jest.mock('../src/components/PinPad', () => jest.fn(() => null));
 const MockPinPad = PinPad as jest.MockedFunction<typeof PinPad>;
+
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      checkmark: Icon,
+      exclamation: Icon,
+    },
+  };
+});
 
 const mockStart = jest.fn();
 const mockCancel = jest.fn();
@@ -90,44 +101,21 @@ function hookMock(phase: string) {
   };
 }
 
-async function renderScreen(phase = 'idle') {
+function renderScreen(phase = 'idle') {
   mockUseLoadKey.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <ConfirmKeyScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+  return render(<ConfirmKeyScreen navigation={navigation} route={route} />);
 }
 
-/** Recursively extract all text content from a ReactTestInstance subtree. */
-function extractText(node: any): string {
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
-}
-
-/** Press the choice button whose rendered text matches the given word. */
-async function pressChoice(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  word: string,
-) {
-  const pressables = getActivePressables(renderer);
-  const btn = pressables.find(p => extractText(p).includes(word));
-  if (!btn) throw new Error(`No choice button found for word: "${word}"`);
+async function pressChoice(word: string) {
   await act(async () => {
-    btn.props.onPress();
+    fireEvent.press(screen.getByText(word));
   });
 }
 
 /** Complete all N_CHALLENGE correct answers. */
-async function completeChallenge(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-) {
+async function completeChallenge() {
   for (const word of CORRECT_WORDS) {
-    await pressChoice(renderer, word);
+    await pressChoice(word);
   }
 }
 
@@ -164,21 +152,23 @@ describe('ConfirmKeyScreen', () => {
       });
     });
 
-    it('shows unfilled slots at start', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('____');
+    it('shows unfilled slots at start', () => {
+      renderScreen();
+      expect(screen.getAllByText('____').length).toBeGreaterThan(0);
     });
 
-    it('shows choice buttons for the first challenge', async () => {
-      const renderer = await renderScreen();
+    it('shows choice buttons for the first challenge', () => {
+      renderScreen();
       // With random=0: slot 0 correct word is 'bravo', choices include it
-      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[0]);
+      expect(screen.getAllByText(CORRECT_WORDS[0]).length).toBeGreaterThan(0);
     });
 
     it('hides choices once all answers are filled', async () => {
-      const renderer = await renderScreen();
-      await completeChallenge(renderer);
-      expect(getActivePressables(renderer)).toHaveLength(0);
+      renderScreen();
+      await completeChallenge();
+      for (const word of CORRECT_WORDS) {
+        expect(screen.getAllByText(word)).toHaveLength(1);
+      }
     });
   });
 
@@ -188,38 +178,30 @@ describe('ConfirmKeyScreen', () => {
 
   describe('word challenge', () => {
     it('fills the first slot and shows the next choices on correct answer', async () => {
-      const renderer = await renderScreen();
-      await pressChoice(renderer, CORRECT_WORDS[0]);
+      renderScreen();
+      await pressChoice(CORRECT_WORDS[0]);
       // First slot now shows the word instead of ____
-      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[0]);
+      expect(screen.getAllByText(CORRECT_WORDS[0]).length).toBeGreaterThan(0);
       // Second slot's correct word is now available as a choice
-      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[1]);
+      expect(screen.getByText(CORRECT_WORDS[1])).toBeTruthy();
     });
 
     it('does not advance when the wrong word is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      const wrongBtn = pressables.find(p =>
-        extractText(p).includes(WRONG_WORD_FOR_SLOT_0),
-      );
-      if (wrongBtn) {
-        await act(async () => {
-          wrongBtn.props.onPress();
-        });
-      }
-      expect(JSON.stringify(renderer.toJSON())).toContain('____');
+      renderScreen();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(screen.getAllByText('____').length).toBeGreaterThan(0);
       expect(mockStart).not.toHaveBeenCalled();
     });
 
     it('calls start() after all correct answers are provided', async () => {
-      const renderer = await renderScreen();
-      await completeChallenge(renderer);
+      renderScreen();
+      await completeChallenge();
       expect(mockStart).toHaveBeenCalledTimes(1);
     });
 
     it('does not call start() before all answers are filled', async () => {
-      const renderer = await renderScreen();
-      await pressChoice(renderer, CORRECT_WORDS[0]);
+      renderScreen();
+      await pressChoice(CORRECT_WORDS[0]);
       expect(mockStart).not.toHaveBeenCalled();
     });
   });

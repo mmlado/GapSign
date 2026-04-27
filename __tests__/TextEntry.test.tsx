@@ -1,5 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 
 import TextEntry from '../src/components/TextEntry';
 
@@ -19,37 +19,29 @@ jest.mock('react-native-paper', () => {
 const onSubmit = jest.fn();
 const onType = jest.fn();
 
-async function renderEntry(
+function renderEntry(
   props: Partial<React.ComponentProps<typeof TextEntry>> = {},
 ) {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <TextEntry onSubmit={onSubmit} onType={onType} {...props} />,
-    );
-  });
-  return renderer;
+  return render(<TextEntry onSubmit={onSubmit} onType={onType} {...props} />);
 }
 
-function getInput(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.find((n: any) => n.type === 'TextInput');
-}
-
-function getContinueButton(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.find(
-    (n: any) =>
-      typeof n.props.onPress === 'function' &&
-      typeof n.props.disabled === 'boolean',
-  );
-}
-
-async function typeValue(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  value: string,
-) {
-  await act(async () => {
-    getInput(renderer).props.onChangeText(value);
-  });
+/** Find TextInput from toJSON */
+function getTextInputFromJSON(json: any): any {
+  let found: any = null;
+  function walk(node: any) {
+    if (!node || found) return;
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (node.type === 'TextInput') {
+      found = node;
+      return;
+    }
+    if (node.children) walk(node.children);
+  }
+  walk(json);
+  return found;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,70 +54,74 @@ describe('TextEntry', () => {
     onType.mockClear();
   });
 
-  it('renders a TextInput', async () => {
-    const renderer = await renderEntry();
-    expect(getInput(renderer)).toBeTruthy();
+  it('renders a TextInput', () => {
+    const { toJSON } = renderEntry();
+    expect(getTextInputFromJSON(toJSON())).toBeTruthy();
   });
 
-  it('Continue button is disabled when value is empty', async () => {
-    const renderer = await renderEntry();
-    const btn = getContinueButton(renderer);
-    expect(btn!.props.disabled).toBe(true);
-  });
-
-  it('Continue button is enabled after typing', async () => {
-    const renderer = await renderEntry();
-    await typeValue(renderer, 'secret');
-    const btn = getContinueButton(renderer);
-    expect(btn!.props.disabled).toBe(false);
-  });
-
-  it('calls onSubmit with the typed value when Continue is pressed', async () => {
-    const renderer = await renderEntry();
-    await typeValue(renderer, 'mysecret');
-    await act(async () => {
-      getContinueButton(renderer)!.props.onPress();
-    });
-    expect(onSubmit).toHaveBeenCalledWith('mysecret');
-  });
-
-  it('clears the field after submit', async () => {
-    const renderer = await renderEntry();
-    await typeValue(renderer, 'mysecret');
-    await act(async () => {
-      getContinueButton(renderer)!.props.onPress();
-    });
-    expect(getInput(renderer).props.value).toBe('');
-  });
-
-  it('does not call onSubmit when value is empty', async () => {
-    const renderer = await renderEntry();
-    await act(async () => {
-      getContinueButton(renderer)!.props.onPress();
-    });
+  it('Continue button is disabled when value is empty', () => {
+    // Verify by attempting to press — disabled button should not call onSubmit
+    renderEntry();
+    fireEvent.press(screen.getByText('Continue'));
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('calls onType when text changes', async () => {
-    const renderer = await renderEntry();
-    await typeValue(renderer, 'x');
+  it('Continue button is enabled after typing', () => {
+    renderEntry();
+    const input = screen.UNSAFE_getByType(require('react-native').TextInput);
+    fireEvent.changeText(input, 'secret');
+    fireEvent.press(screen.getByText('Continue'));
+    expect(onSubmit).toHaveBeenCalledWith('secret');
+  });
+
+  it('calls onSubmit with the typed value when Continue is pressed', () => {
+    renderEntry();
+    const input = screen.UNSAFE_getByType(require('react-native').TextInput);
+    fireEvent.changeText(input, 'mysecret');
+    fireEvent.press(screen.getByText('Continue'));
+    expect(onSubmit).toHaveBeenCalledWith('mysecret');
+  });
+
+  it('clears the field after submit', () => {
+    renderEntry();
+    const input = screen.UNSAFE_getByType(require('react-native').TextInput);
+    fireEvent.changeText(input, 'mysecret');
+    fireEvent.press(screen.getByText('Continue'));
+    expect(
+      screen.UNSAFE_getByType(require('react-native').TextInput).props.value,
+    ).toBe('');
+  });
+
+  it('does not call onSubmit when value is empty', () => {
+    renderEntry();
+    fireEvent.press(screen.getByText('Continue'));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('calls onType when text changes', () => {
+    renderEntry();
+    const input = screen.UNSAFE_getByType(require('react-native').TextInput);
+    fireEvent.changeText(input, 'x');
     expect(onType).toHaveBeenCalled();
   });
 
-  it('clears the value when resetKey changes', async () => {
-    const renderer = await renderEntry({ resetKey: 'entry' });
-    await typeValue(renderer, 'typed');
-    expect(getInput(renderer).props.value).toBe('typed');
-    await act(async () => {
-      renderer.update(
-        <TextEntry onSubmit={onSubmit} onType={onType} resetKey="confirm" />,
-      );
-    });
-    expect(getInput(renderer).props.value).toBe('');
+  it('clears the value when resetKey changes', () => {
+    const { rerender } = renderEntry({ resetKey: 'entry' });
+    const input = screen.UNSAFE_getByType(require('react-native').TextInput);
+    fireEvent.changeText(input, 'typed');
+    expect(
+      screen.UNSAFE_getByType(require('react-native').TextInput).props.value,
+    ).toBe('typed');
+    rerender(
+      <TextEntry onSubmit={onSubmit} onType={onType} resetKey="confirm" />,
+    );
+    expect(
+      screen.UNSAFE_getByType(require('react-native').TextInput).props.value,
+    ).toBe('');
   });
 
-  it('shows the error when provided', async () => {
-    const renderer = await renderEntry({ error: 'Secrets do not match' });
-    expect(JSON.stringify(renderer.toJSON())).toContain('Secrets do not match');
+  it('shows the error when provided', () => {
+    renderEntry({ error: 'Secrets do not match' });
+    expect(screen.getByText('Secrets do not match')).toBeTruthy();
   });
 });

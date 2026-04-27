@@ -1,5 +1,4 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
 import type { BIP32KeyPair } from 'keycard-sdk/dist/bip32key';
 
 import {
@@ -59,20 +58,6 @@ const WORDS = [
 ];
 const preparedKeyPair = { type: 'keypair' } as unknown as BIP32KeyPair;
 
-let hookStart: (keyPair: BIP32KeyPair) => void;
-
-function TestHook() {
-  const { start } = useLoadKey();
-  hookStart = start;
-  return null;
-}
-
-async function mountHook() {
-  await act(async () => {
-    ReactTestRenderer.create(React.createElement(TestHook));
-  });
-}
-
 describe('deriveMnemonicKeyPair', () => {
   beforeEach(() => {
     mockExecute.mockClear();
@@ -115,9 +100,9 @@ describe('useLoadKey', () => {
   });
 
   it('requests PIN before loading the prepared keypair', async () => {
-    await mountHook();
+    const { result } = renderHook(() => useLoadKey());
     await act(async () => {
-      hookStart(preparedKeyPair);
+      result.current.start(preparedKeyPair);
     });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
@@ -125,9 +110,9 @@ describe('useLoadKey', () => {
   });
 
   it('loads the prepared BIP32 keypair onto an empty card', async () => {
-    await mountHook();
+    const { result } = renderHook(() => useLoadKey());
     await act(async () => {
-      hookStart(preparedKeyPair);
+      result.current.start(preparedKeyPair);
     });
     const checkOK = jest.fn();
     const cmdSet = {
@@ -142,9 +127,9 @@ describe('useLoadKey', () => {
   });
 
   it('rejects cards that already have a master key', async () => {
-    await mountHook();
+    const { result } = renderHook(() => useLoadKey());
     await act(async () => {
-      hookStart(preparedKeyPair);
+      result.current.start(preparedKeyPair);
     });
 
     await expect(
