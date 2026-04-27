@@ -1,0 +1,1 @@
+Publish signed universal APKs and SHA256 checksums in GitHub releases Reduce release APK size with minification, resource shrinking, and ARM-only release splits
