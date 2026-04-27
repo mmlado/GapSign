@@ -1,7 +1,6 @@
-import React, { act, useCallback } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
+import { useCallback } from 'react';
 import { useNFCOperation } from '../src/hooks/keycard/useNFCOperation';
-import type { UseNFCOperation } from '../src/hooks/keycard/useNFCOperation';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
@@ -44,25 +43,6 @@ jest.mock('keycard-sdk', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Test wrapper component
-// ---------------------------------------------------------------------------
-
-let latestHook: UseNFCOperation<string>;
-
-function TestHook() {
-  latestHook = useNFCOperation(useCallback(async () => 'ok', []));
-  return null;
-}
-
-async function mountHook() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(React.createElement(TestHook));
-  });
-  return renderer;
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -78,111 +58,131 @@ describe('useNFCOperation', () => {
   });
 
   describe('initial state', () => {
-    it('starts idle with empty status and null result', async () => {
-      await mountHook();
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
-      expect(latestHook.result).toBeNull();
+    it('starts idle with empty status and null result', () => {
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
+      expect(result.current.result).toBeNull();
     });
   });
 
   describe('start', () => {
     it('transitions to nfc and calls startNFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.start();
+        result.current.start();
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
     });
 
     it('sets status to "Tap your Keycard"', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.start();
+        result.current.start();
       });
-      expect(latestHook.status).toBe('Tap your Keycard');
+      expect(result.current.status).toBe('Tap your Keycard');
     });
   });
 
   describe('cancel', () => {
     it('returns to idle, clears status, and stops NFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.start();
+        result.current.start();
       });
       await act(async () => {
-        latestHook.cancel();
+        result.current.cancel();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
       expect(mockStopNFC).toHaveBeenCalled();
     });
   });
 
   describe('reset', () => {
     it('returns to idle, clears result, and stops NFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.reset();
+        result.current.reset();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
-      expect(latestHook.result).toBeNull();
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
+      expect(result.current.result).toBeNull();
       expect(mockStopNFC).toHaveBeenCalled();
     });
   });
 
   describe('NFC events', () => {
     it('user-cancelled resets to idle when in nfc phase', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.start();
+        result.current.start();
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
       await act(async () => {
         capturedOnCancelled?.();
       });
-      expect(latestHook.phase).toBe('idle');
+      expect(result.current.phase).toBe('idle');
     });
 
     it('user-cancelled does not change phase when idle', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
         capturedOnCancelled?.();
       });
-      expect(latestHook.phase).toBe('idle');
+      expect(result.current.phase).toBe('idle');
     });
 
     it('timeout updates status message', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
         capturedOnTimeout?.();
       });
-      expect(latestHook.status).toBe('Timed out — tap again');
+      expect(result.current.status).toBe('Timed out — tap again');
     });
 
     it('card disconnected during nfc updates status and stays in nfc', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
-        latestHook.start();
+        result.current.start();
       });
       await act(async () => {
         capturedOnDisconnected?.();
       });
-      expect(latestHook.phase).toBe('nfc');
-      expect(latestHook.status).toBe(
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.status).toBe(
         'Connection lost - adjust Keycard position',
       );
     });
 
     it('card disconnected outside nfc does not update status', async () => {
-      await mountHook();
+      const { result } = renderHook(() =>
+        useNFCOperation(useCallback(async () => 'ok', [])),
+      );
       await act(async () => {
         capturedOnDisconnected?.();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
     });
   });
 });

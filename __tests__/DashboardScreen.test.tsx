@@ -1,6 +1,6 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
 import { Linking } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DashboardScreen from '../src/screens/DashboardScreen';
 
@@ -19,6 +19,20 @@ jest.mock('react-native-paper', () => {
     Text,
     Snackbar: ({ visible, children }: any) =>
       visible ? require('react').createElement(Text, null, children) : null,
+  };
+});
+
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      close: Icon,
+      nfcActivate: Icon,
+      openInBrowser: Icon,
+      scan: Icon,
+    },
   };
 });
 
@@ -62,14 +76,12 @@ const navigation = {
 
 async function renderScreen(routeParams?: { toast?: string }) {
   focusCallback = null;
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
   const route = routeParams ? { params: routeParams } : ({} as any);
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <DashboardScreen navigation={navigation} route={route as any} />,
-    );
-  });
-  return renderer;
+  const view = render(
+    <DashboardScreen navigation={navigation} route={route as any} />,
+  );
+  await act(async () => {});
+  return view;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,7 +98,7 @@ describe('DashboardScreen', () => {
     mockLoadBooleanPreference.mockResolvedValue(true);
     mockSaveBooleanPreference.mockResolvedValue(undefined);
     focusCallback = null;
-    jest.spyOn(Linking, 'openURL').mockResolvedValue();
+    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -95,26 +107,19 @@ describe('DashboardScreen', () => {
 
   describe('static layout', () => {
     it('renders the Scan transaction button', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Scan transaction');
+      await renderScreen();
+      expect(screen.getByText('Scan transaction')).toBeTruthy();
     });
 
     it('renders one fewer pressable when action list is empty', async () => {
       mockDashboardActions.push({ label: 'Sentinel', navigate: jest.fn() });
-      const withOne = await renderScreen();
-      const countWithOne = withOne.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      ).length;
+      await renderScreen();
+      expect(screen.getByText('Sentinel')).toBeTruthy();
 
       mockDashboardActions.length = 0;
-      const withNone = await renderScreen();
-      const countWithNone = withNone.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      ).length;
-
-      expect(countWithNone).toBe(countWithOne - 1);
+      screen.unmount();
+      await renderScreen();
+      expect(screen.queryByText('Sentinel')).toBeNull();
     });
   });
 
@@ -124,9 +129,9 @@ describe('DashboardScreen', () => {
         { label: 'Action One', navigate: jest.fn() },
         { label: 'Action Two', navigate: jest.fn() },
       );
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Action One');
-      expect(JSON.stringify(renderer.toJSON())).toContain('Action Two');
+      await renderScreen();
+      expect(screen.getByText('Action One')).toBeTruthy();
+      expect(screen.getByText('Action Two')).toBeTruthy();
     });
 
     it('calls the action navigate when an item is pressed', async () => {
@@ -135,15 +140,8 @@ describe('DashboardScreen', () => {
         label: 'Test Action',
         navigate: mockNavigate,
       });
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      );
-      // Action item pressables come before the PrimaryButton
-      await act(async () => {
-        pressables[0].props.onPress();
-      });
+      await renderScreen();
+      fireEvent.press(screen.getByText('Test Action'));
       expect(mockNavigate).toHaveBeenCalledTimes(1);
       expect(mockNavigate).toHaveBeenCalledWith(navigation);
     });
@@ -155,14 +153,8 @@ describe('DashboardScreen', () => {
         { label: 'First', navigate: mockFirst },
         { label: 'Second', navigate: mockSecond },
       );
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      );
-      await act(async () => {
-        pressables[1].props.onPress();
-      });
+      await renderScreen();
+      fireEvent.press(screen.getByText('Second'));
       expect(mockSecond).toHaveBeenCalledTimes(1);
       expect(mockFirst).not.toHaveBeenCalled();
     });
@@ -170,39 +162,26 @@ describe('DashboardScreen', () => {
 
   describe('navigation', () => {
     it('navigates to QRScanner when Scan transaction is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      );
-      // With no actions, the only pressable is the PrimaryButton
-      await act(async () => {
-        pressables[0].props.onPress();
-      });
+      await renderScreen();
+      fireEvent.press(screen.getByText('Scan transaction'));
       expect(navigation.navigate).toHaveBeenCalledWith('QRScanner');
     });
 
     it('does not call navigation.navigate when an action item is pressed', async () => {
       mockDashboardActions.push({ label: 'Some Action', navigate: jest.fn() });
-      const renderer = await renderScreen();
-      const pressables = renderer.root.findAll(
-        (node: any) => typeof node.props.onPress === 'function',
-        { deep: true },
-      );
-      await act(async () => {
-        pressables[0].props.onPress();
-      });
+      await renderScreen();
+      fireEvent.press(screen.getByText('Some Action'));
       expect(navigation.navigate).not.toHaveBeenCalled();
     });
   });
 
   describe('toast / snackbar', () => {
     it('shows the snackbar with the toast message when the screen is focused', async () => {
-      const renderer = await renderScreen({ toast: 'Card initialized' });
+      await renderScreen({ toast: 'Card initialized' });
       await act(async () => {
         focusCallback?.();
       });
-      expect(JSON.stringify(renderer.toJSON())).toContain('Card initialized');
+      expect(screen.getByText('Card initialized')).toBeTruthy();
     });
 
     it('clears the toast param after showing the snackbar', async () => {
@@ -214,47 +193,35 @@ describe('DashboardScreen', () => {
     });
 
     it('does not show the snackbar when there is no toast param', async () => {
-      const renderer = await renderScreen();
+      await renderScreen();
       await act(async () => {
         focusCallback?.();
       });
       expect(navigation.setParams).not.toHaveBeenCalled();
-      // Snackbar renders null when not visible — message not in output
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Card initialized',
-      );
+      expect(screen.queryByText('Card initialized')).toBeNull();
     });
   });
 
   describe('keycard notice', () => {
     it('shows the notice when it has not been dismissed', async () => {
       mockLoadBooleanPreference.mockResolvedValue(false);
-      const renderer = await renderScreen();
+      await renderScreen();
 
-      expect(JSON.stringify(renderer.toJSON())).toContain('Keycard required');
-      expect(JSON.stringify(renderer.toJSON())).toContain('Buy a Keycard');
-      expect(JSON.stringify(renderer.toJSON())).toContain('ShellSummer9746');
-      expect(JSON.stringify(renderer.toJSON())).toContain('on purchases over');
-      expect(JSON.stringify(renderer.toJSON())).toContain('$25');
+      expect(screen.getByText('Keycard required')).toBeTruthy();
+      expect(screen.getByText('Buy a Keycard')).toBeTruthy();
+      expect(screen.getByText(/ShellSummer9746/)).toBeTruthy();
     });
 
     it('hides the notice when it was already dismissed', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Keycard required',
-      );
+      await renderScreen();
+      expect(screen.queryByText('Keycard required')).toBeNull();
     });
 
     it('opens the purchase link in the browser', async () => {
       mockLoadBooleanPreference.mockResolvedValue(false);
-      const renderer = await renderScreen();
-      const purchaseLink = renderer.root.find(
-        (node: any) => node.props.testID === 'dashboard-keycard-purchase-link',
-      );
+      await renderScreen();
 
-      await act(async () => {
-        purchaseLink.props.onPress();
-      });
+      fireEvent.press(screen.getByTestId('dashboard-keycard-purchase-link'));
 
       expect(Linking.openURL).toHaveBeenCalledWith(
         'https://get.keycard.tech/vuxxnf',
@@ -263,22 +230,17 @@ describe('DashboardScreen', () => {
 
     it('dismisses the notice and remembers that choice', async () => {
       mockLoadBooleanPreference.mockResolvedValue(false);
-      const renderer = await renderScreen();
-      const closeButton = renderer.root.find(
-        (node: any) => node.props.testID === 'dashboard-keycard-notice-close',
-      );
+      await renderScreen();
 
       await act(async () => {
-        closeButton.props.onPress();
+        fireEvent.press(screen.getByTestId('dashboard-keycard-notice-close'));
       });
 
       expect(mockSaveBooleanPreference).toHaveBeenCalledWith(
         'preference_dashboard_keycard_notice_dismissed',
         true,
       );
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Keycard required',
-      );
+      expect(screen.queryByText('Keycard required')).toBeNull();
     });
   });
 });

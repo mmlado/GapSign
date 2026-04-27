@@ -1,5 +1,6 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { TextInput } from 'react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import MnemonicScreen from '../src/screens/keypair/MnemonicScreen';
@@ -79,51 +80,49 @@ function hookMock(phase = 'idle', result: string | null = null) {
   };
 }
 
-async function renderScreen(phase = 'idle') {
+function renderScreen(phase = 'idle') {
   mockUseLoadKey.mockReturnValue(hookMock(phase));
   mockUseVerifyFingerprint.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <MnemonicScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+  return render(<MnemonicScreen navigation={navigation} route={route} />);
 }
 
-function extractText(node: any): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
+function getTextInputs() {
+  return screen.UNSAFE_getAllByType(TextInput);
 }
 
-function getTextInputs(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll((node: any) => node.type === 'TextInput', {
-    deep: true,
-  });
+function getWordInput() {
+  return getTextInputs()[0];
 }
 
-function getWordInput(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return getTextInputs(renderer)[0];
+function getPassphraseInput() {
+  return getTextInputs()[1];
 }
 
-function getPassphraseInput(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return getTextInputs(renderer)[1];
+function getButton(label = 'Continue') {
+  let node: any = screen.getByText(label);
+  while (node) {
+    if (typeof node.props?.onPress === 'function') {
+      return node;
+    }
+    node = node.parent;
+  }
+  throw new Error(`No button found for ${label}`);
 }
 
-function getContinueButton(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' &&
-      node.props.disabled !== undefined,
-    { deep: true },
-  )[0];
+function getSegment(label: string) {
+  let node: any = screen.getByText(label);
+  while (node) {
+    if (typeof node.props?.onPress === 'function') {
+      return node;
+    }
+    node = node.parent;
+  }
+  throw new Error(`No segment found for ${label}`);
 }
 
-function setInput(renderer: ReactTestRenderer.ReactTestRenderer, text: string) {
+function setInput(text: string) {
   return act(async () => {
-    getWordInput(renderer).props.onChangeText(text);
+    fireEvent.changeText(getWordInput(), text);
   });
 }
 
@@ -145,59 +144,44 @@ describe('MnemonicScreen', () => {
 
   describe('layout', () => {
     it('renders the 12/24 word selector', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('12 words');
-      expect(JSON.stringify(renderer.toJSON())).toContain('24 words');
+      renderScreen();
+      expect(screen.getByText('12 words')).toBeTruthy();
+      expect(screen.getByText('24 words')).toBeTruthy();
     });
 
     it('renders the word input with multiline', async () => {
-      const renderer = await renderScreen();
-      expect(getWordInput(renderer).props.multiline).toBe(true);
+      renderScreen();
+      expect(getWordInput().props.multiline).toBe(true);
     });
 
     it('renders the passphrase input with correct placeholder', async () => {
-      const renderer = await renderScreen();
-      expect(getPassphraseInput(renderer).props.placeholder).toBe(
+      renderScreen();
+      expect(getPassphraseInput().props.placeholder).toBe(
         'Passphrase (optional)',
       );
     });
 
     it('renders the Continue button', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Continue');
+      renderScreen();
+      expect(screen.getByText('Continue')).toBeTruthy();
     });
   });
 
   describe('word count selector', () => {
     it('defaults to 12-word mode', async () => {
-      const renderer = await renderScreen();
-      // find the segment pressables by their label text
-      const segments = renderer.root.findAll(
-        (node: any) =>
-          typeof node.props.onPress === 'function' &&
-          (extractText(node).trim() === '12 words' ||
-            extractText(node).trim() === '24 words'),
-        { deep: true },
-      );
-      const seg12 = segments.find(s => extractText(s).trim() === '12 words');
+      renderScreen();
+      const seg12 = getSegment('12 words');
       // active segment gets segmentActive style (#474747 background)
       const style = [seg12?.props.style].flat();
       expect(JSON.stringify(style)).toContain('474747');
     });
 
     it('switches to 24-word mode when the 24-word segment is pressed', async () => {
-      const renderer = await renderScreen();
-      const segments = renderer.root.findAll(
-        (node: any) =>
-          typeof node.props.onPress === 'function' &&
-          (extractText(node).trim() === '12 words' ||
-            extractText(node).trim() === '24 words'),
-        { deep: true },
-      );
-      const seg24 = segments.find(s => extractText(s).trim() === '24 words');
+      renderScreen();
       await act(async () => {
-        seg24?.props.onPress();
+        fireEvent.press(screen.getByText('24 words'));
       });
+      const seg24 = getSegment('24 words');
       const style = [seg24?.props.style].flat();
       expect(JSON.stringify(style)).toContain('474747');
     });
@@ -205,119 +189,98 @@ describe('MnemonicScreen', () => {
 
   describe('Continue button disabled state', () => {
     it('is disabled when input is empty', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       // clear the test prefill
-      await setInput(renderer, '');
-      expect(getContinueButton(renderer).props.disabled).toBe(true);
+      await setInput('');
+      expect(getButton().props.disabled).toBe(true);
     });
 
     it('is enabled when the correct number of words are entered', async () => {
-      const renderer = await renderScreen();
-      await setInput(renderer, VALID_12);
-      expect(getContinueButton(renderer).props.disabled).toBe(false);
+      renderScreen();
+      await setInput(VALID_12);
+      expect(getButton().props.disabled).toBe(false);
     });
 
     it('remains disabled when word count does not match selector (24 mode, 12 words)', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       // switch to 24-word mode
-      const segments = renderer.root.findAll(
-        (node: any) =>
-          typeof node.props.onPress === 'function' &&
-          extractText(node).trim() === '24 words',
-        { deep: true },
-      );
       await act(async () => {
-        segments[0]?.props.onPress();
+        fireEvent.press(screen.getByText('24 words'));
       });
-      await setInput(renderer, VALID_12);
-      expect(getContinueButton(renderer).props.disabled).toBe(true);
+      await setInput(VALID_12);
+      expect(getButton().props.disabled).toBe(true);
     });
 
     it('is enabled when 24 words are entered in 24-word mode', async () => {
-      const renderer = await renderScreen();
-      const segments = renderer.root.findAll(
-        (node: any) =>
-          typeof node.props.onPress === 'function' &&
-          extractText(node).trim() === '24 words',
-        { deep: true },
-      );
+      renderScreen();
       await act(async () => {
-        segments[0]?.props.onPress();
+        fireEvent.press(screen.getByText('24 words'));
       });
-      await setInput(renderer, VALID_24);
-      expect(getContinueButton(renderer).props.disabled).toBe(false);
+      await setInput(VALID_24);
+      expect(getButton().props.disabled).toBe(false);
     });
   });
 
   describe('word validation', () => {
     it('shows error for invalid completed word', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       // trailing space triggers validation of the completed word
-      await setInput(renderer, 'notaword ');
-      expect(JSON.stringify(renderer.toJSON())).toContain('notaword');
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'is not a valid BIP39 word',
-      );
+      await setInput('notaword ');
+      expect(screen.getByText(/notaword/)).toBeTruthy();
+      expect(screen.getByText(/is not a valid BIP39 word/)).toBeTruthy();
     });
 
     it('does not show error while word is still being typed', async () => {
-      const renderer = await renderScreen();
-      await setInput(renderer, 'aban');
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'is not a valid BIP39 word',
-      );
+      renderScreen();
+      await setInput('aban');
+      expect(screen.queryByText(/is not a valid BIP39 word/)).toBeNull();
     });
 
     it('does not show error for a valid completed word', async () => {
-      const renderer = await renderScreen();
-      await setInput(renderer, 'abandon ');
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'is not a valid BIP39 word',
-      );
+      renderScreen();
+      await setInput('abandon ');
+      expect(screen.queryByText(/is not a valid BIP39 word/)).toBeNull();
     });
   });
 
   describe('Continue pressed', () => {
     it('shows phrase error when mnemonic is invalid', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       // 12 words but checksum is wrong
       await setInput(
-        renderer,
         'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon',
       );
       await act(async () => {
-        getContinueButton(renderer).props.onPress();
+        fireEvent.press(screen.getByText('Continue'));
       });
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Invalid recovery phrase',
-      );
+      expect(screen.getByText('Invalid recovery phrase')).toBeTruthy();
       expect(mockStart).not.toHaveBeenCalled();
     });
 
     it('calls start() when mnemonic is valid', async () => {
-      const renderer = await renderScreen();
-      await setInput(renderer, VALID_12);
+      renderScreen();
+      await setInput(VALID_12);
       await act(async () => {
-        getContinueButton(renderer).props.onPress();
+        fireEvent.press(screen.getByText('Continue'));
       });
       expect(mockStart).toHaveBeenCalledTimes(1);
     });
 
     it('passes words to useLoadKey', async () => {
       mockUseLoadKey.mockClear();
-      const renderer = await renderScreen();
-      await setInput(renderer, VALID_12);
+      renderScreen();
+      await setInput(VALID_12);
       expect(mockUseLoadKey).toHaveBeenCalled();
     });
 
     it('passes passphrase to the local derivation helper when entered', async () => {
-      const renderer = await renderScreen();
-      await setInput(renderer, VALID_12);
+      renderScreen();
+      await setInput(VALID_12);
       await act(async () => {
-        getPassphraseInput(renderer).props.onChangeText('mysecret');
+        fireEvent.changeText(getPassphraseInput(), 'mysecret');
       });
       await act(async () => {
-        getContinueButton(renderer).props.onPress();
+        fireEvent.press(screen.getByText('Continue'));
       });
       const { deriveMnemonicKeyPair } = jest.requireMock(
         '../src/hooks/keycard/useLoadKey',
@@ -344,32 +307,28 @@ describe('MnemonicScreen', () => {
   });
 
   describe('verify mode', () => {
-    async function renderVerify(phase = 'idle', result: string | null = null) {
+    function renderVerify(phase = 'idle', result: string | null = null) {
       mockUseLoadKey.mockReturnValue(hookMock(phase));
       mockUseVerifyFingerprint.mockReturnValue(hookMock(phase, result));
-      let renderer!: ReactTestRenderer.ReactTestRenderer;
-      await act(async () => {
-        renderer = ReactTestRenderer.create(
-          <MnemonicScreen navigation={navigation} route={routeVerify} />,
-        );
-      });
-      return renderer;
+      return render(
+        <MnemonicScreen navigation={navigation} route={routeVerify} />,
+      );
     }
 
     it('shows "Verify" button label', async () => {
-      const renderer = await renderVerify();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Verify');
+      renderVerify();
+      expect(screen.getByText('Verify')).toBeTruthy();
     });
 
     it('derives a fingerprint locally and passes it to verify start', async () => {
-      const renderer = await renderVerify();
-      await setInput(renderer, VALID_12);
+      renderVerify();
+      await setInput(VALID_12);
       await act(async () => {
-        getPassphraseInput(renderer).props.onChangeText('mysecret');
+        fireEvent.changeText(getPassphraseInput(), 'mysecret');
       });
 
       await act(async () => {
-        getContinueButton(renderer).props.onPress();
+        fireEvent.press(screen.getByText('Verify'));
       });
 
       expect(mockStart).toHaveBeenCalledWith(expect.any(Number));

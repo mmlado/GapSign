@@ -1,8 +1,8 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import React from 'react';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+
 import GenerateKeyScreen from '../src/screens/keypair/GenerateKeyScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
-import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -69,15 +69,9 @@ function hookMock(phase: string, result: string[] | null = null) {
   return { phase, status: '', result, start: mockStart, cancel: mockCancel };
 }
 
-async function renderScreen(phase = 'idle', result: string[] | null = null) {
+function renderScreen(phase = 'idle', result: string[] | null = null) {
   mockUseGenerateKey.mockReturnValue(hookMock(phase, result));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <GenerateKeyScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+  return render(<GenerateKeyScreen navigation={navigation} route={route} />);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,71 +90,58 @@ describe('GenerateKeyScreen', () => {
 
   describe('on mount', () => {
     it('calls start() immediately', async () => {
-      await renderScreen();
+      renderScreen();
       expect(mockStart).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('word grid', () => {
-    it('does not render the word grid when phase is not done', async () => {
-      const renderer = await renderScreen('nfc');
-      expect(JSON.stringify(renderer.toJSON())).not.toContain('apple');
+    it('does not render the word grid when phase is not done', () => {
+      renderScreen('nfc');
+      expect(screen.queryByText('apple')).toBeNull();
     });
 
-    it('renders words when phase is done and result is set', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      expect(JSON.stringify(renderer.toJSON())).toContain('apple');
-      expect(JSON.stringify(renderer.toJSON())).toContain('lemon');
+    it('renders words when phase is done and result is set', () => {
+      renderScreen('done', WORDS);
+      expect(screen.getByText('apple')).toBeTruthy();
+      expect(screen.getByText('lemon')).toBeTruthy();
     });
 
-    it('renders a BlurView over the words before revealing', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      const blur = renderer.root.findAll(
-        (node: any) => node.type === 'BlurView',
-        { deep: true },
-      );
-      expect(blur.length).toBeGreaterThan(0);
+    it('renders a BlurView over the words before revealing', () => {
+      renderScreen('done', WORDS);
+      expect(screen.UNSAFE_queryAllByType('BlurView')).toHaveLength(1);
     });
 
     it('removes the BlurView after the reveal button is pressed', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      const pressables = getActivePressables(renderer);
+      renderScreen('done', WORDS);
       await act(async () => {
-        pressables[0].props.onPress(); // "Reveal recovery phrase"
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
-      const blur = renderer.root.findAll(
-        (node: any) => node.type === 'BlurView',
-        { deep: true },
-      );
-      expect(blur.length).toBe(0);
+      expect(screen.UNSAFE_queryAllByType('BlurView')).toHaveLength(0);
     });
   });
 
   describe('primary button', () => {
-    it('shows "Reveal recovery phrase" before revealing', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Reveal recovery phrase',
-      );
+    it('shows "Reveal recovery phrase" before revealing', () => {
+      renderScreen('done', WORDS);
+      expect(screen.getByText('Reveal recovery phrase')).toBeTruthy();
     });
 
     it('shows "Done" after revealing', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      const pressables = getActivePressables(renderer);
+      renderScreen('done', WORDS);
       await act(async () => {
-        pressables[0].props.onPress(); // reveal
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
-      expect(JSON.stringify(renderer.toJSON())).toContain('Done');
+      expect(screen.getByText('Done')).toBeTruthy();
     });
 
     it('calls navigation.replace to ConfirmKey when "Done" is pressed', async () => {
-      const renderer = await renderScreen('done', WORDS);
-      const pressables = getActivePressables(renderer);
+      renderScreen('done', WORDS);
       await act(async () => {
-        pressables[0].props.onPress(); // reveal
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
       await act(async () => {
-        getActivePressables(renderer)[0].props.onPress(); // done
+        fireEvent.press(screen.getByText('Done'));
       });
       expect(navigation.replace).toHaveBeenCalledWith('ConfirmKey', {
         words: WORDS,
@@ -174,30 +155,30 @@ describe('GenerateKeyScreen', () => {
       return calls[calls.length - 1][0];
     }
 
-    it('nfc.phase is idle when phase is idle', async () => {
-      await renderScreen('idle');
+    it('nfc.phase is idle when phase is idle', () => {
+      renderScreen('idle');
       expect(lastProps().nfc.phase).toBe('idle');
     });
 
-    it('nfc.phase is nfc when phase is nfc', async () => {
-      await renderScreen('nfc');
+    it('nfc.phase is nfc when phase is nfc', () => {
+      renderScreen('nfc');
       expect(lastProps().nfc.phase).toBe('nfc');
     });
 
-    it('nfc.phase is error when phase is error', async () => {
-      await renderScreen('error');
+    it('nfc.phase is error when phase is error', () => {
+      renderScreen('error');
       expect(lastProps().nfc.phase).toBe('error');
     });
 
-    it('nfc.phase is done when phase is done', async () => {
-      await renderScreen('done', WORDS);
+    it('nfc.phase is done when phase is done', () => {
+      renderScreen('done', WORDS);
       expect(lastProps().nfc.phase).toBe('done');
     });
   });
 
   describe('cancel', () => {
     it('calls cancel() and navigation.goBack() when NFCBottomSheet cancel is pressed', async () => {
-      await renderScreen('nfc');
+      renderScreen('nfc');
       const onCancel = MockNFCBottomSheet.mock.calls[0][0].onCancel;
       await act(async () => {
         onCancel();

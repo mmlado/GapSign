@@ -1,5 +1,4 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
 
 import { useGenerateSlip39Shares } from '../src/hooks/keycard/useGenerateSlip39Shares';
 
@@ -27,28 +26,6 @@ jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
   }),
 }));
 
-let hookStart: () => void;
-
-function TestHook({
-  shareCount = 3,
-  threshold = 2,
-}: {
-  shareCount?: number;
-  threshold?: number;
-}) {
-  const { start } = useGenerateSlip39Shares(shareCount, threshold);
-  hookStart = start;
-  return null;
-}
-
-async function mountHook(shareCount?: number, threshold?: number) {
-  await act(async () => {
-    ReactTestRenderer.create(
-      React.createElement(TestHook, { shareCount, threshold }),
-    );
-  });
-}
-
 describe('useGenerateSlip39Shares', () => {
   beforeEach(() => {
     mockExecute.mockClear();
@@ -57,9 +34,9 @@ describe('useGenerateSlip39Shares', () => {
   });
 
   it('reads Keycard entropy without requiring PIN', async () => {
-    await mountHook();
+    const { result } = renderHook(() => useGenerateSlip39Shares(3, 2));
     await act(async () => {
-      hookStart();
+      result.current.start();
     });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
@@ -68,7 +45,7 @@ describe('useGenerateSlip39Shares', () => {
     const entropy = new Uint8Array([1, 2, 3]);
     const checkOK = jest.fn();
     const setStatus = jest.fn();
-    const result = await capturedOperation!(
+    const opResult = await capturedOperation!(
       {
         generateMnemonic: jest.fn().mockResolvedValue({
           data: entropy,
@@ -80,13 +57,13 @@ describe('useGenerateSlip39Shares', () => {
 
     expect(setStatus).toHaveBeenCalledWith('Reading Keycard entropy...');
     expect(checkOK).toHaveBeenCalledTimes(1);
-    expect(result).toBe(entropy);
+    expect(opResult).toBe(entropy);
   });
 
-  it('validates generation settings before requesting NFC', async () => {
-    await mountHook(3, 1);
+  it('validates generation settings before requesting NFC', () => {
+    const { result } = renderHook(() => useGenerateSlip39Shares(3, 1));
 
-    expect(() => hookStart()).toThrow(/at least 2/);
+    expect(() => result.current.start()).toThrow(/at least 2/);
     expect(mockExecute).not.toHaveBeenCalled();
   });
 });

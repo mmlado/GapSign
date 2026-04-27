@@ -1,8 +1,8 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+
 import InitCardScreen, { dashboardEntry } from '../src/screens/InitCardScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
-import { getActivePressables, findKey } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -61,26 +61,17 @@ function hookMock(phase: string) {
   };
 }
 
-async function renderScreen(phase = 'idle') {
+function renderScreen(phase = 'idle') {
   mockUseInitCard.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <InitCardScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
+  return render(<InitCardScreen navigation={navigation} route={route} />);
 }
 
 /** Press a digit key six times to complete a full PIN entry. keyIndex 0 = '1', 1 = '2'. */
-async function enterPin(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  keyIndex = 0,
-) {
+async function enterPin(keyIndex = 0) {
   const digit = String(keyIndex + 1);
   for (let i = 0; i < 6; i++) {
     await act(async () => {
-      findKey(renderer, digit).props.onPress();
+      fireEvent.press(screen.getByText(digit));
     });
   }
 }
@@ -113,8 +104,8 @@ describe('InitCardScreen', () => {
     });
 
     it('shows the PIN pad on first render', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('6 digits');
+      renderScreen();
+      expect(screen.getByText('6 digits')).toBeTruthy();
     });
   });
 
@@ -124,40 +115,38 @@ describe('InitCardScreen', () => {
 
   describe('step transitions', () => {
     it('moves to pin_confirm after 6 digits are entered', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       navigation.setOptions.mockClear();
-      await enterPin(renderer, 0); // '1' × 6
+      await enterPin(0);
       expect(navigation.setOptions).toHaveBeenCalledWith({
         title: 'Confirm your PIN',
       });
     });
 
     it('moves to duress_question after the PIN is confirmed correctly', async () => {
-      const renderer = await renderScreen();
-      await enterPin(renderer, 0); // PIN: '111111'
-      await enterPin(renderer, 0); // confirm same PIN
-      expect(JSON.stringify(renderer.toJSON())).toContain('Add a duress PIN?');
+      renderScreen();
+      await enterPin(0);
+      await enterPin(0);
+      expect(screen.getByText('Add a duress PIN?')).toBeTruthy();
     });
 
     it('shows an error when the confirmed PIN does not match', async () => {
-      const renderer = await renderScreen();
-      await enterPin(renderer, 0); // PIN: '111111'
-      await enterPin(renderer, 1); // confirm: '222222' — mismatch
-      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
+      renderScreen();
+      await enterPin(0);
+      await enterPin(1);
+      expect(screen.getByText("PINs don't match")).toBeTruthy();
     });
 
     it('stays on pin_confirm after a mismatch (does not advance)', async () => {
-      const renderer = await renderScreen();
+      renderScreen();
       navigation.setOptions.mockClear();
-      await enterPin(renderer, 0); // PIN
-      await enterPin(renderer, 1); // wrong confirm
+      await enterPin(0);
+      await enterPin(1);
       // Title remains 'Confirm your PIN' (no advancement to duress_question)
       expect(navigation.setOptions).not.toHaveBeenCalledWith({
         title: 'Initialize Card',
       });
-      expect(JSON.stringify(renderer.toJSON())).not.toContain(
-        'Add a duress PIN?',
-      );
+      expect(screen.queryByText('Add a duress PIN?')).toBeNull();
     });
   });
 
@@ -167,29 +156,26 @@ describe('InitCardScreen', () => {
 
   describe('duress question', () => {
     async function reachConfirmPrompt() {
-      const renderer = await renderScreen();
-      await enterPin(renderer, 0); // PIN: '111111'
-      await enterPin(renderer, 0); // confirm: '111111'
-      return renderer;
+      const view = renderScreen();
+      await enterPin(0);
+      await enterPin(0);
+      return view;
     }
 
     it('calls start with the PIN and null duress when No is pressed', async () => {
-      const renderer = await reachConfirmPrompt();
-      // 'No, skip' is the second pressable in ConfirmPrompt
-      const pressables = getActivePressables(renderer);
+      await reachConfirmPrompt();
       await act(async () => {
-        pressables[pressables.length - 1].props.onPress(); // 'No, skip'
+        fireEvent.press(screen.getByText('No, skip'));
       });
       expect(mockStart).toHaveBeenCalledTimes(1);
       expect(mockStart).toHaveBeenCalledWith('111111', null);
     });
 
     it('moves to duress_entry when Yes is pressed', async () => {
-      const renderer = await reachConfirmPrompt();
+      await reachConfirmPrompt();
       navigation.setOptions.mockClear();
-      const pressables = getActivePressables(renderer);
       await act(async () => {
-        pressables[0].props.onPress(); // PrimaryButton(Yes) = index 0
+        fireEvent.press(screen.getByText('Yes, add duress PIN'));
       });
       expect(navigation.setOptions).toHaveBeenCalledWith({
         title: 'Create a duress PIN',
@@ -203,39 +189,37 @@ describe('InitCardScreen', () => {
 
   describe('duress PIN entry', () => {
     async function reachDuressEntry() {
-      const renderer = await renderScreen();
-      await enterPin(renderer, 0); // PIN: '111111'
-      await enterPin(renderer, 0); // confirm: '111111'
-      // press 'Yes, add duress PIN' — PrimaryButton(Yes) is index 0
-      const pressables = getActivePressables(renderer);
+      const view = renderScreen();
+      await enterPin(0);
+      await enterPin(0);
       await act(async () => {
-        pressables[0].props.onPress();
+        fireEvent.press(screen.getByText('Yes, add duress PIN'));
       });
-      return renderer;
+      return view;
     }
 
     it('moves to duress_confirm after 6 duress digits', async () => {
-      const renderer = await reachDuressEntry();
+      await reachDuressEntry();
       navigation.setOptions.mockClear();
-      await enterPin(renderer, 1); // duress: '222222'
+      await enterPin(1);
       expect(navigation.setOptions).toHaveBeenCalledWith({
         title: 'Confirm duress PIN',
       });
     });
 
     it('calls start with PIN and duress when duress confirm matches', async () => {
-      const renderer = await reachDuressEntry();
-      await enterPin(renderer, 1); // duress: '222222'
-      await enterPin(renderer, 1); // duress confirm: '222222'
+      await reachDuressEntry();
+      await enterPin(1);
+      await enterPin(1);
       expect(mockStart).toHaveBeenCalledTimes(1);
       expect(mockStart).toHaveBeenCalledWith('111111', '222222');
     });
 
     it('shows an error when duress confirm does not match', async () => {
-      const renderer = await reachDuressEntry();
-      await enterPin(renderer, 1); // duress: '222222'
-      await enterPin(renderer, 0); // duress confirm: '111111' — mismatch
-      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
+      await reachDuressEntry();
+      await enterPin(1);
+      await enterPin(0);
+      expect(screen.getByText("PINs don't match")).toBeTruthy();
     });
   });
 
@@ -281,11 +265,7 @@ describe('InitCardScreen', () => {
         ...hookMock('done'),
         result: '123456789012',
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <InitCardScreen navigation={navigation} route={route} />,
-        );
-      });
+      render(<InitCardScreen navigation={navigation} route={route} />);
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [{ name: 'Dashboard', params: { toast: 'Card initialized' } }],

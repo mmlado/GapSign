@@ -1,9 +1,8 @@
 import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import ChangeSecretScreen from '../src/screens/secrets/ChangeSecretScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
-import { findKey } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -75,27 +74,16 @@ async function renderScreen(
   phase = 'idle',
 ) {
   mockUseChangeSecret.mockReturnValue(hookMock(phase));
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <ChangeSecretScreen
-        navigation={navigation}
-        route={routeFor(secretType)}
-      />,
-    );
-  });
-  return renderer;
+  return render(
+    <ChangeSecretScreen navigation={navigation} route={routeFor(secretType)} />,
+  );
 }
 
-async function enterDigits(
-  renderer: ReactTestRenderer.ReactTestRenderer,
-  count: number,
-  keyIndex = 0,
-) {
+async function enterDigits(count: number, keyIndex = 0) {
   const digit = String(keyIndex + 1);
   for (let i = 0; i < count; i++) {
     await act(async () => {
-      findKey(renderer, digit).props.onPress();
+      fireEvent.press(screen.getByText(digit));
     });
   }
 }
@@ -135,31 +123,31 @@ describe('ChangeSecretScreen', () => {
     });
 
     it('shows "6 digits" label', async () => {
-      const renderer = await renderScreen('pin');
-      expect(JSON.stringify(renderer.toJSON())).toContain('6 digits');
+      await renderScreen('pin');
+      expect(screen.getByText('6 digits')).toBeTruthy();
     });
 
     it('moves to confirm step and updates title after 6 digits', async () => {
-      const renderer = await renderScreen('pin');
+      await renderScreen('pin');
       navigation.setOptions.mockClear();
-      await enterDigits(renderer, 6, 0);
+      await enterDigits(6, 0);
       expect(navigation.setOptions).toHaveBeenCalledWith({
         title: 'Confirm new PIN',
       });
     });
 
     it('calls start when confirmed PIN matches', async () => {
-      const renderer = await renderScreen('pin');
-      await enterDigits(renderer, 6, 0); // new PIN: 111111
-      await enterDigits(renderer, 6, 0); // confirm: 111111
+      await renderScreen('pin');
+      await enterDigits(6, 0); // new PIN: 111111
+      await enterDigits(6, 0); // confirm: 111111
       expect(mockStart).toHaveBeenCalledWith('111111');
     });
 
     it('shows error on mismatch', async () => {
-      const renderer = await renderScreen('pin');
-      await enterDigits(renderer, 6, 0); // 111111
-      await enterDigits(renderer, 6, 1); // 222222
-      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
+      await renderScreen('pin');
+      await enterDigits(6, 0); // 111111
+      await enterDigits(6, 1); // 222222
+      expect(screen.getByText("PINs don't match")).toBeTruthy();
       expect(mockStart).not.toHaveBeenCalled();
     });
 
@@ -168,14 +156,9 @@ describe('ChangeSecretScreen', () => {
         ...hookMock('done'),
         result: undefined,
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <ChangeSecretScreen
-            navigation={navigation}
-            route={routeFor('pin')}
-          />,
-        );
-      });
+      render(
+        <ChangeSecretScreen navigation={navigation} route={routeFor('pin')} />,
+      );
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [{ name: 'Dashboard', params: { toast: 'PIN changed' } }],
@@ -196,14 +179,14 @@ describe('ChangeSecretScreen', () => {
     });
 
     it('shows "12 digits" label', async () => {
-      const renderer = await renderScreen('puk');
-      expect(JSON.stringify(renderer.toJSON())).toContain('12 digits');
+      await renderScreen('puk');
+      expect(screen.getByText('12 digits')).toBeTruthy();
     });
 
     it('calls start when confirmed PUK matches after 12 digits', async () => {
-      const renderer = await renderScreen('puk');
-      await enterDigits(renderer, 12, 0); // 12 × '1'
-      await enterDigits(renderer, 12, 0);
+      await renderScreen('puk');
+      await enterDigits(12, 0);
+      await enterDigits(12, 0);
       expect(mockStart).toHaveBeenCalledWith('111111111111');
     });
 
@@ -212,14 +195,9 @@ describe('ChangeSecretScreen', () => {
         ...hookMock('done'),
         result: undefined,
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <ChangeSecretScreen
-            navigation={navigation}
-            route={routeFor('puk')}
-          />,
-        );
-      });
+      render(
+        <ChangeSecretScreen navigation={navigation} route={routeFor('puk')} />,
+      );
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [{ name: 'Dashboard', params: { toast: 'PUK changed' } }],
@@ -240,8 +218,8 @@ describe('ChangeSecretScreen', () => {
     });
 
     it('does not show a PIN pad', async () => {
-      const renderer = await renderScreen('pairing');
-      expect(JSON.stringify(renderer.toJSON())).not.toContain('digits');
+      await renderScreen('pairing');
+      expect(screen.queryByText(/digits/)).toBeNull();
     });
 
     it('resets to Dashboard with "Pairing secret changed" toast when done', async () => {
@@ -249,14 +227,12 @@ describe('ChangeSecretScreen', () => {
         ...hookMock('done'),
         result: undefined,
       });
-      await act(async () => {
-        ReactTestRenderer.create(
-          <ChangeSecretScreen
-            navigation={navigation}
-            route={routeFor('pairing')}
-          />,
-        );
-      });
+      render(
+        <ChangeSecretScreen
+          navigation={navigation}
+          route={routeFor('pairing')}
+        />,
+      );
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [

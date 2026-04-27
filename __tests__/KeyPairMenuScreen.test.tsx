@@ -1,6 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import { getActivePressables } from './testUtils';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import KeyPairMenuScreen, {
   dashboardEntry,
@@ -19,6 +18,17 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      nfcActivate: Icon,
+    },
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -26,21 +36,8 @@ jest.mock('react-native-paper', () => {
 const navigation = { navigate: jest.fn() } as any;
 const route = { key: 'KeyPairMenu', name: 'KeyPairMenu' } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <KeyPairMenuScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
-}
-
-function extractText(node: any): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
+function renderScreen() {
+  return render(<KeyPairMenuScreen navigation={navigation} route={route} />);
 }
 
 // ---------------------------------------------------------------------------
@@ -53,84 +50,55 @@ describe('KeyPairMenuScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders Generate BIP39 before Import BIP39, ahead of SLIP39 entries', async () => {
-      const renderer = await renderScreen();
-      const json = JSON.stringify(renderer.toJSON());
-      expect(json.indexOf('Generate BIP39 key pair')).toBeLessThan(
-        json.indexOf('Import BIP39 recovery phrase'),
+    it('renders Generate BIP39 before Import BIP39, ahead of SLIP39 entries', () => {
+      const { toJSON } = renderScreen();
+      const rendered = JSON.stringify(toJSON());
+      expect(rendered.indexOf('Generate BIP39 key pair')).toBeLessThan(
+        rendered.indexOf('Import BIP39 recovery phrase'),
       );
-      expect(json.indexOf('Import BIP39 recovery phrase')).toBeLessThan(
-        json.indexOf('Generate SLIP39 shares'),
+      expect(rendered.indexOf('Import BIP39 recovery phrase')).toBeLessThan(
+        rendered.indexOf('Generate SLIP39 shares'),
       );
-      expect(json).toContain('Verify BIP39 recovery phrase');
+      expect(screen.getByText('Verify BIP39 recovery phrase')).toBeTruthy();
     });
 
-    it('renders SLIP39 menu entries', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Generate SLIP39 shares',
-      );
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Import SLIP39 shares',
-      );
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Verify SLIP39 shares',
-      );
+    it('renders SLIP39 menu entries', () => {
+      renderScreen();
+      expect(screen.getByText('Generate SLIP39 shares')).toBeTruthy();
+      expect(screen.getByText('Import SLIP39 shares')).toBeTruthy();
+      expect(screen.getByText('Verify SLIP39 shares')).toBeTruthy();
     });
   });
 
   describe('navigation', () => {
-    it('navigates to Mnemonic when "Import BIP39 recovery phrase" is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      const entry = pressables.find(p =>
-        extractText(p).includes('Import BIP39 recovery phrase'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to Mnemonic when "Import BIP39 recovery phrase" is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Import BIP39 recovery phrase'));
       expect(navigation.navigate).toHaveBeenCalledWith('Mnemonic');
     });
 
-    it('navigates to Mnemonic with verify mode when "Verify BIP39 recovery phrase" is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      const entry = pressables.find(p =>
-        extractText(p).includes('Verify BIP39 recovery phrase'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to Mnemonic with verify mode when "Verify BIP39 recovery phrase" is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Verify BIP39 recovery phrase'));
       expect(navigation.navigate).toHaveBeenCalledWith('Mnemonic', {
         mode: 'verify',
       });
     });
 
-    it('navigates to KeySize when "Generate BIP39 key pair" is pressed', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-      const entry = pressables.find(p =>
-        extractText(p).includes('Generate BIP39 key pair'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to KeySize when "Generate BIP39 key pair" is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Generate BIP39 key pair'));
       expect(navigation.navigate).toHaveBeenCalledWith('KeySize');
     });
 
-    it('navigates to Slip39 generate/import/verify modes', async () => {
-      const renderer = await renderScreen();
-      const pressables = getActivePressables(renderer);
-
+    it('navigates to Slip39 generate/import/verify modes', () => {
+      renderScreen();
       for (const [label, mode] of [
         ['Generate SLIP39 shares', 'generate'],
         ['Import SLIP39 shares', 'import'],
         ['Verify SLIP39 shares', 'verify'],
       ] as const) {
-        const entry = pressables.find(p => extractText(p).includes(label));
-        await act(async () => {
-          entry!.props.onPress();
-        });
+        fireEvent.press(screen.getByText(label));
         expect(navigation.navigate).toHaveBeenCalledWith('Slip39', { mode });
       }
     });

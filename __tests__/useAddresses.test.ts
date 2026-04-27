@@ -1,5 +1,4 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
 import { useAddresses } from '../src/hooks/keycard/useAddresses';
 
 // ---------------------------------------------------------------------------
@@ -49,28 +48,6 @@ jest.mock('../src/utils/hdAddress', () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Test wrapper
-// ---------------------------------------------------------------------------
-
-let hookStart: () => void;
-
-function TestHook({ coin }: { coin: 'eth' | 'btc' }) {
-  const { start } = useAddresses(coin);
-  hookStart = start;
-  return null;
-}
-
-async function mountHook(coin: 'eth' | 'btc' = 'eth') {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      React.createElement(TestHook, { coin }),
-    );
-  });
-  return renderer;
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -84,9 +61,9 @@ describe('useAddresses', () => {
 
   describe('start()', () => {
     it('calls execute with requiresPin: true', async () => {
-      await mountHook('eth');
+      const { result } = renderHook(() => useAddresses('eth'));
       await act(async () => {
-        hookStart();
+        result.current.start();
       });
       expect(mockExecute).toHaveBeenCalledTimes(1);
       expect(capturedOptions).toEqual({ requiresPin: true });
@@ -95,9 +72,9 @@ describe('useAddresses', () => {
 
   describe('ETH operation', () => {
     async function runEthOperation(cmdSet: any) {
-      await mountHook('eth');
+      const { result } = renderHook(() => useAddresses('eth'));
       await act(async () => {
-        hookStart();
+        result.current.start();
       });
       return capturedOperation!(cmdSet);
     }
@@ -146,9 +123,9 @@ describe('useAddresses', () => {
 
   describe('BTC operation', () => {
     it("calls exportExtendedKey with the BTC path m/84'/0'/0'", async () => {
-      await mountHook('btc');
+      const { result } = renderHook(() => useAddresses('btc'));
       await act(async () => {
-        hookStart();
+        result.current.start();
       });
       const mockExport = jest.fn().mockResolvedValue({
         checkOK: jest.fn(),

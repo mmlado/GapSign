@@ -1,5 +1,4 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
+import { act, renderHook } from '@testing-library/react-native';
 import { useKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
 import type { UseKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
 import { checkGenuine } from '../src/utils/genuineCheck';
@@ -67,25 +66,6 @@ const mockCheckGenuine = checkGenuine as jest.MockedFunction<
 const mockLoadPairing = loadPairing as jest.MockedFunction<typeof loadPairing>;
 
 // ---------------------------------------------------------------------------
-// Test wrapper component
-// ---------------------------------------------------------------------------
-
-let latestHook: UseKeycardOperation<string>;
-
-function TestHook() {
-  latestHook = useKeycardOperation<string>();
-  return null;
-}
-
-async function mountHook() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(React.createElement(TestHook));
-  });
-  return renderer;
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -104,138 +84,138 @@ describe('useKeycardOperation', () => {
   });
 
   describe('initial state', () => {
-    it('starts idle with empty status and no result', async () => {
-      await mountHook();
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
-      expect(latestHook.result).toBeNull();
+    it('starts idle with empty status and no result', () => {
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
+      expect(result.current.result).toBeNull();
     });
   });
 
   describe('execute', () => {
     it('transitions to pin_entry when requiresPin is true', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: true });
+        result.current.execute(jest.fn(), { requiresPin: true });
       });
-      expect(latestHook.phase).toBe('pin_entry');
+      expect(result.current.phase).toBe('pin_entry');
     });
 
     it('transitions to nfc and calls startNFC when requiresPin is false', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
     });
 
     it('defaults requiresPin to true when options are omitted', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn());
+        result.current.execute(jest.fn());
       });
-      expect(latestHook.phase).toBe('pin_entry');
+      expect(result.current.phase).toBe('pin_entry');
       expect(mockStartNFC).not.toHaveBeenCalled();
     });
   });
 
   describe('submitPin', () => {
     it('transitions to nfc and calls startNFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.submitPin('123456');
+        result.current.submitPin('123456');
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
     });
   });
 
   describe('cancel', () => {
     it('returns to idle, clears status, and stops NFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: true });
+        result.current.execute(jest.fn(), { requiresPin: true });
       });
       await act(async () => {
-        latestHook.cancel();
+        result.current.cancel();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
       expect(mockStopNFC).toHaveBeenCalled();
     });
   });
 
   describe('reset', () => {
     it('returns to idle, clears result, and stops NFC', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.reset();
+        result.current.reset();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
-      expect(latestHook.result).toBeNull();
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
+      expect(result.current.result).toBeNull();
       expect(mockStopNFC).toHaveBeenCalled();
     });
   });
 
   describe('NFC events', () => {
     it('user-cancelled resets to idle when in nfc phase', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
 
       await act(async () => {
         capturedOnCancelled?.();
       });
-      expect(latestHook.phase).toBe('idle');
+      expect(result.current.phase).toBe('idle');
     });
 
     it('user-cancelled does not change phase when not in nfc', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: true });
+        result.current.execute(jest.fn(), { requiresPin: true });
       });
-      expect(latestHook.phase).toBe('pin_entry');
+      expect(result.current.phase).toBe('pin_entry');
 
       await act(async () => {
         capturedOnCancelled?.();
       });
-      expect(latestHook.phase).toBe('pin_entry');
+      expect(result.current.phase).toBe('pin_entry');
     });
 
     it('timeout updates status message', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
         capturedOnTimeout?.();
       });
-      expect(latestHook.status).toBe('Timed out — tap again');
+      expect(result.current.status).toBe('Timed out — tap again');
     });
 
     it('card disconnected during nfc updates status and stays in nfc', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
       await act(async () => {
         capturedOnDisconnected?.();
       });
-      expect(latestHook.phase).toBe('nfc');
-      expect(latestHook.status).toBe(
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.status).toBe(
         'Connection lost - adjust Keycard position',
       );
     });
 
     it('card disconnected outside nfc does not update status', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       // phase is idle — disconnect should be a no-op for status
       await act(async () => {
         capturedOnDisconnected?.();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.status).toBe('');
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.status).toBe('');
     });
   });
 
@@ -275,108 +255,108 @@ describe('useKeycardOperation', () => {
       Keycard.Commandset.mockImplementation(() => makeMockCmdSet());
     });
 
-    async function triggerCardConnect() {
+    async function triggerCardConnect(_hook: UseKeycardOperation<string>) {
       await act(async () => {
         await capturedOnConnected?.();
       });
     }
 
     it('genuine check runs when no existing pairing', async () => {
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn().mockResolvedValue('result'), {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
           requiresPin: false,
         });
       });
-      await triggerCardConnect();
+      await triggerCardConnect(result.current);
       expect(mockCheckGenuine).toHaveBeenCalledTimes(1);
     });
 
     it('phase becomes genuine_warning when check fails', async () => {
       mockCheckGenuine.mockResolvedValue(false);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      await triggerCardConnect();
-      expect(latestHook.phase).toBe('genuine_warning');
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('genuine_warning');
     });
 
     it('genuine check is skipped when pairing already exists', async () => {
       mockLoadPairing.mockResolvedValue({ pairingIndex: 0 } as any);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn().mockResolvedValue('result'), {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
           requiresPin: false,
         });
       });
-      await triggerCardConnect();
+      await triggerCardConnect(result.current);
       expect(mockCheckGenuine).not.toHaveBeenCalled();
     });
 
     it('proceedWithNonGenuine transitions back to nfc', async () => {
       mockCheckGenuine.mockResolvedValue(false);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      await triggerCardConnect();
-      expect(latestHook.phase).toBe('genuine_warning');
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('genuine_warning');
 
       await act(async () => {
-        latestHook.proceedWithNonGenuine();
+        result.current.proceedWithNonGenuine();
       });
-      expect(latestHook.phase).toBe('nfc');
+      expect(result.current.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledTimes(2); // initial + after proceed
     });
 
     it('reconnect after proceedWithNonGenuine skips genuine check', async () => {
       mockCheckGenuine.mockResolvedValue(false);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn().mockResolvedValue('r'), {
+        result.current.execute(jest.fn().mockResolvedValue('r'), {
           requiresPin: false,
         });
       });
-      await triggerCardConnect(); // first connect: check fails, warning shown
+      await triggerCardConnect(result.current); // first connect: check fails, warning shown
       await act(async () => {
-        latestHook.proceedWithNonGenuine();
+        result.current.proceedWithNonGenuine();
       });
       // Simulate second card connect after user proceeds
       mockCheckGenuine.mockClear();
-      await triggerCardConnect();
+      await triggerCardConnect(result.current);
       expect(mockCheckGenuine).not.toHaveBeenCalled();
     });
 
     it('cancel in genuine_warning returns to idle', async () => {
       mockCheckGenuine.mockResolvedValue(false);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      await triggerCardConnect();
-      expect(latestHook.phase).toBe('genuine_warning');
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('genuine_warning');
 
       await act(async () => {
-        latestHook.cancel();
+        result.current.cancel();
       });
-      expect(latestHook.phase).toBe('idle');
+      expect(result.current.phase).toBe('idle');
     });
 
     it('reset in genuine_warning returns to idle and clears result', async () => {
       mockCheckGenuine.mockResolvedValue(false);
-      await mountHook();
+      const { result } = renderHook(() => useKeycardOperation<string>());
       await act(async () => {
-        latestHook.execute(jest.fn(), { requiresPin: false });
+        result.current.execute(jest.fn(), { requiresPin: false });
       });
-      await triggerCardConnect();
-      expect(latestHook.phase).toBe('genuine_warning');
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('genuine_warning');
 
       await act(async () => {
-        latestHook.reset();
+        result.current.reset();
       });
-      expect(latestHook.phase).toBe('idle');
-      expect(latestHook.result).toBeNull();
+      expect(result.current.phase).toBe('idle');
+      expect(result.current.result).toBeNull();
     });
   });
 });

@@ -1,6 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import { getActivePressables } from './testUtils';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import KeycardMenuScreen, {
   dashboardEntry,
@@ -15,24 +14,22 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      nfcActivate: Icon,
+    },
+  };
+});
+
 const navigation = { navigate: jest.fn() } as any;
 const route = { key: 'KeycardMenu', name: 'KeycardMenu' } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <KeycardMenuScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
-}
-
-function extractText(node: any): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
+function renderScreen() {
+  return render(<KeycardMenuScreen navigation={navigation} route={route} />);
 }
 
 describe('KeycardMenuScreen', () => {
@@ -40,66 +37,39 @@ describe('KeycardMenuScreen', () => {
     navigation.navigate.mockClear();
   });
 
-  it('renders the requested submenu items', async () => {
-    const renderer = await renderScreen();
-    const json = JSON.stringify(renderer.toJSON());
-
-    expect(json).toContain('Initialize');
-    expect(json).toContain('Keypair');
-    expect(json).toContain('Secrets');
-    expect(json).toContain('Factory reset');
+  it('renders the requested submenu items', () => {
+    renderScreen();
+    expect(screen.getByText('Initialize')).toBeTruthy();
+    expect(screen.getByText('Keypair')).toBeTruthy();
+    expect(screen.getByText('Secrets')).toBeTruthy();
+    expect(screen.getByText('Factory reset')).toBeTruthy();
   });
 
-  it('shows the NFC indicator only for Initialize', async () => {
-    const renderer = await renderScreen();
-
-    expect(
-      renderer.root.findAll(
-        (node: any) => node.props.testID === 'menu-nfc-indicator-0',
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node: any) => node.props.testID === 'menu-nfc-indicator-1',
-      ),
-    ).toHaveLength(0);
-    expect(
-      renderer.root.findAll(
-        (node: any) => node.props.testID === 'menu-nfc-indicator-2',
-      ),
-    ).toHaveLength(0);
-    expect(
-      renderer.root.findAll(
-        (node: any) => node.props.testID === 'menu-nfc-indicator-3',
-      ),
-    ).toHaveLength(0);
+  it('shows the NFC indicator only for Initialize', () => {
+    renderScreen();
+    expect(screen.getByTestId('menu-nfc-indicator-0')).toBeTruthy();
+    expect(screen.queryByTestId('menu-nfc-indicator-1')).toBeNull();
+    expect(screen.queryByTestId('menu-nfc-indicator-2')).toBeNull();
+    expect(screen.queryByTestId('menu-nfc-indicator-3')).toBeNull();
   });
 
-  it('renders the NFC indicator with the primary accent color', async () => {
-    const renderer = await renderScreen();
-    const indicators = renderer.root.findAll(
-      (node: any) => node.props.testID === 'menu-nfc-indicator-0',
+  it('renders the NFC indicator with the primary accent color', () => {
+    renderScreen();
+    expect(screen.getByTestId('menu-nfc-indicator-0').props.color).toBe(
+      '#FF6400',
     );
-
-    expect(indicators).toHaveLength(1);
-    expect(indicators[0].props.color).toBe('#FF6400');
   });
 
-  it('navigates to the expected screens', async () => {
-    const renderer = await renderScreen();
-    const pressables = getActivePressables(renderer);
-
-    for (const [label, screen] of [
+  it('navigates to the expected screens', () => {
+    renderScreen();
+    for (const [label, destination] of [
       ['Initialize', 'InitCard'],
       ['Keypair', 'KeyPairMenu'],
       ['Secrets', 'SecretsMenu'],
       ['Factory reset', 'FactoryReset'],
     ] as const) {
-      const entry = pressables.find(p => extractText(p).includes(label));
-      await act(async () => {
-        entry!.props.onPress();
-      });
-      expect(navigation.navigate).toHaveBeenCalledWith(screen);
+      fireEvent.press(screen.getByText(label));
+      expect(navigation.navigate).toHaveBeenCalledWith(destination);
     }
   });
 

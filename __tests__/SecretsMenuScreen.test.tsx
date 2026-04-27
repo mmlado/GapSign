@@ -1,6 +1,5 @@
-import React, { act } from 'react';
-import ReactTestRenderer from 'react-test-renderer';
-import { getActivePressables } from './testUtils';
+import React from 'react';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import SecretsMenuScreen, {
   dashboardEntry,
@@ -19,6 +18,17 @@ jest.mock('react-native-paper', () => {
   return { MD3DarkTheme: { colors: {} }, Text };
 });
 
+jest.mock('../src/assets/icons', () => {
+  const { View } = require('react-native');
+  const Icon = (props: any) => <View {...props} />;
+  return {
+    Icons: {
+      chevronRight: Icon,
+      nfcActivate: Icon,
+    },
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -26,21 +36,8 @@ jest.mock('react-native-paper', () => {
 const navigation = { navigate: jest.fn() } as any;
 const route = { key: 'SecretsMenu', name: 'SecretsMenu' } as any;
 
-async function renderScreen() {
-  let renderer!: ReactTestRenderer.ReactTestRenderer;
-  await act(async () => {
-    renderer = ReactTestRenderer.create(
-      <SecretsMenuScreen navigation={navigation} route={route} />,
-    );
-  });
-  return renderer;
-}
-
-function extractText(node: any): string {
-  if (typeof node === 'string') return node;
-  if (Array.isArray(node)) return node.map(extractText).join('');
-  if (node?.children) return extractText(node.children);
-  return '';
+function renderScreen() {
+  return render(<SecretsMenuScreen navigation={navigation} route={route} />);
 }
 
 // ---------------------------------------------------------------------------
@@ -53,59 +50,42 @@ describe('SecretsMenuScreen', () => {
   });
 
   describe('layout', () => {
-    it('renders "Change PIN" entry', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Change PIN');
+    it('renders "Change PIN" entry', () => {
+      renderScreen();
+      expect(screen.getByText('Change PIN')).toBeTruthy();
     });
 
-    it('renders "Change PUK" entry', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain('Change PUK');
+    it('renders "Change PUK" entry', () => {
+      renderScreen();
+      expect(screen.getByText('Change PUK')).toBeTruthy();
     });
 
-    it('renders "Change Pairing Secret" entry', async () => {
-      const renderer = await renderScreen();
-      expect(JSON.stringify(renderer.toJSON())).toContain(
-        'Change Pairing Secret',
-      );
+    it('renders "Change Pairing Secret" entry', () => {
+      renderScreen();
+      expect(screen.getByText('Change Pairing Secret')).toBeTruthy();
     });
   });
 
   describe('navigation', () => {
-    it('navigates to ChangeSecret with pin secretType', async () => {
-      const renderer = await renderScreen();
-      const entry = getActivePressables(renderer).find(p =>
-        extractText(p).includes('Change PIN'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to ChangeSecret with pin secretType', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Change PIN'));
       expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
         secretType: 'pin',
       });
     });
 
-    it('navigates to ChangeSecret with puk secretType', async () => {
-      const renderer = await renderScreen();
-      const entry = getActivePressables(renderer).find(p =>
-        extractText(p).includes('Change PUK'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to ChangeSecret with puk secretType', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Change PUK'));
       expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
         secretType: 'puk',
       });
     });
 
-    it('navigates to ChangeSecret with pairing secretType', async () => {
-      const renderer = await renderScreen();
-      const entry = getActivePressables(renderer).find(p =>
-        extractText(p).includes('Change Pairing Secret'),
-      );
-      await act(async () => {
-        entry!.props.onPress();
-      });
+    it('navigates to ChangeSecret with pairing secretType', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Change Pairing Secret'));
       expect(navigation.navigate).toHaveBeenCalledWith('ChangeSecret', {
         secretType: 'pairing',
       });
