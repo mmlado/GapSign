@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Downgrade Gradle wrapper to 8.14.2 for F-Droid build server compatibility
+
 ## [1.0.0] - 2026-04-27
 
 ### Added

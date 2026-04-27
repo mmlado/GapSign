@@ -14,7 +14,7 @@ AuthorWebSite: https://github.com/mmlado
 SourceCode: https://github.com/mmlado/GapSign
 IssueTracker: https://github.com/mmlado/GapSign/issues
 
-Summary: Air-gapped Ethereum and Bitcoin signing. Requires a Keycard NFC smart card.
+Summary: Air-gapped Ethereum and Bitcoin signing with a Keycard NFC smart card
 Description: |-
   GapSign works with a Keycard NFC smart card to sign Ethereum and Bitcoin
   transactions without ever connecting to the internet.
