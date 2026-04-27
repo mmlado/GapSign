@@ -12,12 +12,12 @@ export default function AddressDetailScreen({
   route,
   navigation,
 }: AddressDetailScreenProps) {
-  const { address, index } = route.params;
+  const { address, index, title } = route.params;
   const insets = useSafeAreaInsets();
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: String(index) });
-  }, [navigation, index]);
+    navigation.setOptions({ title: title ?? String(index) });
+  }, [navigation, index, title]);
 
   const handleCopy = useCallback(() => {
     Clipboard.setString(address);

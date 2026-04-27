@@ -98,6 +98,24 @@ describe('AddressDetailScreen', () => {
       renderScreen(ETH_ADDRESS, 5);
       expect(navigation.setOptions).toHaveBeenCalledWith({ title: '5' });
     });
+
+    it('uses a custom title when provided', () => {
+      render(
+        <AddressDetailScreen
+          navigation={navigation}
+          route={
+            {
+              key: 'AddressDetail',
+              name: 'AddressDetail',
+              params: { address: ETH_ADDRESS, index: 0, title: 'Ethereum donation' },
+            } as any
+          }
+        />,
+      );
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Ethereum donation',
+      });
+    });
   });
 
   describe('copy', () => {
