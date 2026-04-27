@@ -92,8 +92,8 @@ android {
         applicationId "tech.gapsign"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 900
-        versionName "0.9.0"
+        versionCode 10000
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {
