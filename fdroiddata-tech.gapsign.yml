@@ -53,6 +53,8 @@ Builds:
       - .fdroid-node/bin/npm ci
     scandelete:
       - node_modules/
+    scanignore:
+      - android/app/.fdroid-node/
     gradle:
       - yes
 
