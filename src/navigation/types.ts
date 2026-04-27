@@ -55,7 +55,7 @@ export type RootStackParamList = {
   FactoryReset: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
-  AddressDetail: { address: string; index: number };
+  AddressDetail: { address: string; index: number; title?: string };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     title: string;
