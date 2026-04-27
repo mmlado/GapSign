@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-04-27
+
 ### Fixed
 
 - Downgrade Gradle wrapper to 8.14.2 for F-Droid build server compatibility
@@ -121,7 +123,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/mmlado/GapSign/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mmlado/GapSign/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/mmlado/GapSign/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/mmlado/GapSign/compare/v0.7.0...v0.8.0

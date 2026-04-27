@@ -1,0 +1,1 @@
+Downgrade Gradle wrapper to 8.14.2 for F-Droid build server compatibility
