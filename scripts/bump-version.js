@@ -132,7 +132,7 @@ fs.writeFileSync(changelogPath, changelog);
 // F-Droid metadata and Fastlane changelog
 // ---------------------------------------------------------------------------
 
-const fdroidMetadataPath = path.join(ROOT, 'fdroiddata-com.gapsign.yml');
+const fdroidMetadataPath = path.join(ROOT, 'fdroiddata-tech.gapsign.yml');
 if (fs.existsSync(fdroidMetadataPath)) {
   let fdroidMetadata = fs.readFileSync(fdroidMetadataPath, 'utf8');
   fdroidMetadata = fdroidMetadata
@@ -161,7 +161,7 @@ fs.writeFileSync(
 const branch = `release/v${newVersion}`;
 execSync(`git checkout -b ${branch}`, { stdio: 'inherit' });
 execSync(
-  'git add package.json package-lock.json android/app/build.gradle ios/GapSign.xcodeproj/project.pbxproj CHANGELOG.md fdroiddata-com.gapsign.yml fastlane/metadata/android/en-US/changelogs',
+  'git add package.json package-lock.json android/app/build.gradle ios/GapSign.xcodeproj/project.pbxproj CHANGELOG.md fdroiddata-tech.gapsign.yml fastlane/metadata/android/en-US/changelogs',
   { stdio: 'inherit' },
 );
 execSync(`git commit -m "chore: bump version to ${newVersion}"`, {
