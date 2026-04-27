@@ -39,12 +39,21 @@ interface PinPadProps {
 
 const PIN_LENGTH = 6;
 
-const PAD_KEYS = [
-  ['1', '2', '3'],
-  ['4', '5', '6'],
-  ['7', '8', '9'],
-  ['', '0', '⌫'],
-];
+const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+function shuffleKeys(): string[][] {
+  const slots = [...DIGITS];
+  for (let i = slots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [slots[i], slots[j]] = [slots[j], slots[i]];
+  }
+  return [
+    [slots[0], slots[1], slots[2]],
+    [slots[3], slots[4], slots[5]],
+    [slots[6], slots[7], slots[8]],
+    ['', slots[9], '⌫'],
+  ];
+}
 
 export default function PinPad({
   onComplete,
@@ -53,6 +62,15 @@ export default function PinPad({
   length = PIN_LENGTH,
 }: PinPadProps) {
   const [pin, setPin] = useState('');
+  const [padKeys, setPadKeys] = useState(shuffleKeys);
+  const prevError = useRef(error);
+
+  useEffect(() => {
+    if (error && error !== prevError.current) {
+      setPadKeys(shuffleKeys());
+    }
+    prevError.current = error;
+  }, [error]);
 
   const handleKey = useCallback(
     (key: string) => {
@@ -94,7 +112,7 @@ export default function PinPad({
       </View>
 
       <View style={styles.pad}>
-        {PAD_KEYS.map((row, ri) => (
+        {padKeys.map((row, ri) => (
           <View key={ri} style={styles.padRow}>
             {row.map((key, ki) => (
               <Pressable

@@ -86,10 +86,6 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -158,7 +154,7 @@ describe('QRScannerScreen', () => {
         scan('ur:eth-sign-request/part1');
       });
       // Progress > 0 renders the progress bar (identified by its fill colour)
-      expect(toJson(renderer)).toContain('#1C8A80');
+      expect(JSON.stringify(renderer.toJSON())).toContain('#1C8A80');
     });
   });
 

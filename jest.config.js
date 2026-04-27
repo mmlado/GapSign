@@ -4,7 +4,7 @@ module.exports = {
   testEnvironmentOptions: {
     customExportConditions: ['require', 'node', 'node-addons'],
   },
-  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/'],
+  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', 'testUtils\\.ts$'],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@noble/(secp256k1|hashes|curves)|@scure/(bip32|bip39|base)|keycard-sdk)/)',
   ],

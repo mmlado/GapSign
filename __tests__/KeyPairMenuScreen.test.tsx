@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { getActivePressables } from './testUtils';
 
 import KeyPairMenuScreen, {
   dashboardEntry,
@@ -35,23 +36,11 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function extractText(node: any): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join('');
   if (node?.children) return extractText(node.children);
   return '';
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -66,7 +55,7 @@ describe('KeyPairMenuScreen', () => {
   describe('layout', () => {
     it('renders Generate BIP39 before Import BIP39, ahead of SLIP39 entries', async () => {
       const renderer = await renderScreen();
-      const json = toJson(renderer);
+      const json = JSON.stringify(renderer.toJSON());
       expect(json.indexOf('Generate BIP39 key pair')).toBeLessThan(
         json.indexOf('Import BIP39 recovery phrase'),
       );
@@ -78,9 +67,15 @@ describe('KeyPairMenuScreen', () => {
 
     it('renders SLIP39 menu entries', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Generate SLIP39 shares');
-      expect(toJson(renderer)).toContain('Import SLIP39 shares');
-      expect(toJson(renderer)).toContain('Verify SLIP39 shares');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Generate SLIP39 shares',
+      );
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Import SLIP39 shares',
+      );
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Verify SLIP39 shares',
+      );
     });
   });
 

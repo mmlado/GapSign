@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { getActivePressables } from './testUtils';
 
 import KeycardMenuScreen, {
   dashboardEntry,
@@ -27,23 +28,11 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function extractText(node: any): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join('');
   if (node?.children) return extractText(node.children);
   return '';
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
 }
 
 describe('KeycardMenuScreen', () => {
@@ -53,7 +42,7 @@ describe('KeycardMenuScreen', () => {
 
   it('renders the requested submenu items', async () => {
     const renderer = await renderScreen();
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
 
     expect(json).toContain('Initialize');
     expect(json).toContain('Keypair');

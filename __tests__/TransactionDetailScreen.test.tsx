@@ -117,10 +117,6 @@ async function renderScreen(result: any) {
   return renderer;
 }
 
-function toJson(renderer: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(renderer.toJSON());
-}
-
 const fullRequest: EthSignRequest = {
   signData: 'aabbccdd',
   dataType: 1,
@@ -147,12 +143,12 @@ describe('TransactionDetailScreen – error result', () => {
       kind: 'error',
       message: 'Parse failed',
     });
-    expect(toJson(renderer)).toContain('Parse failed');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Parse failed');
   });
 
   it('does not show the Sign transaction button', async () => {
     const renderer = await renderScreen({ kind: 'error', message: 'error' });
-    expect(toJson(renderer)).not.toContain('Sign transaction');
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('Sign transaction');
   });
 });
 
@@ -168,7 +164,7 @@ describe('TransactionDetailScreen – unsupported result', () => {
       kind: 'unsupported',
       type: 'eth-signature',
     });
-    expect(toJson(renderer)).toContain('eth-signature');
+    expect(JSON.stringify(renderer.toJSON())).toContain('eth-signature');
   });
 
   it('does not show the Sign transaction button', async () => {
@@ -176,7 +172,7 @@ describe('TransactionDetailScreen – unsupported result', () => {
       kind: 'unsupported',
       type: 'eth-signature',
     });
-    expect(toJson(renderer)).not.toContain('Sign transaction');
+    expect(JSON.stringify(renderer.toJSON())).not.toContain('Sign transaction');
   });
 });
 
@@ -192,7 +188,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    expect(toJson(renderer)).toContain('aabbccdd');
+    expect(JSON.stringify(renderer.toJSON())).toContain('aabbccdd');
   });
 
   it('displays the derivation path', async () => {
@@ -200,7 +196,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    expect(toJson(renderer)).toContain("m/44'/60'/0'/0");
+    expect(JSON.stringify(renderer.toJSON())).toContain("m/44'/60'/0'/0");
   });
 
   it('displays optional fields when present', async () => {
@@ -208,7 +204,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
     expect(json).toContain('0xabcdef1234567890abcdef1234567890abcdef12');
     expect(json).toContain('MetaMask');
     expect(json).toContain('01020304');
@@ -220,13 +216,13 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     }); // dataType: 1
-    expect(toJson(renderer)).toContain('Legacy Transaction');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Legacy Transaction');
   });
 
   it('falls back to "Unknown (N)" for an unrecognised data type', async () => {
     const request = { ...fullRequest, dataType: 99 };
     const renderer = await renderScreen({ kind: 'eth-sign-request', request });
-    expect(toJson(renderer)).toContain('Unknown (99)');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Unknown (99)');
   });
 
   it('shows the Sign transaction button', async () => {
@@ -234,7 +230,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    expect(toJson(renderer)).toContain('Sign transaction');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Sign transaction');
   });
 
   it('renders correctly with only required fields (no optional fields)', async () => {
@@ -247,7 +243,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: minimalRequest,
     });
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
     expect(json).toContain('cafebabe');
     expect(json).toContain('Personal Message');
     expect(json).not.toContain('MetaMask');
@@ -279,7 +275,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
         origin: 'MetaMask',
       },
     });
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
     expect(json).toContain('EIP-712 Typed Data');
     expect(json).toContain('Primary type');
     expect(json).toContain('Mail');
@@ -306,7 +302,7 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       kind: 'crypto-psbt',
       request: { psbtHex: VALID_PSBT_HEX },
     });
-    expect(toJson(renderer)).toContain('Sign transaction');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Sign transaction');
   });
 
   it('shows Bitcoin PSBT label', async () => {
@@ -314,7 +310,7 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       kind: 'crypto-psbt',
       request: { psbtHex: VALID_PSBT_HEX },
     });
-    expect(toJson(renderer)).toContain('Bitcoin PSBT');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Bitcoin PSBT');
   });
 
   it('shows Invalid PSBT error for malformed hex', async () => {
@@ -322,7 +318,7 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       kind: 'crypto-psbt',
       request: { psbtHex: 'deadbeef' },
     });
-    expect(toJson(renderer)).toContain('Invalid PSBT');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Invalid PSBT');
   });
 
   it('shows Sign transaction button even on invalid PSBT (screen-level decision)', async () => {
@@ -330,7 +326,7 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       kind: 'crypto-psbt',
       request: { psbtHex: 'deadbeef' },
     });
-    expect(toJson(renderer)).toContain('Sign transaction');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Sign transaction');
   });
 
   it('shows BIP-322 requests as message signing', async () => {
@@ -338,7 +334,7 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
       kind: 'crypto-psbt',
       request: { psbtHex: BIP322_PSBT_HEX },
     });
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
     expect(json).toContain('Bitcoin Message');
     expect(json).toContain('BIP-322 Message');
     expect(json).toContain('Sign message');
@@ -358,7 +354,7 @@ describe('TransactionDetailScreen – btc-sign-request result', () => {
         origin: 'Sparrow',
       },
     });
-    const json = toJson(renderer);
+    const json = JSON.stringify(renderer.toJSON());
     expect(json).toContain('Bitcoin Message');
     expect(json).toContain('btc-sign-request');
     expect(json).toContain('hello btc');

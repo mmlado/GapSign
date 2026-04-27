@@ -42,10 +42,6 @@ async function renderComponent() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) => typeof node.props.onPress === 'function',
@@ -65,17 +61,19 @@ describe('ConfirmPrompt', () => {
 
     it('renders the title', async () => {
       const renderer = await renderComponent();
-      expect(toJson(renderer)).toContain('Add a duress PIN?');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Add a duress PIN?');
     });
 
     it('renders the Yes button', async () => {
       const renderer = await renderComponent();
-      expect(toJson(renderer)).toContain('Yes, add duress PIN');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Yes, add duress PIN',
+      );
     });
 
     it('renders the No button', async () => {
       const renderer = await renderComponent();
-      expect(toJson(renderer)).toContain('No, skip');
+      expect(JSON.stringify(renderer.toJSON())).toContain('No, skip');
     });
   });
 

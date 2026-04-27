@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { getActivePressables } from './testUtils';
 
 import SecretsMenuScreen, {
   dashboardEntry,
@@ -35,23 +36,11 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function extractText(node: any): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join('');
   if (node?.children) return extractText(node.children);
   return '';
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -66,17 +55,19 @@ describe('SecretsMenuScreen', () => {
   describe('layout', () => {
     it('renders "Change PIN" entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Change PIN');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Change PIN');
     });
 
     it('renders "Change PUK" entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Change PUK');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Change PUK');
     });
 
     it('renders "Change Pairing Secret" entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Change Pairing Secret');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Change Pairing Secret',
+      );
     });
   });
 

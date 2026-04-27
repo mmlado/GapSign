@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import KeySizeScreen from '../src/screens/keypair/KeySizeScreen';
+import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -32,18 +33,6 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -56,22 +45,26 @@ describe('KeySizeScreen', () => {
   describe('layout', () => {
     it('renders the "12 word" option', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('12 word');
+      expect(JSON.stringify(renderer.toJSON())).toContain('12 word');
     });
 
     it('renders the "24 word" option', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('24 word');
+      expect(JSON.stringify(renderer.toJSON())).toContain('24 word');
     });
 
     it('renders the "12 word + passphrase" option', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('12 word + passphrase');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        '12 word + passphrase',
+      );
     });
 
     it('renders the "24 word + passphrase" option', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('24 word + passphrase');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        '24 word + passphrase',
+      );
     });
   });
 

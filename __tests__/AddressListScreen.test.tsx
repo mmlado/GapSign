@@ -36,6 +36,7 @@ jest.mock('../src/utils/hdAddress', () => ({
 // Mock PinPad
 jest.mock('../src/components/PinPad', () => jest.fn(() => null));
 import PinPad from '../src/components/PinPad';
+import { getActivePressables } from './testUtils';
 const MockPinPad = PinPad as jest.MockedFunction<typeof PinPad>;
 
 // Mock useAddresses
@@ -98,18 +99,6 @@ async function renderScreen(
     jest.runAllTimers();
   });
   return renderer;
-}
-
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -216,8 +205,8 @@ describe('AddressListScreen', () => {
     it('renders the first batch of addresses', async () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('0xAddr'));
       const renderer = await renderScreen('done', mockAccountKey);
-      expect(toJson(renderer)).toContain('0xAddr0');
-      expect(toJson(renderer)).toContain('0xAddr19');
+      expect(JSON.stringify(renderer.toJSON())).toContain('0xAddr0');
+      expect(JSON.stringify(renderer.toJSON())).toContain('0xAddr19');
     });
 
     it('loads more addresses starting at the next index on subsequent calls', async () => {
@@ -268,8 +257,8 @@ describe('AddressListScreen', () => {
       mockDeriveAddresses.mockReturnValue(makeBatch('bc1q'));
       await renderScreen('done', mockAccountKey, 'btc');
       expect(mockDeriveAddresses).toHaveBeenCalled();
-      const rendered = toJson(
-        (await renderScreen('done', mockAccountKey, 'btc')) as any,
+      const rendered = JSON.stringify(
+        (await renderScreen('done', mockAccountKey, 'btc')).toJSON(),
       );
       expect(rendered).toContain('bc1q0');
     });

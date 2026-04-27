@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import InitCardScreen, { dashboardEntry } from '../src/screens/InitCardScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import { getActivePressables, findKey } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -71,27 +72,15 @@ async function renderScreen(phase = 'idle') {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
-/** Press key at index `ki` six times to complete a full PIN entry. */
+/** Press a digit key six times to complete a full PIN entry. keyIndex 0 = '1', 1 = '2'. */
 async function enterPin(
   renderer: ReactTestRenderer.ReactTestRenderer,
   keyIndex = 0,
 ) {
+  const digit = String(keyIndex + 1);
   for (let i = 0; i < 6; i++) {
-    const keys = getActivePressables(renderer);
     await act(async () => {
-      keys[keyIndex].props.onPress();
+      findKey(renderer, digit).props.onPress();
     });
   }
 }
@@ -125,7 +114,7 @@ describe('InitCardScreen', () => {
 
     it('shows the PIN pad on first render', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('6 digits');
+      expect(JSON.stringify(renderer.toJSON())).toContain('6 digits');
     });
   });
 
@@ -147,14 +136,14 @@ describe('InitCardScreen', () => {
       const renderer = await renderScreen();
       await enterPin(renderer, 0); // PIN: '111111'
       await enterPin(renderer, 0); // confirm same PIN
-      expect(toJson(renderer)).toContain('Add a duress PIN?');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Add a duress PIN?');
     });
 
     it('shows an error when the confirmed PIN does not match', async () => {
       const renderer = await renderScreen();
       await enterPin(renderer, 0); // PIN: '111111'
       await enterPin(renderer, 1); // confirm: '222222' — mismatch
-      expect(toJson(renderer)).toContain("PINs don't match");
+      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
     });
 
     it('stays on pin_confirm after a mismatch (does not advance)', async () => {
@@ -166,7 +155,9 @@ describe('InitCardScreen', () => {
       expect(navigation.setOptions).not.toHaveBeenCalledWith({
         title: 'Initialize Card',
       });
-      expect(toJson(renderer)).not.toContain('Add a duress PIN?');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Add a duress PIN?',
+      );
     });
   });
 
@@ -244,7 +235,7 @@ describe('InitCardScreen', () => {
       const renderer = await reachDuressEntry();
       await enterPin(renderer, 1); // duress: '222222'
       await enterPin(renderer, 0); // duress confirm: '111111' — mismatch
-      expect(toJson(renderer)).toContain("PINs don't match");
+      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
     });
   });
 

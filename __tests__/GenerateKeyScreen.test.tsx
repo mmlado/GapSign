@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import GenerateKeyScreen from '../src/screens/keypair/GenerateKeyScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -79,18 +80,6 @@ async function renderScreen(phase = 'idle', result: string[] | null = null) {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -115,13 +104,13 @@ describe('GenerateKeyScreen', () => {
   describe('word grid', () => {
     it('does not render the word grid when phase is not done', async () => {
       const renderer = await renderScreen('nfc');
-      expect(toJson(renderer)).not.toContain('apple');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain('apple');
     });
 
     it('renders words when phase is done and result is set', async () => {
       const renderer = await renderScreen('done', WORDS);
-      expect(toJson(renderer)).toContain('apple');
-      expect(toJson(renderer)).toContain('lemon');
+      expect(JSON.stringify(renderer.toJSON())).toContain('apple');
+      expect(JSON.stringify(renderer.toJSON())).toContain('lemon');
     });
 
     it('renders a BlurView over the words before revealing', async () => {
@@ -150,7 +139,9 @@ describe('GenerateKeyScreen', () => {
   describe('primary button', () => {
     it('shows "Reveal recovery phrase" before revealing', async () => {
       const renderer = await renderScreen('done', WORDS);
-      expect(toJson(renderer)).toContain('Reveal recovery phrase');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Reveal recovery phrase',
+      );
     });
 
     it('shows "Done" after revealing', async () => {
@@ -159,7 +150,7 @@ describe('GenerateKeyScreen', () => {
       await act(async () => {
         pressables[0].props.onPress(); // reveal
       });
-      expect(toJson(renderer)).toContain('Done');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Done');
     });
 
     it('calls navigation.replace to ConfirmKey when "Done" is pressed', async () => {

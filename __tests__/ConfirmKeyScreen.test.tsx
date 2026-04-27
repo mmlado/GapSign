@@ -3,6 +3,7 @@ import ReactTestRenderer from 'react-test-renderer';
 import ConfirmKeyScreen from '../src/screens/keypair/ConfirmKeyScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import PinPad from '../src/components/PinPad';
+import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -100,18 +101,6 @@ async function renderScreen(phase = 'idle') {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 /** Recursively extract all text content from a ReactTestInstance subtree. */
 function extractText(node: any): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -177,13 +166,13 @@ describe('ConfirmKeyScreen', () => {
 
     it('shows unfilled slots at start', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('____');
+      expect(JSON.stringify(renderer.toJSON())).toContain('____');
     });
 
     it('shows choice buttons for the first challenge', async () => {
       const renderer = await renderScreen();
       // With random=0: slot 0 correct word is 'bravo', choices include it
-      expect(toJson(renderer)).toContain(CORRECT_WORDS[0]);
+      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[0]);
     });
 
     it('hides choices once all answers are filled', async () => {
@@ -202,9 +191,9 @@ describe('ConfirmKeyScreen', () => {
       const renderer = await renderScreen();
       await pressChoice(renderer, CORRECT_WORDS[0]);
       // First slot now shows the word instead of ____
-      expect(toJson(renderer)).toContain(CORRECT_WORDS[0]);
+      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[0]);
       // Second slot's correct word is now available as a choice
-      expect(toJson(renderer)).toContain(CORRECT_WORDS[1]);
+      expect(JSON.stringify(renderer.toJSON())).toContain(CORRECT_WORDS[1]);
     });
 
     it('does not advance when the wrong word is pressed', async () => {
@@ -218,7 +207,7 @@ describe('ConfirmKeyScreen', () => {
           wrongBtn.props.onPress();
         });
       }
-      expect(toJson(renderer)).toContain('____');
+      expect(JSON.stringify(renderer.toJSON())).toContain('____');
       expect(mockStart).not.toHaveBeenCalled();
     });
 

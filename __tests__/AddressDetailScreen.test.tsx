@@ -65,10 +65,6 @@ async function renderScreen(address = ETH_ADDRESS, index = INDEX) {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -83,7 +79,7 @@ describe('AddressDetailScreen', () => {
   describe('layout', () => {
     it('renders the address text', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain(ETH_ADDRESS);
+      expect(JSON.stringify(renderer.toJSON())).toContain(ETH_ADDRESS);
     });
 
     it('passes the address to QRCode', async () => {
