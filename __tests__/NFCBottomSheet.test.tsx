@@ -55,10 +55,6 @@ async function renderSheet(nfc: NFCOperation, showOnDone?: boolean) {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function getPressables(renderer: ReactTestRenderer.ReactTestRenderer) {
   return renderer.root.findAll(
     (node: any) => typeof node.props.onPress === 'function',
@@ -76,14 +72,14 @@ describe('NFCBottomSheet', () => {
       const renderer = await renderSheet(
         makeNfc('nfc', { status: 'Waiting for card…' }),
       );
-      expect(toJson(renderer)).toContain('Waiting for card…');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Waiting for card…');
     });
   });
 
   describe('Cancel button — phase nfc (scanning)', () => {
     it('shows the Cancel button', async () => {
       const renderer = await renderSheet(makeNfc('nfc'));
-      expect(toJson(renderer)).toContain('Cancel');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Cancel');
     });
 
     it('calls onCancel when Cancel is pressed', async () => {
@@ -99,7 +95,7 @@ describe('NFCBottomSheet', () => {
   describe('Cancel button — phase error', () => {
     it('shows the Cancel button', async () => {
       const renderer = await renderSheet(makeNfc('error'));
-      expect(toJson(renderer)).toContain('Cancel');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Cancel');
     });
 
     it('calls onCancel when Cancel is pressed', async () => {
@@ -115,7 +111,7 @@ describe('NFCBottomSheet', () => {
   describe('Cancel button — phase done with showOnDone', () => {
     it('hides the Cancel button (success variant)', async () => {
       const renderer = await renderSheet(makeNfc('done'), true);
-      expect(toJson(renderer)).not.toContain('Cancel');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain('Cancel');
     });
 
     it('has no pressable elements', async () => {
@@ -135,21 +131,23 @@ describe('NFCBottomSheet', () => {
       const renderer = await renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(toJson(renderer)).toContain('Unverified Keycard');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Unverified Keycard');
     });
 
     it('shows warning body text', async () => {
       const renderer = await renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(toJson(renderer)).toContain('could not be verified');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'could not be verified',
+      );
     });
 
     it('shows Cancel and Proceed Anyway buttons', async () => {
       const renderer = await renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      const json = toJson(renderer);
+      const json = JSON.stringify(renderer.toJSON());
       expect(json).toContain('Cancel');
       expect(json).toContain('Proceed Anyway');
     });
@@ -186,7 +184,9 @@ describe('NFCBottomSheet', () => {
       const renderer = await renderSheet(
         makeNfc('genuine_warning', { proceedWithNonGenuine: onProceed }),
       );
-      expect(toJson(renderer)).not.toContain('Tap your Keycard');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Tap your Keycard',
+      );
     });
   });
 
@@ -202,7 +202,9 @@ describe('NFCBottomSheet', () => {
     it('does not show the NFC sheet content', async () => {
       const submitPin = jest.fn();
       const renderer = await renderSheet(makeNfc('pin_entry', { submitPin }));
-      expect(toJson(renderer)).not.toContain('Tap your Keycard');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Tap your Keycard',
+      );
     });
   });
 

@@ -56,10 +56,6 @@ async function renderScreen(
   return renderer;
 }
 
-function toJson(renderer: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(renderer.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -71,7 +67,7 @@ describe('QRResultScreen', () => {
 
   it('renders the "Done" button', async () => {
     const renderer = await renderScreen(SAMPLE_UR);
-    expect(toJson(renderer)).toContain('Done');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Done');
   });
 
   it('calls setOptions with the provided title', async () => {

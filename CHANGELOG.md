@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Scramble PIN pad digit layout on mount and on each new error to prevent shoulder-surfing
 - F-Droid release metadata, store listing text, and unsigned Android release artifact workflow
 - About screen with app description, Keycard link, contributors, and license list
 - Keycard menu and NFC action indicators so every visible NFC-triggering action shows the `Icons.nfcActivate` marker

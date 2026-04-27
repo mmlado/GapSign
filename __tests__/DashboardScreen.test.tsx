@@ -72,10 +72,6 @@ async function renderScreen(routeParams?: { toast?: string }) {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -100,7 +96,7 @@ describe('DashboardScreen', () => {
   describe('static layout', () => {
     it('renders the Scan transaction button', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Scan transaction');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Scan transaction');
     });
 
     it('renders one fewer pressable when action list is empty', async () => {
@@ -129,8 +125,8 @@ describe('DashboardScreen', () => {
         { label: 'Action Two', navigate: jest.fn() },
       );
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Action One');
-      expect(toJson(renderer)).toContain('Action Two');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Action One');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Action Two');
     });
 
     it('calls the action navigate when an item is pressed', async () => {
@@ -206,7 +202,7 @@ describe('DashboardScreen', () => {
       await act(async () => {
         focusCallback?.();
       });
-      expect(toJson(renderer)).toContain('Card initialized');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Card initialized');
     });
 
     it('clears the toast param after showing the snackbar', async () => {
@@ -224,7 +220,9 @@ describe('DashboardScreen', () => {
       });
       expect(navigation.setParams).not.toHaveBeenCalled();
       // Snackbar renders null when not visible — message not in output
-      expect(toJson(renderer)).not.toContain('Card initialized');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Card initialized',
+      );
     });
   });
 
@@ -233,16 +231,18 @@ describe('DashboardScreen', () => {
       mockLoadBooleanPreference.mockResolvedValue(false);
       const renderer = await renderScreen();
 
-      expect(toJson(renderer)).toContain('Keycard required');
-      expect(toJson(renderer)).toContain('Buy a Keycard');
-      expect(toJson(renderer)).toContain('ShellSummer9746');
-      expect(toJson(renderer)).toContain('on purchases over');
-      expect(toJson(renderer)).toContain('$25');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Keycard required');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Buy a Keycard');
+      expect(JSON.stringify(renderer.toJSON())).toContain('ShellSummer9746');
+      expect(JSON.stringify(renderer.toJSON())).toContain('on purchases over');
+      expect(JSON.stringify(renderer.toJSON())).toContain('$25');
     });
 
     it('hides the notice when it was already dismissed', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).not.toContain('Keycard required');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Keycard required',
+      );
     });
 
     it('opens the purchase link in the browser', async () => {
@@ -276,7 +276,9 @@ describe('DashboardScreen', () => {
         'preference_dashboard_keycard_notice_dismissed',
         true,
       );
-      expect(toJson(renderer)).not.toContain('Keycard required');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Keycard required',
+      );
     });
   });
 });

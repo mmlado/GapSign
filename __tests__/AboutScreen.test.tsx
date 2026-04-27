@@ -32,10 +32,6 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(renderer: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(renderer.toJSON());
-}
-
 function findText(renderer: ReactTestRenderer.ReactTestRenderer, text: string) {
   return renderer.root.findAll(
     (node: any) => node.type === 'Text' && node.props.children === text,
@@ -68,10 +64,10 @@ describe('AboutScreen', () => {
   it('renders the app, Keycard, contributors, and license sections', async () => {
     const renderer = await renderScreen();
 
-    expect(toJson(renderer)).toContain('GapSign');
-    expect(toJson(renderer)).toContain('Keycard required');
-    expect(toJson(renderer)).toContain('Mladen Milankovic');
-    expect(toJson(renderer)).toContain('Open-source licenses');
+    expect(JSON.stringify(renderer.toJSON())).toContain('GapSign');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Keycard required');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Mladen Milankovic');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Open-source licenses');
   });
 
   it('opens contributor GitHub profiles', async () => {

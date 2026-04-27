@@ -91,10 +91,6 @@ async function renderScreen(phase = 'idle') {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 function extractText(node: any): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join('');
@@ -150,8 +146,8 @@ describe('MnemonicScreen', () => {
   describe('layout', () => {
     it('renders the 12/24 word selector', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('12 words');
-      expect(toJson(renderer)).toContain('24 words');
+      expect(JSON.stringify(renderer.toJSON())).toContain('12 words');
+      expect(JSON.stringify(renderer.toJSON())).toContain('24 words');
     });
 
     it('renders the word input with multiline', async () => {
@@ -168,7 +164,7 @@ describe('MnemonicScreen', () => {
 
     it('renders the Continue button', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Continue');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Continue');
     });
   });
 
@@ -258,20 +254,26 @@ describe('MnemonicScreen', () => {
       const renderer = await renderScreen();
       // trailing space triggers validation of the completed word
       await setInput(renderer, 'notaword ');
-      expect(toJson(renderer)).toContain('notaword');
-      expect(toJson(renderer)).toContain('is not a valid BIP39 word');
+      expect(JSON.stringify(renderer.toJSON())).toContain('notaword');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'is not a valid BIP39 word',
+      );
     });
 
     it('does not show error while word is still being typed', async () => {
       const renderer = await renderScreen();
       await setInput(renderer, 'aban');
-      expect(toJson(renderer)).not.toContain('is not a valid BIP39 word');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'is not a valid BIP39 word',
+      );
     });
 
     it('does not show error for a valid completed word', async () => {
       const renderer = await renderScreen();
       await setInput(renderer, 'abandon ');
-      expect(toJson(renderer)).not.toContain('is not a valid BIP39 word');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'is not a valid BIP39 word',
+      );
     });
   });
 
@@ -286,7 +288,9 @@ describe('MnemonicScreen', () => {
       await act(async () => {
         getContinueButton(renderer).props.onPress();
       });
-      expect(toJson(renderer)).toContain('Invalid recovery phrase');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Invalid recovery phrase',
+      );
       expect(mockStart).not.toHaveBeenCalled();
     });
 

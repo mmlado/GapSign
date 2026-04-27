@@ -4,6 +4,7 @@ import FactoryResetScreen, {
   dashboardEntry,
 } from '../src/screens/FactoryResetScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import { getActivePressables } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -70,18 +71,6 @@ async function renderScreen(phase = 'idle') {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -111,24 +100,28 @@ describe('FactoryResetScreen', () => {
 
     it('shows the warning description', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain(
+      expect(JSON.stringify(renderer.toJSON())).toContain(
         'Factory reset permanently erases key pair',
       );
     });
 
     it('shows the backup checkbox label', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('I have a backup');
+      expect(JSON.stringify(renderer.toJSON())).toContain('I have a backup');
     });
 
     it('shows the "Factory reset Keycard" button', async () => {
       const renderer = await renderScreen('idle');
-      expect(toJson(renderer)).toContain('Factory reset Keycard');
+      expect(JSON.stringify(renderer.toJSON())).toContain(
+        'Factory reset Keycard',
+      );
     });
 
     it('does not show the idle content when not idle', async () => {
       const renderer = await renderScreen('nfc');
-      expect(toJson(renderer)).not.toContain('Factory reset Keycard');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain(
+        'Factory reset Keycard',
+      );
     });
   });
 

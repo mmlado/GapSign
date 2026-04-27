@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { getActivePressables } from './testUtils';
 import AddressMenuScreen, {
   dashboardEntry,
 } from '../src/screens/address/AddressMenuScreen';
@@ -34,18 +35,6 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -58,12 +47,12 @@ describe('AddressMenuScreen', () => {
   describe('layout', () => {
     it('renders the "Ethereum" menu entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Ethereum');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Ethereum');
     });
 
     it('renders the "Bitcoin" menu entry', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Bitcoin');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Bitcoin');
     });
 
     it('shows the NFC indicator for both address entries', async () => {

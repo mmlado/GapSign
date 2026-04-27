@@ -3,6 +3,7 @@ import ReactTestRenderer from 'react-test-renderer';
 
 import ChangeSecretScreen from '../src/screens/secrets/ChangeSecretScreen';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
+import { findKey } from './testUtils';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -86,27 +87,15 @@ async function renderScreen(
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
-function getActivePressables(renderer: ReactTestRenderer.ReactTestRenderer) {
-  return renderer.root.findAll(
-    (node: any) =>
-      typeof node.props.onPress === 'function' && !node.props.disabled,
-    { deep: true },
-  );
-}
-
 async function enterDigits(
   renderer: ReactTestRenderer.ReactTestRenderer,
   count: number,
   keyIndex = 0,
 ) {
+  const digit = String(keyIndex + 1);
   for (let i = 0; i < count; i++) {
-    const keys = getActivePressables(renderer);
     await act(async () => {
-      keys[keyIndex].props.onPress();
+      findKey(renderer, digit).props.onPress();
     });
   }
 }
@@ -147,7 +136,7 @@ describe('ChangeSecretScreen', () => {
 
     it('shows "6 digits" label', async () => {
       const renderer = await renderScreen('pin');
-      expect(toJson(renderer)).toContain('6 digits');
+      expect(JSON.stringify(renderer.toJSON())).toContain('6 digits');
     });
 
     it('moves to confirm step and updates title after 6 digits', async () => {
@@ -170,7 +159,7 @@ describe('ChangeSecretScreen', () => {
       const renderer = await renderScreen('pin');
       await enterDigits(renderer, 6, 0); // 111111
       await enterDigits(renderer, 6, 1); // 222222
-      expect(toJson(renderer)).toContain("PINs don't match");
+      expect(JSON.stringify(renderer.toJSON())).toContain("PINs don't match");
       expect(mockStart).not.toHaveBeenCalled();
     });
 
@@ -208,7 +197,7 @@ describe('ChangeSecretScreen', () => {
 
     it('shows "12 digits" label', async () => {
       const renderer = await renderScreen('puk');
-      expect(toJson(renderer)).toContain('12 digits');
+      expect(JSON.stringify(renderer.toJSON())).toContain('12 digits');
     });
 
     it('calls start when confirmed PUK matches after 12 digits', async () => {
@@ -252,7 +241,7 @@ describe('ChangeSecretScreen', () => {
 
     it('does not show a PIN pad', async () => {
       const renderer = await renderScreen('pairing');
-      expect(toJson(renderer)).not.toContain('digits');
+      expect(JSON.stringify(renderer.toJSON())).not.toContain('digits');
     });
 
     it('resets to Dashboard with "Pairing secret changed" toast when done', async () => {

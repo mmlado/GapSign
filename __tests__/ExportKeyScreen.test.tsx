@@ -41,10 +41,6 @@ async function renderScreen() {
   return renderer;
 }
 
-function toJson(r: ReactTestRenderer.ReactTestRenderer): string {
-  return JSON.stringify(r.toJSON());
-}
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -61,7 +57,7 @@ describe('ExportKeyScreen', () => {
 
     it('renders the Ethereum option', async () => {
       const renderer = await renderScreen();
-      expect(toJson(renderer)).toContain('Ethereum');
+      expect(JSON.stringify(renderer.toJSON())).toContain('Ethereum');
     });
 
     it('shows the NFC indicator for every export option', async () => {
