@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Downgrade @react-native-async-storage/async-storage to 1.24.0 to remove local maven repo incompatible with F-Droid build server
+
 ## [1.0.1] - 2026-04-27
 
 ### Fixed
