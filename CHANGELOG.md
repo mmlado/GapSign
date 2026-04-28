@@ -6,7 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
 - Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review UI; show unlimited approval warning
+- Detect and label pre-hashed EIP-712 payloads (`0x1901` prefix) with domain separator and message hash
+
+### Fixed
+
+- Fix EIP-712 JSON decode for wallets that send minified or non-round-tripping UTF-8 payloads; prettify JSON display
 
 ## [1.0.3] - 2026-04-27
 
@@ -16,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Reduce release APK size with minification, resource shrinking, and ARM-only release splits
 
 ## [1.0.2] - 2026-04-27
+
+### Changed
 
 - Downgrade @react-native-async-storage/async-storage to 1.24.0 to remove local maven repo incompatible with F-Droid build server
 
