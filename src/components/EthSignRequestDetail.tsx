@@ -5,7 +5,7 @@ import type { EthSignRequest } from '../types';
 import theme from '../theme';
 import DecodedCallSection from './DecodedCallSection';
 import InfoRow from './InfoRow';
-import { parseEip712Summary } from '../utils/eip712';
+import { parseEip712Prehashed, parseEip712Summary } from '../utils/eip712';
 import { getTxLabel, parseTx } from '../utils/txParser';
 
 const CHAIN_NAMES: Record<number, string> = {
@@ -40,6 +40,10 @@ export default function EthSignRequestDetail({
   const tx = parseTx(request.signData, request.dataType);
   const eip712 =
     request.dataType === 2 ? parseEip712Summary(request.signData) : null;
+  const eip712Prehashed =
+    request.dataType === 2 && !eip712
+      ? parseEip712Prehashed(request.signData)
+      : null;
 
   return (
     <>
@@ -142,14 +146,34 @@ export default function EthSignRequestDetail({
         </>
       )}
 
-      {(!tx?.decodedCall || tx.decodedCall.kind === 'unknown-call') && (
-        <View style={styles.row}>
-          <InfoRow
-            label="Data"
-            value={eip712?.rawJson ?? tx?.data ?? request.signData}
-          />
-        </View>
+      {eip712Prehashed && (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text variant="labelMedium" style={styles.sectionHeaderText}>
+              EIP-712 (pre-hashed)
+            </Text>
+          </View>
+          <View style={styles.row}>
+            <InfoRow
+              label="Domain separator"
+              value={eip712Prehashed.domainSeparatorHash}
+            />
+          </View>
+          <View style={styles.row}>
+            <InfoRow label="Message hash" value={eip712Prehashed.messageHash} />
+          </View>
+        </>
       )}
+
+      {!eip712Prehashed &&
+        (!tx?.decodedCall || tx.decodedCall.kind === 'unknown-call') && (
+          <View style={styles.row}>
+            <InfoRow
+              label="Data"
+              value={eip712?.rawJson ?? tx?.data ?? request.signData}
+            />
+          </View>
+        )}
 
       {request.origin && (
         <View style={styles.row}>

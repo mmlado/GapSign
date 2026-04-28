@@ -1,4 +1,4 @@
-import { hexToString, stringToHex, validateTypedData } from 'viem';
+import { validateTypedData } from 'viem';
 
 import { ensureHexPrefix } from './hex';
 
@@ -19,18 +19,35 @@ export type Eip712Summary = {
   message: Record<string, string>;
 };
 
+export type Eip712Prehashed = {
+  domainSeparatorHash: string;
+  messageHash: string;
+};
+
+// \x19\x01 prefix + 32-byte domain separator + 32-byte message hash = 66 bytes
+const PREHASHED_PREFIX = '1901';
+const PREHASHED_BYTE_LENGTH = 66;
+
+export function parseEip712Prehashed(
+  signDataHex: string,
+): Eip712Prehashed | null {
+  const hex = signDataHex.replace(/^0x/, '');
+  if (hex.length !== PREHASHED_BYTE_LENGTH * 2) return null;
+  if (!hex.startsWith(PREHASHED_PREFIX)) return null;
+  return {
+    domainSeparatorHash: '0x' + hex.slice(4, 68),
+    messageHash: '0x' + hex.slice(68),
+  };
+}
+
 function isJsonObject(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function decodeUtf8(hex: string): string | null {
   try {
-    const normalizedHex = ensureHexPrefix(hex);
-    const text = hexToString(normalizedHex);
-    if (stringToHex(text).toLowerCase() !== normalizedHex.toLowerCase()) {
-      return null;
-    }
-    return text;
+    const stripped = ensureHexPrefix(hex).replace(/^0x/, '');
+    return Buffer.from(stripped, 'hex').toString('utf8');
   } catch {
     return null;
   }
@@ -85,7 +102,7 @@ export function parseEip712Summary(signDataHex: string): Eip712Summary | null {
     });
 
     return {
-      rawJson: json,
+      rawJson: JSON.stringify(parsed, null, 2),
       primaryType:
         typeof parsed.primaryType === 'string' ? parsed.primaryType : undefined,
       domain: toDisplayMap(parsed.domain),
