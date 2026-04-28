@@ -6,7 +6,7 @@ module.exports = {
   },
   testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', 'testUtils\\.ts$'],
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@noble/(secp256k1|hashes|curves)|@scure/(bip32|bip39|base)|keycard-sdk)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|@noble/(secp256k1|hashes|curves)|@scure/(bip32|bip39|base)|keycard-sdk)/)',
   ],
   setupFilesAfterEnv: ['./jest.setup.js'],
   moduleNameMapper: {

@@ -166,4 +166,66 @@ describe('inspectBtcPsbt', () => {
     expect(summary.requestType).toBe('bip322-message');
     expect(summary.bip322Address).toMatch(/^tb1/);
   });
+
+  it('detects mainnet from derivation path coin type 0', () => {
+    const { Psbt, payments, networks } = require('bitcoinjs-lib');
+    const fakePubkey = Buffer.alloc(33, 0x02);
+    const { output } = payments.p2wpkh({
+      pubkey: fakePubkey,
+      network: networks.bitcoin,
+    });
+    const psbt = new Psbt({ network: networks.bitcoin });
+    psbt.addInput({
+      hash: Buffer.alloc(32, 0xbb),
+      index: 0,
+      bip32Derivation: [
+        {
+          masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+          path: "m/84'/0'/0'/0/0",
+          pubkey: fakePubkey,
+        },
+      ],
+    });
+    psbt.addOutput({ script: output!, value: 50_000 });
+    const summary = inspectBtcPsbt(psbt.toBuffer().toString('hex'));
+    expect(summary.network).toBe('mainnet');
+  });
+
+  it('resolves input value from nonWitnessUtxo', () => {
+    const { Psbt, Transaction, payments, networks } = require('bitcoinjs-lib');
+    const fakePubkey = Buffer.alloc(33, 0x02);
+    const { output } = payments.p2pkh({
+      pubkey: fakePubkey,
+      network: networks.bitcoin,
+    });
+
+    const prevTx = new Transaction();
+    prevTx.addInput(Buffer.alloc(32), 0);
+    prevTx.addOutput(output!, 80_000);
+
+    const psbt = new Psbt({ network: networks.bitcoin });
+    psbt.addInput({
+      hash: prevTx.getHash(),
+      index: 0,
+      nonWitnessUtxo: prevTx.toBuffer(),
+      bip32Derivation: [
+        {
+          masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+          path: "m/44'/0'/0'/0/0",
+          pubkey: fakePubkey,
+        },
+      ],
+    });
+    psbt.addOutput({ script: output!, value: 70_000 });
+
+    const summary = inspectBtcPsbt(psbt.toBuffer().toString('hex'));
+    expect(summary.network).toBe('mainnet');
+    expect(summary.inputCount).toBe(1);
+    expect(summary.totalOutputSats).toBe(70_000);
+  });
+
+  it('returns unknown network when no derivation path present', () => {
+    const summary = inspectBtcPsbt(MINIMAL_PSBT_HEX);
+    expect(summary.network).toBe('unknown');
+  });
 });

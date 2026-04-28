@@ -8,6 +8,11 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
+const mockUseNavigationNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ navigate: mockUseNavigationNavigate }),
+}));
+
 jest.mock('react-native-paper', () => {
   const { Text } = require('react-native');
   return {
@@ -52,6 +57,7 @@ function renderScreen() {
 describe('AboutScreen', () => {
   beforeEach(() => {
     navigation.navigate.mockClear();
+    mockUseNavigationNavigate.mockClear();
     mockSetString.mockClear();
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
@@ -117,6 +123,24 @@ describe('AboutScreen', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('LicenseDetail', {
       packageName: '@ethereumjs/rlp',
       licenseType: 'MPL-2.0',
+    });
+  });
+
+  it('shows QR for the GitHub project link', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Show GitHub project QR code'));
+    expect(navigation.navigate).toHaveBeenCalledWith('UrlQR', {
+      url: 'https://github.com/mmlado/GapSign',
+      title: 'GitHub project',
+    });
+  });
+
+  it('shows QR for a contributor profile', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText('Show QR code for mmlado'));
+    expect(mockUseNavigationNavigate).toHaveBeenCalledWith('UrlQR', {
+      url: 'https://github.com/mmlado',
+      title: expect.any(String),
     });
   });
 });

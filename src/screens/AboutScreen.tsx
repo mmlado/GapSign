@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import {
-  Image,
   Linking,
   Pressable,
   ScrollView,
@@ -14,13 +13,14 @@ import { Icons } from '../assets/icons';
 import type { AboutScreenProps, DashboardAction } from '../navigation/types';
 import theme from '../theme';
 
+import AppIdentityHeader from '../components/about/AppIdentityHeader';
 import ContributorsList from '../components/about/ContributorsList';
-import DonationList from '../components/about/DonationList';
+import DonationSection from '../components/about/DonationSection';
 import KeycardPurchaseCard from '../components/KeycardPurchaseCard';
 import LicenseList from '../components/about/LicenseList';
 
+import { KEYCARD_PURCHASE_URL } from '../constants/keycard';
 import type { LicenseEntry } from '../data/licenses';
-import { version as APP_VERSION } from '../../package.json';
 
 const PROJECT_GITHUB_URL = 'https://github.com/mmlado/GapSign';
 
@@ -49,18 +49,7 @@ export default function AboutScreen({ navigation }: AboutScreenProps) {
         { paddingBottom: insets.bottom + 24 },
       ]}
     >
-      {/* App identity */}
-      <View style={styles.header}>
-        <View style={styles.appIdentity}>
-          <Image
-            source={require('../../fastlane/metadata/android/en-US/images/icon.png')}
-            style={styles.appIcon}
-            accessibilityLabel="GapSign app icon"
-          />
-          <Text style={styles.appName}>GapSign</Text>
-        </View>
-        <Text style={styles.version}>v{APP_VERSION}</Text>
-      </View>
+      <AppIdentityHeader />
 
       <Text style={styles.description}>
         GapSign is an open-source air-gapped hardware wallet companion for
@@ -69,28 +58,46 @@ export default function AboutScreen({ navigation }: AboutScreenProps) {
         Bitcoin signing — keeping your private keys offline at all times.
       </Text>
 
-      <Pressable
-        style={styles.projectLink}
-        onPress={() => Linking.openURL(PROJECT_GITHUB_URL)}
-      >
-        <Text style={styles.projectLinkText}>GitHub project</Text>
-        <Icons.openInBrowser
-          width={18}
-          height={18}
-          color={theme.colors.onSurface}
-        />
-      </Pressable>
+      <View style={styles.projectLinkRow}>
+        <Pressable
+          style={styles.projectLink}
+          onPress={() => Linking.openURL(PROJECT_GITHUB_URL)}
+        >
+          <Text style={styles.projectLinkText}>GitHub project</Text>
+          <Icons.openInBrowser
+            width={18}
+            height={18}
+            color={theme.colors.onSurface}
+          />
+        </Pressable>
+        <Pressable
+          style={styles.qrIconButton}
+          accessibilityLabel="Show GitHub project QR code"
+          onPress={() =>
+            navigation.navigate('UrlQR', {
+              url: PROJECT_GITHUB_URL,
+              title: 'GitHub project',
+            })
+          }
+        >
+          <Icons.qr
+            width={20}
+            height={20}
+            color={theme.colors.onSurfaceMuted}
+          />
+        </Pressable>
+      </View>
 
-      {/* Keycard section */}
-      <KeycardPurchaseCard />
+      <KeycardPurchaseCard
+        onShowQR={() =>
+          navigation.navigate('UrlQR', {
+            url: KEYCARD_PURCHASE_URL,
+            title: 'Buy a Keycard',
+          })
+        }
+      />
 
-      {/* Donations */}
-      <Text style={styles.sectionTitle}>Support development</Text>
-      <Text style={styles.sectionDescription}>
-        Donations help keep GapSign maintained and available as open-source
-        software.
-      </Text>
-      <DonationList
+      <DonationSection
         onShowQR={(label, address) =>
           navigation.navigate('AddressDetail', {
             address,
@@ -100,11 +107,9 @@ export default function AboutScreen({ navigation }: AboutScreenProps) {
         }
       />
 
-      {/* Contributors */}
       <Text style={styles.sectionTitle}>Contributors</Text>
       <ContributorsList />
 
-      {/* Licenses */}
       <Text style={styles.sectionTitle}>Open-source licenses</Text>
       <LicenseList onSelectLicense={handleSelectLicense} />
     </ScrollView>
@@ -120,44 +125,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 16,
   },
-  header: {
-    alignItems: 'center',
-    paddingTop: 8,
-    gap: 4,
-  },
-  appIdentity: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-  },
-  appName: {
-    fontFamily: 'Inter_18pt-SemiBold',
-    fontSize: 28,
-    lineHeight: 34,
-    color: theme.colors.onSurface,
-  },
-  appIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-  },
-  version: {
-    fontSize: 14,
-    color: theme.colors.onSurfaceMuted,
-  },
   description: {
     fontSize: 14,
     lineHeight: 21,
     color: theme.colors.onSurfaceVariant,
     textAlign: 'center',
   },
-  projectLink: {
+  projectLinkRow: {
     alignSelf: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  projectLink: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
+  },
+  qrIconButton: {
+    padding: 8,
   },
   projectLinkText: {
     color: theme.colors.onSurface,
@@ -168,12 +156,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_18pt-SemiBold',
     fontSize: 18,
     color: theme.colors.onSurface,
-    textAlign: 'center',
-  },
-  sectionDescription: {
-    color: theme.colors.onSurfaceVariant,
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: 'center',
   },
 });

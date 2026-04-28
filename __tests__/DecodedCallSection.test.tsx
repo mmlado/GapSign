@@ -1,0 +1,125 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react-native';
+
+import DecodedCallSection from '../src/components/DecodedCallSection';
+import type { DecodedCall } from '../src/utils/txParser';
+
+jest.mock('react-native-paper', () => {
+  const { Text, View } = require('react-native');
+  return {
+    Text: ({ children, ...props }: any) => <Text {...props}>{children}</Text>,
+    Icon: () => <View />,
+  };
+});
+
+jest.mock('../src/theme', () => ({
+  __esModule: true,
+  default: { colors: { onSurfaceVariant: '#aaa', negative: '#f00' } },
+}));
+
+jest.mock('../src/components/InfoRow', () => {
+  const { Text } = require('react-native');
+  return ({ label, value }: { label: string; value: string }) => (
+    <Text>{`${label}: ${value}`}</Text>
+  );
+});
+
+const ADDR_A = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+const ADDR_B = '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
+const UINT256_MAX = 2n ** 256n - 1n;
+
+describe('DecodedCallSection', () => {
+  describe('erc20-transfer', () => {
+    const call: DecodedCall = {
+      kind: 'erc20-transfer',
+      to: ADDR_A,
+      amount: 1000n,
+    };
+
+    it('shows ERC-20 Transfer heading and recipient', () => {
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('ERC-20 Transfer')).toBeTruthy();
+      expect(screen.getByText(`Recipient: ${ADDR_A}`)).toBeTruthy();
+      expect(screen.getByText('Amount (raw units): 1000')).toBeTruthy();
+    });
+
+    it('shows token contract row when provided', () => {
+      render(<DecodedCallSection call={call} tokenContract={ADDR_B} />);
+      expect(screen.getByText(`Token contract: ${ADDR_B}`)).toBeTruthy();
+    });
+
+    it('omits token contract row when not provided', () => {
+      render(<DecodedCallSection call={call} />);
+      expect(screen.queryByText(/Token contract/)).toBeNull();
+    });
+  });
+
+  describe('erc20-transferFrom', () => {
+    const call: DecodedCall = {
+      kind: 'erc20-transferFrom',
+      from: ADDR_A,
+      to: ADDR_B,
+      amount: 500n,
+    };
+
+    it('shows ERC-20 Transfer From heading, from, and recipient', () => {
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('ERC-20 Transfer From')).toBeTruthy();
+      expect(screen.getByText(`From: ${ADDR_A}`)).toBeTruthy();
+      expect(screen.getByText(`Recipient: ${ADDR_B}`)).toBeTruthy();
+      expect(screen.getByText('Amount (raw units): 500')).toBeTruthy();
+    });
+
+    it('shows token contract row when provided', () => {
+      render(<DecodedCallSection call={call} tokenContract={ADDR_A} />);
+      expect(screen.getByText(`Token contract: ${ADDR_A}`)).toBeTruthy();
+    });
+  });
+
+  describe('erc20-approve', () => {
+    it('shows limited approval without warning', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-approve',
+        spender: ADDR_A,
+        amount: 100n,
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('ERC-20 Approve')).toBeTruthy();
+      expect(screen.getByText(`Spender: ${ADDR_A}`)).toBeTruthy();
+      expect(screen.getByText('Allowance: 100')).toBeTruthy();
+      expect(screen.queryByText(/Unlimited approval/)).toBeNull();
+    });
+
+    it('shows "Unlimited" and warning for max uint256', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-approve',
+        spender: ADDR_A,
+        amount: UINT256_MAX,
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('Allowance: Unlimited')).toBeTruthy();
+      expect(screen.getByText(/Unlimited approval/)).toBeTruthy();
+    });
+
+    it('shows token contract row when provided', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-approve',
+        spender: ADDR_A,
+        amount: 1n,
+      };
+      render(<DecodedCallSection call={call} tokenContract={ADDR_B} />);
+      expect(screen.getByText(`Token contract: ${ADDR_B}`)).toBeTruthy();
+    });
+  });
+
+  describe('unknown-call', () => {
+    it('shows raw selector', () => {
+      const call: DecodedCall = {
+        kind: 'unknown-call',
+        selector: '0xdeadbeef',
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('Contract call: 0xdeadbeef')).toBeTruthy();
+    });
+  });
+});

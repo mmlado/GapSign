@@ -16,6 +16,7 @@ type KeycardPurchaseCardProps = {
   buttonTestID?: string;
   closeButtonTestID?: string;
   onClose?: () => void;
+  onShowQR?: () => void;
 };
 
 const keycardPurchaseTitle = 'Keycard required';
@@ -26,6 +27,7 @@ export default function KeycardPurchaseCard({
   buttonTestID,
   closeButtonTestID,
   onClose,
+  onShowQR,
 }: KeycardPurchaseCardProps) {
   const handlePressPurchase = useCallback(() => {
     Linking.openURL(KEYCARD_PURCHASE_URL);
@@ -66,6 +68,15 @@ export default function KeycardPurchaseCard({
           icon={Icons.openInBrowser}
           testID={buttonTestID}
         />
+        {onShowQR ? (
+          <Pressable style={styles.qrIconButton} onPress={onShowQR}>
+            <Icons.qr
+              width={22}
+              height={22}
+              color={theme.colors.onSurfaceMuted}
+            />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -111,6 +122,12 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 8,
+    gap: 8,
+  },
+  qrIconButton: {
+    padding: 8,
   },
 });
