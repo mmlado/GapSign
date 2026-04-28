@@ -26,7 +26,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    // debuggableVariants = ["liteDebug", "prodDebug"]
+    debuggableVariants = ["fullDebug", "offlineDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -94,6 +94,26 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 10003
         versionName "1.0.3"
+    }
+    flavorDimensions "distribution"
+    productFlavors {
+        full {
+            dimension "distribution"
+            applicationId "tech.gapsign"
+            // BuildConfig.INTERNET_ENABLED == true
+            // Usage in Java/Kotlin: if (BuildConfig.INTERNET_ENABLED) { ... }
+            // Usage in JS: expose via a NativeModule when the first internet feature lands
+            buildConfigField "boolean", "INTERNET_ENABLED", "true"
+        }
+        offline {
+            dimension "distribution"
+            applicationId "tech.gapsign.offline"
+            // BuildConfig.INTERNET_ENABLED == false — INTERNET permission never declared
+            buildConfigField "boolean", "INTERNET_ENABLED", "false"
+        }
+    }
+    buildFeatures {
+        buildConfig true
     }
     signingConfigs {
         debug {

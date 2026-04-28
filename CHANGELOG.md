@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review UI; show unlimited approval warning
 - Detect and label pre-hashed EIP-712 payloads (`0x1901` prefix) with domain separator and message hash
+- Add `full` and `offline` Android build flavors; `tech.gapsign` (GapSign) enables internet, `tech.gapsign.offline` (GapSign Offline) is permanently air-gapped
 
 ### Fixed
 
