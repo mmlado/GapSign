@@ -65,6 +65,10 @@ export type RootStackParamList = {
     packageName: string;
     licenseType: string;
   };
+  UrlQR: {
+    url: string;
+    title?: string;
+  };
 };
 
 export type DashboardScreenProps = NativeStackScreenProps<
@@ -175,6 +179,11 @@ export type AboutScreenProps = NativeStackScreenProps<
 export type LicenseDetailScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'LicenseDetail'
+>;
+
+export type UrlQRScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'UrlQR'
 >;
 
 export type DashboardAction = {

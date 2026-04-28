@@ -5,6 +5,7 @@ import { useFactoryReset } from '../src/hooks/keycard/useFactoryReset';
 // RNKeycard mock — captures event callbacks so tests can trigger them
 // ---------------------------------------------------------------------------
 
+let capturedOnConnected: ((...args: any[]) => Promise<void>) | null = null;
 let capturedOnDisconnected: (() => void) | null = null;
 let capturedOnCancelled: (() => void) | null = null;
 let capturedOnTimeout: (() => void) | null = null;
@@ -16,7 +17,10 @@ jest.mock('react-native-keycard', () => ({
   __esModule: true,
   default: {
     Core: {
-      onKeycardConnected: (_cb: () => Promise<void>) => ({ remove: jest.fn() }),
+      onKeycardConnected: (cb: (...args: any[]) => Promise<void>) => {
+        capturedOnConnected = cb;
+        return { remove: jest.fn() };
+      },
       onKeycardDisconnected: (cb: () => void) => {
         capturedOnDisconnected = cb;
         return { remove: jest.fn() };
@@ -36,9 +40,21 @@ jest.mock('react-native-keycard', () => ({
   },
 }));
 
+const mockFactoryReset = jest.fn();
+const mockSelect = jest.fn();
+const mockCmdSet = {
+  select: mockSelect,
+  applicationInfo: { initializedCard: true } as {
+    initializedCard: boolean;
+  } | null,
+  factoryReset: mockFactoryReset,
+};
+
 jest.mock('keycard-sdk', () => ({
   __esModule: true,
-  default: { Commandset: class {} },
+  default: {
+    Commandset: jest.fn().mockImplementation(() => mockCmdSet),
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -49,8 +65,14 @@ describe('useFactoryReset', () => {
   beforeEach(() => {
     mockStartNFC.mockResolvedValue(undefined);
     mockStopNFC.mockResolvedValue(undefined);
+    mockSelect.mockResolvedValue({ sw: 0x9000 });
+    mockFactoryReset.mockResolvedValue(undefined);
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
+    mockSelect.mockClear();
+    mockFactoryReset.mockClear();
+    mockCmdSet.applicationInfo = { initializedCard: true };
+    capturedOnConnected = null;
     capturedOnDisconnected = null;
     capturedOnCancelled = null;
     capturedOnTimeout = null;
@@ -162,6 +184,36 @@ describe('useFactoryReset', () => {
       });
       expect(result.current.phase).toBe('idle');
       expect(result.current.status).toBe('');
+    });
+  });
+
+  describe('NFC operation body', () => {
+    it('throws when card is not initialized', async () => {
+      mockCmdSet.applicationInfo = { initializedCard: false };
+      const { result } = renderHook(() => useFactoryReset());
+      await act(async () => {
+        result.current.start();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+
+      expect(mockFactoryReset).not.toHaveBeenCalled();
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toMatch(/already empty/);
+    });
+
+    it('calls factoryReset when card is initialized', async () => {
+      const { result } = renderHook(() => useFactoryReset());
+      await act(async () => {
+        result.current.start();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+
+      expect(mockFactoryReset).toHaveBeenCalled();
+      expect(result.current.phase).toBe('done');
     });
   });
 });

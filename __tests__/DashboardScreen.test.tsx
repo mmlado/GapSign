@@ -31,6 +31,7 @@ jest.mock('../src/assets/icons', () => {
       close: Icon,
       nfcActivate: Icon,
       openInBrowser: Icon,
+      qr: Icon,
       scan: Icon,
     },
   };
@@ -42,6 +43,7 @@ jest.mock('@react-navigation/native', () => ({
   useFocusEffect: (cb: () => void) => {
     focusCallback = cb;
   },
+  useNavigation: () => ({ navigate: jest.fn() }),
 }));
 
 const mockDashboardActions: { label: string; navigate: (nav: any) => void }[] =

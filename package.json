@@ -3,7 +3,8 @@
   "version": "1.0.3",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "react-native run-android --mode fullDebug",
+    "android:offline": "react-native run-android --mode offlineDebug",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",

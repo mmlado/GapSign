@@ -8,13 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review UI; show unlimited approval warning
-- Detect and label pre-hashed EIP-712 payloads (`0x1901` prefix) with domain separator and message hash
-- Add `full` and `offline` Android build flavors; `tech.gapsign` (GapSign) enables internet, `tech.gapsign.offline` (GapSign Offline) is permanently air-gapped
+- Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review; show unlimited approval warning
+- Detect and label pre-hashed EIP-712 payloads (`0x1901`) with domain separator and message hash
+- `full` (`tech.gapsign`) and `offline` (`tech.gapsign.offline`) Android build flavors
+- QR code fallback for external links so air-gapped users can scan URLs on another device
 
 ### Fixed
 
-- Fix EIP-712 JSON decode for wallets that send minified or non-round-tripping UTF-8 payloads; prettify JSON display
+- EIP-712 JSON decode for minified or non-round-tripping UTF-8 payloads; prettify JSON display
 
 ## [1.0.3] - 2026-04-27
 

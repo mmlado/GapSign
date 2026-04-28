@@ -8,6 +8,7 @@ import type { RootStackParamList } from './types';
 import AboutScreen from '../screens/AboutScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import LicenseDetailScreen from '../screens/LicenseDetailScreen';
+import UrlQRScreen from '../screens/UrlQRScreen';
 import ExportKeyScreen from '../screens/ExportKeyScreen';
 import FactoryResetScreen from '../screens/FactoryResetScreen';
 import InitCardScreen from '../screens/InitCardScreen';
@@ -165,6 +166,11 @@ export const routes: Route[] = [
   {
     name: 'LicenseDetail',
     component: LicenseDetailScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'UrlQR',
+    component: UrlQRScreen,
     options: defaultHeaderOptions,
   },
 ];
