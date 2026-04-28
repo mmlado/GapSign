@@ -92,8 +92,8 @@ android {
         applicationId "tech.gapsign"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 10003
-        versionName "1.0.3"
+        versionCode 10100
+        versionName "1.1.0"
     }
     flavorDimensions "distribution"
     productFlavors {
