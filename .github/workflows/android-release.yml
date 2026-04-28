@@ -74,25 +74,26 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
 
-      - name: Build release APK
+      - name: Build release APKs
         env:
           ANDROID_KEYSTORE_PATH: release.keystore
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: cd android && ./gradlew clean assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
+        run: cd android && ./gradlew clean assembleFullRelease assembleOfflineRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a --no-daemon
 
       - name: Generate APK checksums
         run: |
-          cd android/app/build/outputs/apk/release
-          sha256sum app-*-release.apk > SHA256SUMS.txt
+          mkdir -p android/app/build/outputs/apk/release
+          find android/app/build/outputs/apk -name "app-*-release.apk" \
+            | sort | xargs sha256sum > android/app/build/outputs/apk/release/SHA256SUMS.txt
           {
             echo "## APK SHA256 checksums"
             echo
             echo '```text'
-            cat SHA256SUMS.txt
+            cat android/app/build/outputs/apk/release/SHA256SUMS.txt
             echo '```'
             echo
-          } > RELEASE_NOTES.md
+          } > android/app/build/outputs/apk/release/RELEASE_NOTES.md
 
       - name: Create GitHub Release and upload APKs
         uses: softprops/action-gh-release@v2
@@ -100,6 +101,7 @@ jobs:
           tag_name: ${{ steps.ver.outputs.tag }}
           body_path: android/app/build/outputs/apk/release/RELEASE_NOTES.md
           files: |
-            android/app/build/outputs/apk/release/app-*-release.apk
+            android/app/build/outputs/apk/full/release/app-*-release.apk
+            android/app/build/outputs/apk/offline/release/app-*-release.apk
             android/app/build/outputs/apk/release/SHA256SUMS.txt
           generate_release_notes: true

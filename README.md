@@ -17,7 +17,16 @@
 
 GapSign is an air-gapped Android companion app for [Status Keycard](https://keycard.tech). It lets you sign Ethereum and Bitcoin transactions over NFC, so your private keys never touch an internet-connected device.
 
-All communication with your watch-only wallet happens through animated QR codes using the [Blockchain Commons UR](https://github.com/BlockchainCommons/bc-ur) standard. There is no internet permission, no network calls, and no telemetry.
+All communication with your watch-only wallet happens through animated QR codes using the [Blockchain Commons UR](https://github.com/BlockchainCommons/bc-ur) standard. No telemetry.
+
+GapSign comes in two variants:
+
+| Variant | Package ID | Internet |
+|---------|-----------|----------|
+| **GapSign** | `tech.gapsign` | Optional — for future opt-in security features (ENS, simulation) |
+| **GapSign Offline** | `tech.gapsign.offline` | Never — `INTERNET` permission is absent from the manifest |
+
+Both variants are fully functional for signing and key management. GapSign Offline is the right choice if you want a hard, manifest-level guarantee of no network access.
 
 ## Screenshots
 
@@ -47,7 +56,7 @@ All communication with your watch-only wallet happens through animated QR codes 
 - Import a recovery phrase (BIP-39, 12 or 24 words, with optional passphrase)
 - Import SLIP-39 Shamir Secret Sharing shares
 - Genuine Keycard verification before first pairing
-- Fully air-gapped: no internet permission, no network calls, no telemetry
+- Two variants: GapSign Offline (no internet, manifest-level guarantee) and GapSign (optional internet for future security features)
 
 ## Requirements
 
@@ -71,7 +80,7 @@ For most users, install the universal APK. ABI-specific split APKs are also atta
 
 ### Verification info
 
-- Package ID: `tech.gapsign`
+- Package ID: `tech.gapsign` (GapSign) / `tech.gapsign.offline` (GapSign Offline)
 - SHA-256 hash of signing certificate: `A8:3C:11:4B:1F:42:01:DA:FB:D0:3E:22:1F:1C:29:28:EC:B5:2B:78:BD:A5:E9:3F:29:6F:ED:F2:29:8E:54:6B`
 - `SHA256SUMS.txt` is attached to each GitHub Release to verify APK file hashes.
 
@@ -82,7 +91,7 @@ For most users, install the universal APK. ABI-specific split APKs are also atta
 3. Use GitHub Releases as the update source.
 4. Select the universal APK from the latest release.
 
-> The APK is built automatically by GitHub Actions on every version tag. F-Droid distribution is coming.
+> The APK is built automatically by GitHub Actions on every version tag. A self-hosted F-Droid repository is planned.
 
 ## Building from source
 
@@ -108,7 +117,8 @@ npm run android  # Terminal 2: build and install
 ### Release build
 
 ```sh
-cd android && ./gradlew assembleRelease
+cd android && ./gradlew assembleFullRelease      # GapSign (tech.gapsign)
+cd android && ./gradlew assembleOfflineRelease   # GapSign Offline (tech.gapsign.offline)
 ```
 
 ## Development
@@ -130,7 +140,7 @@ If GapSign is useful to you, voluntary donations help support ongoing open-sourc
 - Pairing data is stored in encrypted storage backed by the Android Keystore
 - Private keys never leave the Keycard; only the signature result is returned to the app
 - QR codes use [Blockchain Commons UR](https://github.com/BlockchainCommons/bc-ur) for structured binary encoding
-- No internet permission in release builds
+- GapSign Offline (`tech.gapsign.offline`) has no `INTERNET` permission at the manifest level — no runtime flag can enable networking
 
 ## License
 
