@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Codecov coverage upload in CI and a live README coverage badge
 - Decode ERC-20 calldata (`transfer`, `transferFrom`, `approve`) in transaction review; show unlimited approval warning
 - Detect and label pre-hashed EIP-712 payloads (`0x1901`) with domain separator and message hash
 - `full` (`tech.gapsign`) and `offline` (`tech.gapsign.offline`) Android build flavors
