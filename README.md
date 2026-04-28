@@ -8,7 +8,7 @@
   <a href="https://github.com/mmlado/GapSign/actions/workflows/ci.yml"><img src="https://github.com/mmlado/GapSign/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/mmlado/GapSign/actions/workflows/android-release.yml"><img src="https://github.com/mmlado/GapSign/actions/workflows/android-release.yml/badge.svg" alt="Build & Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
-  <img src="https://img.shields.io/badge/coverage-84%25-brightgreen.svg" alt="Test coverage" />
+  <a href="https://codecov.io/gh/mmlado/GapSign"><img src="https://codecov.io/gh/mmlado/GapSign/branch/main/graph/badge.svg" alt="Test coverage" /></a>
   <a href="https://developer.android.com"><img src="https://img.shields.io/badge/platform-Android-green.svg" alt="Platform" /></a>
   <a href="https://reactnative.dev"><img src="https://img.shields.io/badge/React%20Native-0.83-blue.svg" alt="React Native" /></a>
   <a href="https://github.com/mmlado/GapSign/releases/latest"><img src="https://img.shields.io/github/v/release/mmlado/GapSign" alt="GitHub release" /></a>
