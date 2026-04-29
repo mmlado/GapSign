@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-29
+
 ### Added
 
 - Expanded Jest coverage for signing utilities and wallet workflow screens
@@ -161,7 +163,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/mmlado/GapSign/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/mmlado/GapSign/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/mmlado/GapSign/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/mmlado/GapSign/compare/v1.0.1...v1.0.2
