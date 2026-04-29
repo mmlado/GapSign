@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Expanded Jest coverage for signing utilities and wallet workflow screens
+- Bundled ABI selector metadata generated from an Etherscan-backed ABI snapshot; transaction review decodes known contract calls and flags NFT operator approvals
 - Bundled ERC-20 token metadata (1441 tokens, Uniswap default list v20.0.0); ERC-20 review shows symbol, formatted amounts, and token logo (offline flavor skips logo fetch)
 - Bundled chain metadata (2593 chains, chainid.network snapshot); transaction review shows chain name and native currency symbol instead of raw chain ID and hardcoded "ETH"
 

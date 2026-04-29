@@ -4,12 +4,9 @@ import { Icon, Text } from 'react-native-paper';
 import theme from '../theme';
 import InfoRow from './InfoRow';
 import { INTERNET_ENABLED } from '../utils/buildConfig';
-import { DecodedCall } from '../utils/txParser';
-import {
-  formatTokenAmount,
-  lookupToken,
-  TokenMetadata,
-} from '../utils/tokenMetadata';
+import type { DecodedCall } from '../utils/txParser';
+import { formatTokenAmount, lookupToken } from '../utils/tokenMetadata';
+import type { TokenMetadata } from '../utils/tokenMetadata';
 
 const UINT256_MAX = 2n ** 256n - 1n;
 
@@ -149,6 +146,35 @@ export default function DecodedCallSection({
             <Icon source="alert" size={16} color={theme.colors.negative} />
             <Text variant="labelSmall" style={styles.warningText}>
               Unlimited approval — spender can transfer all tokens of this type
+            </Text>
+          </View>
+        )}
+      </>
+    );
+  }
+
+  if (call.kind === 'contract-call') {
+    return (
+      <>
+        <View style={styles.sectionHeader}>
+          <Text variant="labelMedium" style={styles.sectionHeaderText}>
+            Contract Call
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <InfoRow label="Function" value={call.signature} />
+        </View>
+        {call.args.map((arg, index) => (
+          <View key={`${arg.name}-${index}`} style={styles.row}>
+            <InfoRow label={`${arg.name} (${arg.type})`} value={arg.value} />
+          </View>
+        ))}
+        {call.highRisk && (
+          <View style={styles.warningRow}>
+            <Icon source="alert" size={16} color={theme.colors.negative} />
+            <Text variant="labelSmall" style={styles.warningText}>
+              High-risk approval:{' '}
+              {call.risk ?? 'review this contract permission carefully'}
             </Text>
           </View>
         )}

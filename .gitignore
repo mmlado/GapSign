@@ -41,6 +41,9 @@ local.properties
 node_modules/
 npm-debug.log
 yarn-error.log
+.env
+.env.*
+!.env.example
 
 # fastlane
 #
