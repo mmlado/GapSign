@@ -127,6 +127,57 @@ describe('DecodedCallSection', () => {
     });
   });
 
+  describe('contract-call', () => {
+    it('shows function signature and decoded args', () => {
+      const call: DecodedCall = {
+        kind: 'contract-call',
+        selector: '0xd0e30db0',
+        functionName: 'deposit',
+        signature: 'deposit()',
+        args: [],
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText('Contract Call')).toBeTruthy();
+      expect(screen.getByText('Function: deposit()')).toBeTruthy();
+    });
+
+    it('shows a high-risk warning when present', () => {
+      const call: DecodedCall = {
+        kind: 'contract-call',
+        selector: '0xa22cb465',
+        functionName: 'setApprovalForAll',
+        signature: 'setApprovalForAll(address,bool)',
+        args: [
+          { name: 'operator', type: 'address', value: ADDR_A },
+          { name: 'approved', type: 'bool', value: 'true' },
+        ],
+        highRisk: true,
+        risk: 'Operator can move all NFTs from this collection',
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(screen.getByText(`operator (address): ${ADDR_A}`)).toBeTruthy();
+      expect(screen.getByText('approved (bool): true')).toBeTruthy();
+      expect(screen.getByText(/High-risk approval/)).toBeTruthy();
+    });
+
+    it('shows fallback warning text for high-risk calls without a risk message', () => {
+      const call: DecodedCall = {
+        kind: 'contract-call',
+        selector: '0xa22cb465',
+        functionName: 'setApprovalForAll',
+        signature: 'setApprovalForAll(address,bool)',
+        args: [],
+        highRisk: true,
+      };
+      render(<DecodedCallSection call={call} />);
+      expect(
+        screen.getByText(
+          /High-risk approval: review this contract permission carefully/,
+        ),
+      ).toBeTruthy();
+    });
+  });
+
   describe('with token metadata (chainId + known contract)', () => {
     it('shows symbol and formatted amount for a known ERC-20 transfer', () => {
       const call: DecodedCall = {

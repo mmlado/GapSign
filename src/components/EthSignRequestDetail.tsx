@@ -55,11 +55,12 @@ export default function EthSignRequestDetail({
         </View>
       )}
 
-      {tx?.to && !tx.decodedCall && (
-        <View style={styles.row}>
-          <InfoRow label="To" value={tx.to} />
-        </View>
-      )}
+      {tx?.to &&
+        (!tx.decodedCall || tx.decodedCall.kind === 'contract-call') && (
+          <View style={styles.row}>
+            <InfoRow label="To" value={tx.to} />
+          </View>
+        )}
 
       {request.chainId !== undefined && (
         <View style={styles.row}>

@@ -1,49 +1,129 @@
 import { RLP } from '@ethereumjs/rlp';
-import { decodeFunctionData, erc20Abi, formatEther, formatGwei } from 'viem';
+import {
+  decodeAbiParameters,
+  formatEther,
+  formatGwei,
+  type AbiParameter,
+} from 'viem';
 
 import { DATA_TYPE_LABELS } from '../types';
+import selectorsData from '../data/selectors.json';
+
+type SelectorArg = AbiParameter & { name: string };
+
+type SelectorEntry = {
+  name: string;
+  signature: string;
+  args: SelectorArg[];
+  highRisk?: boolean;
+  risk?: string;
+};
+
+type SelectorsData = {
+  selectors: Record<string, SelectorEntry[]>;
+};
+
+export type DecodedCallArg = {
+  name: string;
+  type: string;
+  value: string;
+};
 
 export type DecodedCall =
   | { kind: 'erc20-transfer'; to: string; amount: bigint }
   | { kind: 'erc20-transferFrom'; from: string; to: string; amount: bigint }
   | { kind: 'erc20-approve'; spender: string; amount: bigint }
+  | {
+      kind: 'contract-call';
+      selector: string;
+      functionName: string;
+      signature: string;
+      args: DecodedCallArg[];
+      highRisk?: boolean;
+      risk?: string;
+    }
   | { kind: 'unknown-call'; selector: string };
+
+const selectors = (selectorsData as SelectorsData).selectors;
+
+function formatDecodedValue(value: unknown): string {
+  if (typeof value === 'bigint') return value.toString();
+  if (typeof value === 'string') return value;
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (value == null) return String(value);
+  return JSON.stringify(value, (_, nested) =>
+    typeof nested === 'bigint' ? nested.toString() : nested,
+  );
+}
+
+function toSpecializedDecodedCall(
+  entry: SelectorEntry,
+  decodedArgs: readonly unknown[],
+): DecodedCall | null {
+  if (entry.signature === 'transfer(address,uint256)') {
+    return {
+      kind: 'erc20-transfer',
+      to: decodedArgs[0] as string,
+      amount: decodedArgs[1] as bigint,
+    };
+  }
+  if (entry.signature === 'transferFrom(address,address,uint256)') {
+    return {
+      kind: 'erc20-transferFrom',
+      from: decodedArgs[0] as string,
+      to: decodedArgs[1] as string,
+      amount: decodedArgs[2] as bigint,
+    };
+  }
+  if (entry.signature === 'approve(address,uint256)') {
+    return {
+      kind: 'erc20-approve',
+      spender: decodedArgs[0] as string,
+      amount: decodedArgs[1] as bigint,
+    };
+  }
+  return null;
+}
 
 export function decodeCalldata(dataHex: string): DecodedCall | null {
   if (!dataHex || dataHex === '0x' || dataHex.replace('0x', '').length < 8) {
     return null;
   }
-  try {
-    const { functionName, args } = decodeFunctionData({
-      abi: erc20Abi,
-      data: dataHex as `0x${string}`,
-    });
-    if (functionName === 'transfer') {
-      return {
-        kind: 'erc20-transfer',
-        to: args[0] as string,
-        amount: args[1] as bigint,
-      };
-    }
-    if (functionName === 'transferFrom') {
-      return {
-        kind: 'erc20-transferFrom',
-        from: args[0] as string,
-        to: args[1] as string,
-        amount: args[2] as bigint,
-      };
-    }
-    if (functionName === 'approve') {
-      return {
-        kind: 'erc20-approve',
-        spender: args[0] as string,
-        amount: args[1] as bigint,
-      };
-    }
-  } catch {
-    // not an ERC-20 call
+
+  const selector = dataHex.slice(0, 10).toLowerCase();
+  const entries = selectors[selector];
+  if (!entries) {
+    return { kind: 'unknown-call', selector };
   }
-  return { kind: 'unknown-call', selector: dataHex.slice(0, 10) };
+
+  const encodedArgs = `0x${dataHex.slice(10)}` as `0x${string}`;
+  for (const entry of entries) {
+    try {
+      const decodedArgs = decodeAbiParameters(entry.args, encodedArgs);
+      const specialized = toSpecializedDecodedCall(entry, decodedArgs);
+      if (specialized) return specialized;
+
+      const isHighRiskApproval =
+        entry.name === 'setApprovalForAll' && decodedArgs[1] === true;
+      return {
+        kind: 'contract-call',
+        selector,
+        functionName: entry.name,
+        signature: entry.signature,
+        args: entry.args.map((arg, index) => ({
+          name: arg.name || `arg${index}`,
+          type: arg.type,
+          value: formatDecodedValue(decodedArgs[index]),
+        })),
+        highRisk: entry.highRisk && isHighRiskApproval,
+        risk: entry.highRisk && isHighRiskApproval ? entry.risk : undefined,
+      };
+    } catch {
+      // Try the next overloaded ABI entry for this selector.
+    }
+  }
+
+  return { kind: 'unknown-call', selector };
 }
 
 export type ParsedTx = {

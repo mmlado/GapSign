@@ -1,4 +1,5 @@
 import { RLP } from '@ethereumjs/rlp';
+import { encodeFunctionData, parseAbi } from 'viem';
 
 import { decodeCalldata, getTxLabel, parseTx } from '../src/utils/txParser';
 
@@ -248,6 +249,8 @@ describe('decodeCalldata', () => {
     '0x095ea7b30000000000000000000000001111111111111111111111111111111111111111ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const TRANSFER_FROM_HEX =
     '0x23b872dd0000000000000000000000002222222222222222222222222222222222222222000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa9604500000000000000000000000000000000000000000000000000000000000001f4';
+  const SET_APPROVAL_FOR_ALL_HEX =
+    '0xa22cb46500000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000001';
 
   it('decodes ERC-20 transfer', () => {
     const result = decodeCalldata(TRANSFER_HEX);
@@ -280,6 +283,131 @@ describe('decodeCalldata', () => {
   it('returns unknown-call with raw selector for unrecognised calldata', () => {
     const result = decodeCalldata('0xdeadbeef' + '00'.repeat(32));
     expect(result).toEqual({ kind: 'unknown-call', selector: '0xdeadbeef' });
+  });
+
+  it('decodes generic selector-map calls', () => {
+    const result = decodeCalldata('0xd0e30db0');
+    expect(result).toEqual({
+      kind: 'contract-call',
+      selector: '0xd0e30db0',
+      functionName: 'deposit',
+      signature: 'deposit()',
+      args: [],
+    });
+  });
+
+  it('decodes NFT setApprovalForAll and flags approving calls as high-risk', () => {
+    const result = decodeCalldata(SET_APPROVAL_FOR_ALL_HEX);
+    expect(result).toEqual({
+      kind: 'contract-call',
+      selector: '0xa22cb465',
+      functionName: 'setApprovalForAll',
+      signature: 'setApprovalForAll(address,bool)',
+      args: [
+        { name: 'operator', type: 'address', value: SPENDER },
+        { name: 'approved', type: 'bool', value: 'true' },
+      ],
+      highRisk: true,
+      risk: 'Operator can move all NFTs from this collection',
+    });
+  });
+
+  it('does not flag NFT setApprovalForAll revocations as high-risk', () => {
+    const revokeHex =
+      '0xa22cb46500000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000000000000000000';
+    const result = decodeCalldata(revokeHex);
+    expect(result).toMatchObject({
+      kind: 'contract-call',
+      functionName: 'setApprovalForAll',
+      args: [
+        { name: 'operator', type: 'address', value: SPENDER },
+        { name: 'approved', type: 'bool', value: 'false' },
+      ],
+    });
+    expect(result).not.toMatchObject({ highRisk: true });
+  });
+
+  it('decodes Safe execTransaction as generic ABI args', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execTransaction(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,bytes signatures)',
+      ]),
+      functionName: 'execTransaction',
+      args: [
+        RECIPIENT,
+        1n,
+        '0xa9059cbb',
+        0,
+        100000n,
+        21000n,
+        0n,
+        '0x0000000000000000000000000000000000000000',
+        '0x0000000000000000000000000000000000000000',
+        '0x',
+      ],
+    });
+    const result = decodeCalldata(data);
+    expect(result).toMatchObject({
+      kind: 'contract-call',
+      selector: '0x6a761202',
+      functionName: 'execTransaction',
+      signature:
+        'execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)',
+    });
+    if (result?.kind === 'contract-call') {
+      expect(result.args).toEqual(
+        expect.arrayContaining([
+          { name: 'to', type: 'address', value: RECIPIENT },
+          { name: 'value', type: 'uint256', value: '1' },
+          { name: 'operation', type: 'uint8', value: '0' },
+        ]),
+      );
+    }
+  });
+
+  it('formats array arguments in generic selector-map calls', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function calculateMerkleRoot(bytes32[] proof,uint256 leafIndex,bytes32 leaf)',
+      ]),
+      functionName: 'calculateMerkleRoot',
+      args: [
+        [
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        ],
+        3n,
+        '0x3333333333333333333333333333333333333333333333333333333333333333',
+      ],
+    });
+    const result = decodeCalldata(data);
+    expect(result).toMatchObject({
+      kind: 'contract-call',
+      selector: '0x007436d3',
+      functionName: 'calculateMerkleRoot',
+    });
+    if (result?.kind === 'contract-call') {
+      expect(result.args).toEqual([
+        {
+          name: 'proof',
+          type: 'bytes32[]',
+          value:
+            '["0x1111111111111111111111111111111111111111111111111111111111111111","0x2222222222222222222222222222222222222222222222222222222222222222"]',
+        },
+        { name: 'path', type: 'uint256', value: '3' },
+        {
+          name: 'item',
+          type: 'bytes32',
+          value:
+            '0x3333333333333333333333333333333333333333333333333333333333333333',
+        },
+      ]);
+    }
+  });
+
+  it('returns unknown-call when a known selector has invalid encoded args', () => {
+    const result = decodeCalldata('0xa22cb465');
+    expect(result).toEqual({ kind: 'unknown-call', selector: '0xa22cb465' });
   });
 
   it('returns null for empty calldata', () => {
