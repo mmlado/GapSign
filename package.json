@@ -11,7 +11,9 @@
     "test": "jest",
     "postinstall": "npx react-native-asset",
     "bump": "node scripts/bump-version.js",
-    "generate:tokens": "node scripts/generate-tokens.js"
+    "generate:tokens": "node scripts/generate-tokens.js",
+    "generate:chains": "node scripts/generate-chains.js",
+    "generate": "npm run generate:tokens && npm run generate:chains"
   },
   "dependencies": {
     "@ethereumjs/rlp": "^10.1.1",

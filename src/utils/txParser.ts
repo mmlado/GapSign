@@ -77,7 +77,7 @@ function bufToBigInt(b: Uint8Array): bigint {
   return BigInt('0x' + Buffer.from(b).toString('hex'));
 }
 
-function weiToEth(wei: bigint): string {
+function weiToNative(wei: bigint, symbol: string): string {
   if (wei === 0n) {
     return '0';
   }
@@ -87,7 +87,7 @@ function weiToEth(wei: bigint): string {
     return `${wei.toString()} wei`;
   }
 
-  return `${eth} ETH`;
+  return `${eth} ${symbol}`;
 }
 
 function weiToGwei(wei: bigint): string {
@@ -124,7 +124,7 @@ function assertList(value: RlpValue | undefined, field: string): RlpValue[] {
 }
 
 /** Parse a legacy (type 1) unsigned tx: RLP([nonce, gasPrice, gasLimit, to, value, data]) */
-function parseLegacy(bytes: Buffer): ParsedTx {
+function parseLegacy(bytes: Buffer, symbol: string): ParsedTx {
   const decoded = assertList(RLP.decode(bytes) as RlpValue, 'legacy payload');
   if (decoded.length < 6) {
     throw new Error(
@@ -139,7 +139,7 @@ function parseLegacy(bytes: Buffer): ParsedTx {
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
-    value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
+    value: weiToNative(bufToBigInt(assertBytes(value, 'value')), symbol),
     data: dataHex,
     decodedCall: dataHex ? decodeCalldata(dataHex) ?? undefined : undefined,
     fees: {
@@ -152,7 +152,7 @@ function parseLegacy(bytes: Buffer): ParsedTx {
 
 /** Parse an EIP-1559 (type 4 / 0x02) unsigned tx:
  *  0x02 || RLP([chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList]) */
-function parseEIP1559(bytes: Buffer): ParsedTx {
+function parseEIP1559(bytes: Buffer, symbol: string): ParsedTx {
   // Strip the 0x02 type prefix
   const rlpBytes = bytes[0] === 0x02 ? bytes.slice(1) : bytes;
   const decoded = assertList(
@@ -183,7 +183,7 @@ function parseEIP1559(bytes: Buffer): ParsedTx {
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
-    value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
+    value: weiToNative(bufToBigInt(assertBytes(value, 'value')), symbol),
     data: dataHexEip1559,
     decodedCall: dataHexEip1559
       ? decodeCalldata(dataHexEip1559) ?? undefined
@@ -202,7 +202,7 @@ function parseEIP1559(bytes: Buffer): ParsedTx {
 }
 
 /** EIP-2930 (type 0x01): 0x01 || RLP([chainId, nonce, gasPrice, gasLimit, to, value, data, accessList]) */
-function parseEIP2930(bytes: Buffer): ParsedTx {
+function parseEIP2930(bytes: Buffer, symbol: string): ParsedTx {
   const rlpBytes = bytes.slice(1);
   const decoded = assertList(
     RLP.decode(rlpBytes) as RlpValue,
@@ -222,7 +222,7 @@ function parseEIP2930(bytes: Buffer): ParsedTx {
   return {
     nonce: Number(bufToBigInt(assertBytes(nonce, 'nonce'))),
     to: toAddress(assertBytes(to, 'to')),
-    value: weiToEth(bufToBigInt(assertBytes(value, 'value'))),
+    value: weiToNative(bufToBigInt(assertBytes(value, 'value')), symbol),
     data: dataHexEip2930,
     decodedCall: dataHexEip2930
       ? decodeCalldata(dataHexEip2930) ?? undefined
@@ -243,12 +243,14 @@ function parseEIP2930(bytes: Buffer): ParsedTx {
 export function parseTx(
   signDataHex: string,
   dataType: number,
+  nativeCurrencySymbol: string = 'ETH',
 ): ParsedTx | null {
   try {
     const bytes = Buffer.from(signDataHex, 'hex');
-    if (dataType === 1 && bytes[0] === 0x01) return parseEIP2930(bytes);
-    if (dataType === 1) return parseLegacy(bytes);
-    if (dataType === 4) return parseEIP1559(bytes);
+    if (dataType === 1 && bytes[0] === 0x01)
+      return parseEIP2930(bytes, nativeCurrencySymbol);
+    if (dataType === 1) return parseLegacy(bytes, nativeCurrencySymbol);
+    if (dataType === 4) return parseEIP1559(bytes, nativeCurrencySymbol);
     return null;
   } catch {
     return null;
