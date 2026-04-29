@@ -28,6 +28,10 @@ const ADDR_A = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const ADDR_B = '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 const UINT256_MAX = 2n ** 256n - 1n;
 
+// Real addresses from the bundled token list
+const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const MAINNET = 1;
+
 describe('DecodedCallSection', () => {
   describe('erc20-transfer', () => {
     const call: DecodedCall = {
@@ -120,6 +124,85 @@ describe('DecodedCallSection', () => {
       };
       render(<DecodedCallSection call={call} />);
       expect(screen.getByText('Contract call: 0xdeadbeef')).toBeTruthy();
+    });
+  });
+
+  describe('with token metadata (chainId + known contract)', () => {
+    it('shows symbol and formatted amount for a known ERC-20 transfer', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transfer',
+        to: ADDR_A,
+        amount: 1_000_000n, // 1.00 USDC
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={USDC_ADDRESS}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.getByText('USDC')).toBeTruthy();
+      expect(screen.getByText('Amount: 1 USDC')).toBeTruthy();
+    });
+
+    it('shows "Unlimited USDC" for max uint256 approve', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-approve',
+        spender: ADDR_A,
+        amount: UINT256_MAX,
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={USDC_ADDRESS}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.getByText('Allowance: Unlimited USDC')).toBeTruthy();
+    });
+
+    it('shows symbol and formatted amount for a known ERC-20 transferFrom', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transferFrom',
+        from: ADDR_A,
+        to: ADDR_B,
+        amount: 2_000_000n, // 2.00 USDC
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={USDC_ADDRESS}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.getByText('USDC')).toBeTruthy();
+      expect(screen.getByText('Amount: 2 USDC')).toBeTruthy();
+    });
+
+    it('falls back to raw units when chainId is missing', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transfer',
+        to: ADDR_A,
+        amount: 1_000_000n,
+      };
+      render(<DecodedCallSection call={call} tokenContract={USDC_ADDRESS} />);
+      expect(screen.getByText('Amount (raw units): 1000000')).toBeTruthy();
+    });
+
+    it('falls back to raw units for an unknown contract', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transfer',
+        to: ADDR_A,
+        amount: 999n,
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={ADDR_B}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.getByText('Amount (raw units): 999')).toBeTruthy();
     });
   });
 });

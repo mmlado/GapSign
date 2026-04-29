@@ -109,7 +109,7 @@ describe('GenerateKeyScreen', () => {
 
     it('renders a BlurView over the words before revealing', () => {
       renderScreen('done', WORDS);
-      expect(screen.UNSAFE_queryAllByType('BlurView')).toHaveLength(1);
+      expect(screen.UNSAFE_queryAllByType('BlurView' as any)).toHaveLength(1);
     });
 
     it('removes the BlurView after the reveal button is pressed', async () => {
@@ -117,7 +117,7 @@ describe('GenerateKeyScreen', () => {
       await act(async () => {
         fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
-      expect(screen.UNSAFE_queryAllByType('BlurView')).toHaveLength(0);
+      expect(screen.UNSAFE_queryAllByType('BlurView' as any)).toHaveLength(0);
     });
   });
 

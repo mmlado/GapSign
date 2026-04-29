@@ -10,7 +10,8 @@
     "start": "react-native start",
     "test": "jest",
     "postinstall": "npx react-native-asset",
-    "bump": "node scripts/bump-version.js"
+    "bump": "node scripts/bump-version.js",
+    "generate:tokens": "node scripts/generate-tokens.js"
   },
   "dependencies": {
     "@ethereumjs/rlp": "^10.1.1",

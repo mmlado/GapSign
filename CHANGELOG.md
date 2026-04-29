@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Expanded Jest coverage for signing utilities and wallet workflow screens
+- Bundled ERC-20 token metadata (1441 tokens, Uniswap default list v20.0.0); ERC-20 review shows symbol, formatted amounts, and token logo (offline flavor skips logo fetch)
 
 ## [1.1.0] - 2026-04-28
 

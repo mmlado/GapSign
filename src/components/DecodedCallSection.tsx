@@ -1,19 +1,43 @@
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 
 import theme from '../theme';
 import InfoRow from './InfoRow';
+import { INTERNET_ENABLED } from '../utils/buildConfig';
 import { DecodedCall } from '../utils/txParser';
+import {
+  formatTokenAmount,
+  lookupToken,
+  TokenMetadata,
+} from '../utils/tokenMetadata';
 
 const UINT256_MAX = 2n ** 256n - 1n;
+
+function TokenLogo({ uri }: { uri: string }) {
+  if (!INTERNET_ENABLED) return null; /* istanbul ignore next */
+  return <Image source={{ uri }} style={styles.tokenLogo} />;
+}
+
+function formatAmount(amount: bigint, token: TokenMetadata | null): string {
+  if (!token) return amount.toString();
+  return formatTokenAmount(amount, token);
+}
+
+function formatUnlimited(token: TokenMetadata | null): string {
+  return token ? `Unlimited ${token.symbol}` : 'Unlimited';
+}
 
 export default function DecodedCallSection({
   call,
   tokenContract,
+  chainId,
 }: {
   call: DecodedCall;
   tokenContract?: string;
+  chainId?: number;
 }) {
+  const token = lookupToken(chainId, tokenContract);
+
   if (call.kind === 'erc20-transfer') {
     return (
       <>
@@ -22,6 +46,14 @@ export default function DecodedCallSection({
             ERC-20 Transfer
           </Text>
         </View>
+        {token && (
+          <View style={[styles.row, styles.tokenRow]}>
+            {token.logoURI && <TokenLogo uri={token.logoURI} />}
+            <Text variant="labelMedium" style={styles.tokenSymbol}>
+              {token.symbol}
+            </Text>
+          </View>
+        )}
         {tokenContract && (
           <View style={styles.row}>
             <InfoRow label="Token contract" value={tokenContract} />
@@ -31,11 +63,15 @@ export default function DecodedCallSection({
           <InfoRow label="Recipient" value={call.to} />
         </View>
         <View style={styles.row}>
-          <InfoRow label="Amount (raw units)" value={call.amount.toString()} />
+          <InfoRow
+            label={token ? 'Amount' : 'Amount (raw units)'}
+            value={formatAmount(call.amount, token)}
+          />
         </View>
       </>
     );
   }
+
   if (call.kind === 'erc20-transferFrom') {
     return (
       <>
@@ -44,6 +80,14 @@ export default function DecodedCallSection({
             ERC-20 Transfer From
           </Text>
         </View>
+        {token && (
+          <View style={[styles.row, styles.tokenRow]}>
+            {token.logoURI && <TokenLogo uri={token.logoURI} />}
+            <Text variant="labelMedium" style={styles.tokenSymbol}>
+              {token.symbol}
+            </Text>
+          </View>
+        )}
         {tokenContract && (
           <View style={styles.row}>
             <InfoRow label="Token contract" value={tokenContract} />
@@ -56,11 +100,15 @@ export default function DecodedCallSection({
           <InfoRow label="Recipient" value={call.to} />
         </View>
         <View style={styles.row}>
-          <InfoRow label="Amount (raw units)" value={call.amount.toString()} />
+          <InfoRow
+            label={token ? 'Amount' : 'Amount (raw units)'}
+            value={formatAmount(call.amount, token)}
+          />
         </View>
       </>
     );
   }
+
   if (call.kind === 'erc20-approve') {
     const isUnlimited = call.amount === UINT256_MAX;
     return (
@@ -70,6 +118,14 @@ export default function DecodedCallSection({
             ERC-20 Approve
           </Text>
         </View>
+        {token && (
+          <View style={[styles.row, styles.tokenRow]}>
+            {token.logoURI && <TokenLogo uri={token.logoURI} />}
+            <Text variant="labelMedium" style={styles.tokenSymbol}>
+              {token.symbol}
+            </Text>
+          </View>
+        )}
         {tokenContract && (
           <View style={styles.row}>
             <InfoRow label="Token contract" value={tokenContract} />
@@ -81,7 +137,11 @@ export default function DecodedCallSection({
         <View style={styles.row}>
           <InfoRow
             label="Allowance"
-            value={isUnlimited ? 'Unlimited' : call.amount.toString()}
+            value={
+              isUnlimited
+                ? formatUnlimited(token)
+                : formatAmount(call.amount, token)
+            }
           />
         </View>
         {isUnlimited && (
@@ -95,6 +155,7 @@ export default function DecodedCallSection({
       </>
     );
   }
+
   return (
     <View style={styles.row}>
       <InfoRow label="Contract call" value={call.selector} />
@@ -111,6 +172,19 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     color: theme.colors.onSurfaceVariant,
+  },
+  tokenRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tokenSymbol: {
+    color: theme.colors.onSurfaceVariant,
+  },
+  tokenLogo: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   warningRow: {
     flexDirection: 'row',

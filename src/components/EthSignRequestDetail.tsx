@@ -92,7 +92,11 @@ export default function EthSignRequestDetail({
       )}
 
       {tx?.decodedCall && (
-        <DecodedCallSection call={tx.decodedCall} tokenContract={tx.to} />
+        <DecodedCallSection
+          call={tx.decodedCall}
+          tokenContract={tx.to}
+          chainId={request.chainId}
+        />
       )}
 
       {tx?.fees.kind === 'legacy' && (
