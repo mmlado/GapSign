@@ -5,39 +5,21 @@ import type { EthSignRequest } from '../types';
 import theme from '../theme';
 import DecodedCallSection from './DecodedCallSection';
 import InfoRow from './InfoRow';
+import { getChainName, getNativeCurrencySymbol } from '../utils/chainMetadata';
 import { parseEip712Prehashed, parseEip712Summary } from '../utils/eip712';
 import { getTxLabel, parseTx } from '../utils/txParser';
-
-const CHAIN_NAMES: Record<number, string> = {
-  1: 'Ethereum Mainnet',
-  10: 'Optimism',
-  56: 'BNB Smart Chain',
-  100: 'Gnosis',
-  137: 'Polygon',
-  250: 'Fantom',
-  324: 'zkSync Era',
-  8453: 'Base',
-  42161: 'Arbitrum One',
-  43114: 'Avalanche C-Chain',
-  59144: 'Linea',
-  534352: 'Scroll',
-  11155111: 'Sepolia',
-  80002: 'Polygon Amoy',
-  84532: 'Base Sepolia',
-  421614: 'Arbitrum Sepolia',
-};
-
-function chainLabel(chainId: number): string {
-  return CHAIN_NAMES[chainId] ?? `Chain ${chainId}`;
-}
 
 export default function EthSignRequestDetail({
   request,
 }: {
   request: EthSignRequest;
 }) {
+  const nativeSymbol =
+    request.chainId !== undefined
+      ? getNativeCurrencySymbol(request.chainId)
+      : 'ETH';
   const typeLabel = getTxLabel(request.signData, request.dataType);
-  const tx = parseTx(request.signData, request.dataType);
+  const tx = parseTx(request.signData, request.dataType, nativeSymbol);
   const eip712 =
     request.dataType === 2 ? parseEip712Summary(request.signData) : null;
   const eip712Prehashed =
@@ -81,7 +63,7 @@ export default function EthSignRequestDetail({
 
       {request.chainId !== undefined && (
         <View style={styles.row}>
-          <InfoRow label="Chain" value={chainLabel(request.chainId)} />
+          <InfoRow label="Chain" value={getChainName(request.chainId)} />
         </View>
       )}
 

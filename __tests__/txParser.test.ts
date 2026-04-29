@@ -181,6 +181,26 @@ describe('parseTx', () => {
   it('returns null for malformed hex', () => {
     expect(parseTx('zzzz', 1)).toBeNull();
   });
+
+  describe('nativeCurrencySymbol param', () => {
+    it('uses custom symbol in value for legacy tx', () => {
+      const hex = buildLegacyTxHex({ value: 1_000_000_000_000_000_000n });
+      const tx = parseTx(hex, 1, 'BNB');
+      expect(tx?.value).toBe('1 BNB');
+    });
+
+    it('uses custom symbol in value for EIP-1559 tx', () => {
+      const hex = buildEIP1559TxHex({ value: 1_000_000_000_000_000_000n });
+      const tx = parseTx(hex, 4, 'POL');
+      expect(tx?.value).toBe('1 POL');
+    });
+
+    it('uses custom symbol in value for EIP-2930 tx', () => {
+      const hex = buildEIP2930TxHex({ value: 1_000_000_000_000_000_000n });
+      const tx = parseTx(hex, 1, 'AVAX');
+      expect(tx?.value).toBe('1 AVAX');
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
