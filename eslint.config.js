@@ -7,7 +7,7 @@ const compat = new FlatCompat({
 module.exports = [
   ...compat.extends('@react-native'),
   {
-    ignores: ['node_modules/**', 'android/**', 'ios/**'],
+    ignores: ['node_modules/**', 'android/**', 'ios/**', 'scripts/**'],
   },
   {
     files: ['**/__tests__/**', '**/*.test.{ts,tsx}', 'jest.setup.js'],
