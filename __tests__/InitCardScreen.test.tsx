@@ -66,6 +66,14 @@ function renderScreen(phase = 'idle') {
   return render(<InitCardScreen navigation={navigation} route={route} />);
 }
 
+function lastBeforeRemoveHandler() {
+  const call = navigation.addListener.mock.calls
+    .slice()
+    .reverse()
+    .find(([event]: [string]) => event === 'beforeRemove');
+  return call?.[1];
+}
+
 /** Press a digit key six times to complete a full PIN entry. keyIndex 0 = '1', 1 = '2'. */
 async function enterPin(keyIndex = 0) {
   const digit = String(keyIndex + 1);
@@ -97,7 +105,7 @@ describe('InitCardScreen', () => {
 
   describe('initial render', () => {
     it('sets header title to "Create a PIN" on first render', async () => {
-      await renderScreen();
+      renderScreen();
       expect(navigation.setOptions).toHaveBeenCalledWith({
         title: 'Create a PIN',
       });
@@ -234,22 +242,22 @@ describe('InitCardScreen', () => {
     }
 
     it('nfc.phase is idle when phase is idle', async () => {
-      await renderScreen('idle');
+      renderScreen('idle');
       expect(lastProps().nfc.phase).toBe('idle');
     });
 
     it('nfc.phase is nfc when phase is nfc', async () => {
-      await renderScreen('nfc');
+      renderScreen('nfc');
       expect(lastProps().nfc.phase).toBe('nfc');
     });
 
     it('nfc.phase is error when phase is error', async () => {
-      await renderScreen('error');
+      renderScreen('error');
       expect(lastProps().nfc.phase).toBe('error');
     });
 
     it('nfc.phase is done and showOnDone is true when phase is done', async () => {
-      await renderScreen('done');
+      renderScreen('done');
       expect(lastProps().nfc.phase).toBe('done');
       expect(lastProps().showOnDone).toBe(true);
     });
@@ -273,8 +281,48 @@ describe('InitCardScreen', () => {
     });
 
     it('does not navigate when phase is done but result is null', async () => {
-      await renderScreen('done'); // result is null in hookMock
+      renderScreen('done'); // result is null in hookMock
       expect(navigation.reset).not.toHaveBeenCalled();
+    });
+
+    it('cancels NFC when leaving during NFC phase', async () => {
+      renderScreen('nfc');
+      const handler = lastBeforeRemoveHandler();
+      handler?.({ preventDefault: jest.fn() });
+      expect(mockCancel).toHaveBeenCalled();
+    });
+
+    it('returns from duress question to PIN confirmation before leaving', async () => {
+      renderScreen();
+      await enterPin(0);
+      await enterPin(0);
+      const event = { preventDefault: jest.fn() };
+
+      await act(async () => {
+        lastBeforeRemoveHandler()?.(event);
+      });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Confirm your PIN',
+      });
+    });
+
+    it('returns from duress setup to the duress question before leaving', async () => {
+      renderScreen();
+      await enterPin(0);
+      await enterPin(0);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Yes, add duress PIN'));
+      });
+      const event = { preventDefault: jest.fn() };
+
+      await act(async () => {
+        lastBeforeRemoveHandler()?.(event);
+      });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(screen.getByText('Add a duress PIN?')).toBeTruthy();
     });
   });
 

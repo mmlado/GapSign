@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import TransactionDetailScreen from '../src/screens/TransactionDetailScreen';
 import type { EthSignRequest } from '../src/types';
@@ -100,7 +100,8 @@ jest.mock('react-native-paper', () => {
 // ---------------------------------------------------------------------------
 
 function renderScreen(result: any) {
-  return render(
+  const navigation = { navigate: jest.fn() } as any;
+  const view = render(
     <TransactionDetailScreen
       route={
         {
@@ -109,9 +110,10 @@ function renderScreen(result: any) {
           name: 'TransactionDetail',
         } as any
       }
-      navigation={{ navigate: jest.fn() } as any}
+      navigation={navigation}
     />,
   );
+  return { ...view, navigation };
 }
 
 const fullRequest: EthSignRequest = {
@@ -231,6 +233,23 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
     expect(screen.getByText('Sign transaction')).toBeTruthy();
   });
 
+  it('navigates to Keycard with Ethereum signing params', async () => {
+    const { navigation } = renderScreen({
+      kind: 'eth-sign-request',
+      request: fullRequest,
+    });
+    fireEvent.press(screen.getByText('Sign transaction'));
+    expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+      operation: 'sign',
+      signMode: 'eth',
+      signData: fullRequest.signData,
+      derivationPath: fullRequest.derivationPath,
+      chainId: fullRequest.chainId,
+      requestId: fullRequest.requestId,
+      dataType: fullRequest.dataType,
+    });
+  });
+
   it('renders correctly with only required fields (no optional fields)', async () => {
     const minimalRequest: EthSignRequest = {
       signData: 'cafebabe',
@@ -301,6 +320,19 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
     expect(screen.getByText('Sign transaction')).toBeTruthy();
   });
 
+  it('navigates to Keycard with PSBT signing params', async () => {
+    const { navigation } = renderScreen({
+      kind: 'crypto-psbt',
+      request: { psbtHex: VALID_PSBT_HEX },
+    });
+    fireEvent.press(screen.getByText('Sign transaction'));
+    expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+      operation: 'sign',
+      signMode: 'btc',
+      psbtHex: VALID_PSBT_HEX,
+    });
+  });
+
   it('shows Bitcoin PSBT label', async () => {
     renderScreen({
       kind: 'crypto-psbt',
@@ -353,5 +385,30 @@ describe('TransactionDetailScreen – btc-sign-request result', () => {
     expect(screen.getByText('btc-sign-request')).toBeTruthy();
     expect(screen.getByText('hello btc')).toBeTruthy();
     expect(screen.getByText('Sign message')).toBeTruthy();
+  });
+
+  it('navigates to Keycard with Bitcoin message signing params', async () => {
+    const request = {
+      requestId: '00112233445566778899aabbccddeeff',
+      signDataHex: Buffer.from('hello btc', 'utf8').toString('hex'),
+      dataType: 1,
+      derivationPath: "m/84'/0'/0'/0/3",
+      address: 'bc1qexampleaddress',
+      origin: 'Sparrow',
+    };
+    const { navigation } = renderScreen({
+      kind: 'btc-sign-request',
+      request,
+    });
+    fireEvent.press(screen.getByText('Sign message'));
+    expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+      operation: 'sign',
+      signMode: 'btc-message',
+      requestId: request.requestId,
+      signDataHex: request.signDataHex,
+      derivationPath: request.derivationPath,
+      address: request.address,
+      origin: request.origin,
+    });
   });
 });

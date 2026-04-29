@@ -87,6 +87,33 @@ describe('ExportKeyScreen', () => {
       });
     });
 
+    it('navigates to Keycard with Bitcoin export path when Bitcoin is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Bitcoin'));
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: "m/84'/0'/0'",
+      });
+    });
+
+    it('navigates to Keycard with multisig export path when Bitcoin Multisig is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Bitcoin Multisig'));
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: "m/48'/0'/0'/2'",
+      });
+    });
+
+    it('navigates to Keycard with testnet export path when Bitcoin Testnet is pressed', () => {
+      renderScreen();
+      fireEvent.press(screen.getByText('Bitcoin Testnet'));
+      expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
+        operation: 'export_key',
+        derivationPath: "m/84'/1'/0'",
+      });
+    });
+
     it('navigates to Keycard with source "account.ledger_live" when Ledger Live is pressed', () => {
       renderScreen();
       fireEvent.press(screen.getByText('Ledger Live'));

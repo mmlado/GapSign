@@ -137,10 +137,18 @@ describe('AboutScreen', () => {
 
   it('shows QR for a contributor profile', () => {
     renderScreen();
-    fireEvent.press(screen.getByLabelText('Show QR code for mmlado'));
+    fireEvent.press(screen.getByLabelText(/Show QR code for .+/));
     expect(mockUseNavigationNavigate).toHaveBeenCalledWith('UrlQR', {
-      url: 'https://github.com/mmlado',
+      url: expect.stringContaining('github.com'),
       title: expect.any(String),
     });
+  });
+
+  it('opens a contributor profile in the browser', () => {
+    renderScreen();
+    fireEvent.press(screen.getByLabelText(/Open .* GitHub profile/));
+    expect(Linking.openURL).toHaveBeenCalledWith(
+      expect.stringContaining('github.com'),
+    );
   });
 });

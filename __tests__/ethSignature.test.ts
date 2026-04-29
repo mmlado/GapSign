@@ -117,6 +117,26 @@ describe('buildEthSignatureUR', () => {
       expect(sig[sig.length - 1]).toBe(37 + recId);
     });
 
+    it('encodes multi-byte legacy v values', () => {
+      const ur = buildEthSignatureUR(tlvHex, HASH, 1, 111, undefined);
+      const sig: Buffer = decodeUR(ur)[2];
+      expect(sig.subarray(64)).toEqual(Buffer.from([0x01, 0x01 + recId]));
+    });
+
+    it('encodes three-byte legacy v values', () => {
+      const ur = buildEthSignatureUR(tlvHex, HASH, 1, 40_000, undefined);
+      const sig: Buffer = decodeUR(ur)[2];
+      expect(sig.subarray(64)).toHaveLength(3);
+      expect(sig.readUIntBE(64, 3)).toBe(80_035 + recId);
+    });
+
+    it('encodes four-byte legacy v values', () => {
+      const ur = buildEthSignatureUR(tlvHex, HASH, 1, 9_000_000, undefined);
+      const sig: Buffer = decodeUR(ur)[2];
+      expect(sig.subarray(64)).toHaveLength(4);
+      expect(sig.readUInt32BE(64)).toBe(18_000_035 + recId);
+    });
+
     it('EIP-712 (dataType=2): v = 27 + recId', () => {
       const ur = buildEthSignatureUR(tlvHex, HASH, 2, undefined, undefined);
       const sig: Buffer = decodeUR(ur)[2];

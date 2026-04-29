@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { TextInput } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import ChangeSecretScreen from '../src/screens/secrets/ChangeSecretScreen';
@@ -77,6 +78,14 @@ async function renderScreen(
   return render(
     <ChangeSecretScreen navigation={navigation} route={routeFor(secretType)} />,
   );
+}
+
+function lastBeforeRemoveHandler() {
+  const call = navigation.addListener.mock.calls
+    .slice()
+    .reverse()
+    .find(([event]: [string]) => event === 'beforeRemove');
+  return call?.[1];
 }
 
 async function enterDigits(count: number, keyIndex = 0) {
@@ -222,6 +231,34 @@ describe('ChangeSecretScreen', () => {
       expect(screen.queryByText(/digits/)).toBeNull();
     });
 
+    it('calls start when pairing secret confirmation matches', async () => {
+      await renderScreen('pairing');
+      fireEvent.changeText(
+        screen.UNSAFE_getByType(TextInput),
+        'pairing-secret',
+      );
+      fireEvent.press(screen.getByText('Continue'));
+      fireEvent.changeText(
+        screen.UNSAFE_getByType(TextInput),
+        'pairing-secret',
+      );
+      fireEvent.press(screen.getByText('Continue'));
+      expect(mockStart).toHaveBeenCalledWith('pairing-secret');
+    });
+
+    it('shows an error when pairing secret confirmation does not match', async () => {
+      await renderScreen('pairing');
+      fireEvent.changeText(
+        screen.UNSAFE_getByType(TextInput),
+        'pairing-secret',
+      );
+      fireEvent.press(screen.getByText('Continue'));
+      fireEvent.changeText(screen.UNSAFE_getByType(TextInput), 'other-secret');
+      fireEvent.press(screen.getByText('Continue'));
+      expect(screen.getByText("PINs don't match")).toBeTruthy();
+      expect(mockStart).not.toHaveBeenCalled();
+    });
+
     it('resets to Dashboard with "Pairing secret changed" toast when done', async () => {
       mockUseChangeSecret.mockReturnValue({
         ...hookMock('done'),
@@ -260,6 +297,36 @@ describe('ChangeSecretScreen', () => {
     it('showOnDone is true', async () => {
       await renderScreen('pin');
       expect(lastProps().showOnDone).toBe(true);
+    });
+
+    it('cancels and goes back when NFC sheet is cancelled', async () => {
+      await renderScreen('pin');
+      lastProps().onCancel();
+      expect(mockCancel).toHaveBeenCalled();
+      expect(navigation.goBack).toHaveBeenCalled();
+    });
+  });
+
+  describe('beforeRemove guard', () => {
+    it('cancels NFC when leaving during NFC phase', async () => {
+      await renderScreen('pin', 'nfc');
+      lastBeforeRemoveHandler()?.({ preventDefault: jest.fn() });
+      expect(mockCancel).toHaveBeenCalled();
+    });
+
+    it('returns from confirm step to entry step before leaving', async () => {
+      await renderScreen('pin');
+      await enterDigits(6, 0);
+      const event = { preventDefault: jest.fn() };
+
+      await act(async () => {
+        lastBeforeRemoveHandler()?.(event);
+      });
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(navigation.setOptions).toHaveBeenCalledWith({
+        title: 'Enter new PIN',
+      });
     });
   });
 });

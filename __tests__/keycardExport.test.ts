@@ -1,8 +1,19 @@
 import { keccak_256 } from '@noble/hashes/sha3.js';
 
-import { buildExportUr, prepareSignHash } from '../src/utils/keycardExport';
+import {
+  buildExportUr,
+  exportKeyForWallet,
+  prepareSignHash,
+} from '../src/utils/keycardExport';
 
-jest.mock('keycard-sdk', () => ({ __esModule: true, default: {} }));
+jest.mock('keycard-sdk', () => ({
+  __esModule: true,
+  default: {
+    BIP32KeyPair: {
+      fromTLV: jest.fn(() => ({ publicKey: new Uint8Array([9, 9, 9]) })),
+    },
+  },
+}));
 
 jest.mock('../src/utils/cryptoHdKey', () => ({
   buildCryptoHdKeyUR: jest.fn(() => 'ur:crypto-hdkey/mock'),
@@ -111,5 +122,115 @@ describe('buildExportUr', () => {
     const result = buildExportUr(btcResult, "m/84'/0'/0'");
     expect(buildCryptoAccountUR).toHaveBeenCalledWith(btcResult);
     expect(result).toBe('ur:crypto-account/mock');
+  });
+});
+
+describe('exportKeyForWallet', () => {
+  const { pubKeyFingerprint } = require('../src/utils/cryptoAccount');
+  const { exportKeysForBitget } = require('../src/utils/cryptoMultiAccounts');
+
+  const response = (data: number[]) => ({
+    checkOK: jest.fn(),
+    data: new Uint8Array(data),
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pubKeyFingerprint.mockReturnValue(0xdeadbeef);
+  });
+
+  it('delegates Bitget exports to exportKeysForBitget', async () => {
+    const bitgetResult = { keys: [{ path: "m/44'/60'/0'/0/0" }] };
+    exportKeysForBitget.mockResolvedValue(bitgetResult);
+    const cmdSet = {} as any;
+    const setStatus = jest.fn();
+
+    await expect(exportKeyForWallet(cmdSet, 'bitget', setStatus)).resolves.toBe(
+      bitgetResult,
+    );
+    expect(exportKeysForBitget).toHaveBeenCalledWith(cmdSet, setStatus);
+  });
+
+  it('exports an Ethereum hdkey with the parent fingerprint', async () => {
+    const parentResp = response([1, 2, 3]);
+    const extendedResp = response([4, 5, 6]);
+    const cmdSet = {
+      exportKey: jest.fn().mockResolvedValue(parentResp),
+      exportExtendedKey: jest.fn().mockResolvedValue(extendedResp),
+    } as any;
+
+    const result = await exportKeyForWallet(cmdSet, "m/44'/60'/0'/0/0");
+
+    expect(cmdSet.exportKey).toHaveBeenCalledWith(
+      0,
+      true,
+      "m/44'/60'/0'/0",
+      false,
+    );
+    expect(cmdSet.exportExtendedKey).toHaveBeenCalledWith(
+      0,
+      "m/44'/60'/0'/0/0",
+      false,
+    );
+    expect(parentResp.checkOK).toHaveBeenCalled();
+    expect(extendedResp.checkOK).toHaveBeenCalled();
+    expect(result).toEqual({
+      exportRespData: new Uint8Array([4, 5, 6]),
+      sourceFingerprint: 0xdeadbeef,
+    });
+  });
+
+  it('builds Bitcoin descriptor exports for single-sig paths', async () => {
+    const cmdSet = {
+      exportKey: jest
+        .fn()
+        .mockResolvedValueOnce(response([0]))
+        .mockResolvedValueOnce(response([1]))
+        .mockResolvedValueOnce(response([2]))
+        .mockResolvedValueOnce(response([3])),
+      exportExtendedKey: jest
+        .fn()
+        .mockResolvedValueOnce(response([10]))
+        .mockResolvedValueOnce(response([20]))
+        .mockResolvedValueOnce(response([30])),
+    } as any;
+
+    const result = await exportKeyForWallet(cmdSet, "m/84'/0'/0'");
+
+    expect(result).toMatchObject({
+      masterFingerprint: 0xdeadbeef,
+      descriptors: [
+        { derivationPath: "m/84'/0'/0'", scriptType: 'wpkh' },
+        { derivationPath: "m/49'/0'/0'", scriptType: 'sh-wpkh' },
+        { derivationPath: "m/44'/0'/0'", scriptType: 'pkh' },
+      ],
+    });
+    expect(cmdSet.exportExtendedKey).toHaveBeenCalledTimes(3);
+  });
+
+  it('builds Bitcoin descriptor exports for multisig paths', async () => {
+    const cmdSet = {
+      exportKey: jest
+        .fn()
+        .mockResolvedValueOnce(response([0]))
+        .mockResolvedValueOnce(response([1]))
+        .mockResolvedValueOnce(response([2]))
+        .mockResolvedValueOnce(response([3])),
+      exportExtendedKey: jest
+        .fn()
+        .mockResolvedValueOnce(response([10]))
+        .mockResolvedValueOnce(response([20]))
+        .mockResolvedValueOnce(response([30])),
+    } as any;
+
+    const result = await exportKeyForWallet(cmdSet, "m/48'/0'/0'/2'");
+
+    expect(result).toMatchObject({
+      descriptors: [
+        { derivationPath: "m/48'/0'/0'/2'", scriptType: 'wsh' },
+        { derivationPath: "m/48'/0'/0'/1'", scriptType: 'sh-wsh' },
+        { derivationPath: "m/45'", scriptType: 'sh' },
+      ],
+    });
   });
 });

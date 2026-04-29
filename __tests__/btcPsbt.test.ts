@@ -1,6 +1,27 @@
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
 
-import { inspectBtcPsbt, parseCryptoPsbtRequest } from '../src/utils/btcPsbt';
+import {
+  BtcSigningSession,
+  inspectBtcPsbt,
+  parseCryptoPsbtRequest,
+} from '../src/utils/btcPsbt';
+
+jest.mock('keycard-sdk', () => ({
+  __esModule: true,
+  default: {
+    BERTLV: jest.fn().mockImplementation(() => ({
+      enterConstructed: jest.fn(),
+      readPrimitive: jest.fn(() => new Uint8Array([2, ...Array(32).fill(1)])),
+    })),
+    CryptoUtils: {
+      compressPublicKey: jest.fn(key => key),
+    },
+  },
+}));
+
+jest.mock('../src/utils/cryptoAccount', () => ({
+  pubKeyFingerprint: jest.fn(() => 0xdeadbeef),
+}));
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -227,5 +248,87 @@ describe('inspectBtcPsbt', () => {
   it('returns unknown network when no derivation path present', () => {
     const summary = inspectBtcPsbt(MINIMAL_PSBT_HEX);
     expect(summary.network).toBe('unknown');
+  });
+
+  it('falls back to script hex when an output script is not an address', () => {
+    const { Psbt, networks } = require('bitcoinjs-lib');
+    const fakePubkey = Buffer.alloc(33, 0x02);
+    const psbt = new Psbt({ network: networks.testnet });
+    psbt.addInput({
+      hash: Buffer.alloc(32, 0xcc),
+      index: 0,
+      bip32Derivation: [
+        {
+          masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+          path: "m/84'/1'/0'/0/0",
+          pubkey: fakePubkey,
+        },
+      ],
+    });
+    psbt.addOutput({ script: Buffer.from([0x51]), value: 12_345 });
+
+    const summary = inspectBtcPsbt(psbt.toBuffer().toString('hex'));
+    expect(summary.outputs[0].address).toBe('51');
+  });
+});
+
+describe('BtcSigningSession', () => {
+  const { pubKeyFingerprint } = require('../src/utils/cryptoAccount');
+  const cmdSet = {
+    exportKey: jest.fn(() => ({
+      checkOK: jest.fn(),
+      data: new Uint8Array([1, 2, 3]),
+    })),
+    signWithPath: jest.fn(),
+  } as any;
+
+  beforeEach(() => {
+    cmdSet.exportKey.mockClear();
+    cmdSet.signWithPath.mockClear();
+    pubKeyFingerprint.mockReturnValue(0xdeadbeef);
+  });
+
+  it('throws when the Keycard fingerprint matches no inputs', async () => {
+    pubKeyFingerprint.mockReturnValue(0x12345678);
+    const session = new BtcSigningSession(TESTNET_WPKH_PSBT_HEX);
+
+    await expect(session.signWithKeycard(cmdSet)).rejects.toThrow(
+      'This Keycard cannot sign any inputs in this transaction.',
+    );
+  });
+
+  it('rejects taproot inputs before signing', async () => {
+    const { Psbt, payments, networks } = require('bitcoinjs-lib');
+    const fakePubkey = Buffer.alloc(33, 0x02);
+    const tapInternalKey = Buffer.alloc(32, 0x03);
+    const { output } = payments.p2wpkh({
+      pubkey: fakePubkey,
+      network: networks.testnet,
+    });
+    const psbt = new Psbt({ network: networks.testnet });
+    psbt.addInput({
+      hash: Buffer.alloc(32, 0xdd),
+      index: 0,
+      witnessUtxo: {
+        script: output!,
+        value: 50_000,
+      },
+      tapInternalKey,
+      tapBip32Derivation: [
+        {
+          masterFingerprint: Buffer.from([0xde, 0xad, 0xbe, 0xef]),
+          path: "m/86'/1'/0'/0/0",
+          pubkey: tapInternalKey,
+          leafHashes: [],
+        },
+      ],
+    });
+    psbt.addOutput({ script: output!, value: 40_000 });
+    const session = new BtcSigningSession(psbt.toBuffer().toString('hex'));
+
+    await expect(session.signWithKeycard(cmdSet)).rejects.toThrow(
+      'Taproot inputs are not supported yet.',
+    );
+    expect(cmdSet.signWithPath).not.toHaveBeenCalled();
   });
 });
