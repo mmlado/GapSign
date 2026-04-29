@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Expanded Jest coverage for signing utilities and wallet workflow screens
+
 ## [1.1.0] - 2026-04-28
 
 ### Added

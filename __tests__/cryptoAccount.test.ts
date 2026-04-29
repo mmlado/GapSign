@@ -1,5 +1,8 @@
 import { URRegistryDecoder } from '@keystonehq/bc-ur-registry';
-import { buildCryptoAccountUR } from '../src/utils/cryptoAccount';
+import {
+  buildCryptoAccountUR,
+  pubKeyFingerprint,
+} from '../src/utils/cryptoAccount';
 
 /* eslint-disable no-bitwise */
 // Mock keycard-sdk so tests work with synthetic (non-curve-valid) public keys
@@ -124,5 +127,47 @@ describe('buildCryptoAccountUR', () => {
       expect.stringContaining('sh(wpkh('),
       expect.stringContaining('pkh('),
     ]);
+  });
+
+  it('encodes multisig descriptor script expressions', () => {
+    const ur = buildCryptoAccountUR({
+      masterFingerprint: 0xaabbccdd,
+      descriptors: [
+        {
+          derivationPath: "m/48'/0'/0'/2'",
+          exportRespData: EXPORT_DATA,
+          parentFingerprint: 0x11223344,
+          scriptType: 'wsh',
+        },
+        {
+          derivationPath: "m/48'/0'/0'/1'",
+          exportRespData: EXPORT_DATA,
+          parentFingerprint: 0x55667788,
+          scriptType: 'sh-wsh',
+        },
+        {
+          derivationPath: "m/45'",
+          exportRespData: EXPORT_DATA,
+          parentFingerprint: 0x99aabbcc,
+          scriptType: 'sh',
+        },
+      ],
+    });
+
+    const decoder = new URRegistryDecoder();
+    decoder.receivePart(ur);
+    const cryptoAccount = decoder.resultRegistryType() as any;
+
+    expect(
+      cryptoAccount.getOutputDescriptors().map((item: any) => item.toString()),
+    ).toEqual([
+      expect.stringContaining('wsh('),
+      expect.stringContaining('sh(wsh('),
+      expect.stringContaining('sh('),
+    ]);
+  });
+
+  it('computes a public-key fingerprint', () => {
+    expect(pubKeyFingerprint(PUB_KEY_UNCOMPRESSED)).toBe(0xe01b06b9);
   });
 });

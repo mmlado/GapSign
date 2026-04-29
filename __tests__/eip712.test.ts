@@ -67,6 +67,55 @@ describe('parseEip712Summary', () => {
   it('returns null for non-json data', () => {
     expect(parseEip712Summary('deadbeef')).toBeNull();
   });
+
+  it('returns null for JSON that is not an object', () => {
+    const signDataHex = Buffer.from('[]', 'utf8').toString('hex');
+    expect(parseEip712Summary(signDataHex)).toBeNull();
+  });
+
+  it('uses empty domain and message maps when those fields are not objects', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [],
+      },
+      domain: 'not-an-object',
+      message: ['not', 'an', 'object'],
+    };
+    const signDataHex = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'hex',
+    );
+
+    expect(parseEip712Summary(signDataHex)).toEqual({
+      rawJson: JSON.stringify(payload, null, 2),
+      primaryType: undefined,
+      domain: {},
+      message: {},
+    });
+  });
+
+  it('stringifies primitive domain and message values for display', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [],
+      },
+      primaryType: 'EIP712Domain',
+      domain: {
+        chainId: 1,
+        verified: true,
+        salt: null,
+      },
+      message: {},
+    };
+    const signDataHex = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'hex',
+    );
+
+    expect(parseEip712Summary(signDataHex)?.domain).toEqual({
+      chainId: '1',
+      salt: 'null',
+      verified: 'true',
+    });
+  });
 });
 
 describe('parseEip712Prehashed', () => {
