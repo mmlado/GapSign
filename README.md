@@ -75,6 +75,9 @@ Download the latest APK from [Releases](../../releases) and sideload it onto you
   <a href="https://apps.obtainium.imranr.dev/redirect.html?r=obtainium://add/https://github.com/mmlado/GapSign">
     <img src="assets/badges/badge_obtainium.png" alt="Get it on Obtainium" height="70" />
   </a>
+  <a href="https://fdroid.gapsign.tech/repo?fingerprint=24EB891A8A617F8BF20892CB0CF9267709BA94056E64242AD9EDF638C2FED3D2">
+    <img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid" height="70" />
+  </a>
 </p>
 
 For most users, install the universal APK. ABI-specific split APKs are also attached to releases for smaller downloads on known device architectures.
@@ -92,7 +95,19 @@ For most users, install the universal APK. ABI-specific split APKs are also atta
 3. Use GitHub Releases as the update source.
 4. Select the universal APK from the latest release.
 
-> The APK is built automatically by GitHub Actions on every version tag. A self-hosted F-Droid repository is planned.
+### Install via F-Droid
+
+**Repository URL:**
+```
+https://fdroid.gapsign.tech/repo/
+```
+
+**Fingerprint:**
+```
+24EB891A8A617F8BF20892CB0CF9267709BA94056E64242AD9EDF638C2FED3D2
+```
+
+> The APK is built automatically by GitHub Actions on every version tag.
 
 ## Building from source
 

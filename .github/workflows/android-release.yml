@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      release_tag: ${{ steps.ver.outputs.tag }}
 
     steps:
       - name: Checkout code
@@ -128,3 +130,87 @@ jobs:
             android/app/build/outputs/apk/full/release/app-*-release.apk
             android/app/build/outputs/apk/offline/release/app-*-release.apk
             android/app/build/outputs/apk/release/SHA256SUMS.txt
+
+  fdroid:
+    name: Publish F-Droid Repository
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fdroidserver
+        run: pip install fdroidserver
+
+      - name: Restore keystore
+        run: echo "${{ secrets.FDROID_KEYSTORE_B64 }}" | base64 -d > fdroid/keystore.p12
+
+      - name: Restore APKs from all previous releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+        run: |
+          mkdir -p fdroid/repo
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep -v "^${RELEASE_TAG}$" \
+            | while read tag; do
+                gh release download "$tag" \
+                  --pattern "app-offline-*-release.apk" \
+                  --pattern "app-full-*-release.apk" \
+                  --dir fdroid/repo/ \
+                  --clobber 2>/dev/null || true
+              done
+
+      - name: Download current release APKs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+        run: |
+          mkdir -p new-apks/
+          gh release download "$RELEASE_TAG" \
+            --pattern "app-offline-*-release.apk" \
+            --pattern "app-full-*-release.apk" \
+            --dir new-apks/
+          count=$(find new-apks -maxdepth 1 -name "*.apk" | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "No APKs downloaded for $RELEASE_TAG — check release asset names."
+            exit 1
+          fi
+          cp new-apks/*.apk fdroid/repo/
+
+      - name: Copy repo icon
+        run: cp fastlane/metadata/android/en-US/images/icon.png fdroid/icon.png
+
+      - name: Run fdroid update
+        working-directory: fdroid
+        run: fdroid update --verbose
+        env:
+          FDROID_KEYSTORE_PASS: ${{ secrets.FDROID_KEYSTORE_PASS }}
+          FDROID_KEY_PASS: ${{ secrets.FDROID_KEY_PASS }}
+
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p pages
+          cp -r fdroid/repo pages/repo
+          cp -r fdroid/archive pages/archive 2>/dev/null || true
+          echo "fdroid.gapsign.tech" > pages/CNAME
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f fdroid/keystore.p12
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

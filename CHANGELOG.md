@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Read Keycard names during NFC sessions and add a Keycard menu action to set or clear the on-card name
+- Self-hosted F-Droid repository at fdroid.gapsign.tech; published automatically on each tagged release via GitHub Actions
 
 ## [1.2.0] - 2026-04-29
 
