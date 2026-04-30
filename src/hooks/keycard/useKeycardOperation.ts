@@ -7,6 +7,7 @@ import { Commandset } from 'keycard-sdk/dist/commandset';
 import { PAIRING_PASSWORD } from '../../constants/keycard';
 import { loadPairing, savePairing } from '../../storage/pairingStorage';
 import { checkGenuine } from '../../utils/genuineCheck';
+import { displayKeycardName, parseKeycardName } from '../../utils/keycardName';
 import useNFCSession from './useNFCSession';
 
 function toHex(arr: Uint8Array): string {
@@ -35,6 +36,7 @@ export interface ExecuteOptions {
 export interface UseKeycardOperation<T> {
   phase: Phase;
   status: string;
+  cardName: string | null;
   result: T | null;
   pinError: string | null;
   execute: (op: KeycardOperationFn<T>, options?: ExecuteOptions) => void;
@@ -49,6 +51,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [result, setResult] = useState<T | null>(null);
   const [waitingForPin, setWaitingForPin] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [cardName, setCardName] = useState<string | null>(null);
   const [showGenuineWarning, setShowGenuineWarning] = useState(false);
 
   const pinRef = useRef('');
@@ -135,6 +138,16 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
           }, hasMasterKey: ${appInfo.hasMasterKey()}`,
       );
 
+      const dataResp = await cmdSet.getData(0x00);
+      if (dataResp.sw !== 0x9000) {
+        throw new Error(
+          `GET DATA failed: 0x${dataResp.sw.toString(16).toUpperCase()}`,
+        );
+      }
+      const name = parseKeycardName(dataResp.data);
+      setCardName(name);
+      setStatus(`Connected to ${displayKeycardName(name)}`);
+
       const existingPairing = await loadPairing(uid);
       if (!existingPairing && !approvedNonGenuineUidsRef.current.has(uid)) {
         setStatus('Verifying card...');
@@ -213,6 +226,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     resetNFC();
     setWaitingForPin(false);
     setPinError(null);
+    setCardName(null);
     setShowGenuineWarning(false);
     pendingUidRef.current = null;
     pinRef.current = '';
@@ -224,6 +238,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     resetNFC();
     setWaitingForPin(false);
     setPinError(null);
+    setCardName(null);
     setShowGenuineWarning(false);
     pendingUidRef.current = null;
     pinRef.current = '';
@@ -235,6 +250,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   return {
     phase,
     status,
+    cardName,
     result,
     pinError,
     execute,

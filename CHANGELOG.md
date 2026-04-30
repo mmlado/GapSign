@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Read Keycard names during NFC sessions and add a Keycard menu action to set or clear the on-card name
+
 ## [1.2.0] - 2026-04-29
 
 ### Added

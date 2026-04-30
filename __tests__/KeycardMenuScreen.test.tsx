@@ -41,16 +41,18 @@ describe('KeycardMenuScreen', () => {
     renderScreen();
     expect(screen.getByText('Initialize')).toBeTruthy();
     expect(screen.getByText('Keypair')).toBeTruthy();
+    expect(screen.getByText('Set card name')).toBeTruthy();
     expect(screen.getByText('Secrets')).toBeTruthy();
     expect(screen.getByText('Factory reset')).toBeTruthy();
   });
 
-  it('shows the NFC indicator only for Initialize', () => {
+  it('shows the NFC indicator only for direct NFC actions', () => {
     renderScreen();
     expect(screen.getByTestId('menu-nfc-indicator-0')).toBeTruthy();
     expect(screen.queryByTestId('menu-nfc-indicator-1')).toBeNull();
     expect(screen.queryByTestId('menu-nfc-indicator-2')).toBeNull();
     expect(screen.queryByTestId('menu-nfc-indicator-3')).toBeNull();
+    expect(screen.queryByTestId('menu-nfc-indicator-4')).toBeNull();
   });
 
   it('renders the NFC indicator with the primary accent color', () => {
@@ -65,6 +67,7 @@ describe('KeycardMenuScreen', () => {
     for (const [label, destination] of [
       ['Initialize', 'InitCard'],
       ['Keypair', 'KeyPairMenu'],
+      ['Set card name', 'SetCardName'],
       ['Secrets', 'SecretsMenu'],
       ['Factory reset', 'FactoryReset'],
     ] as const) {

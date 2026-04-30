@@ -16,6 +16,7 @@ import KeycardMenuScreen from '../screens/KeycardMenuScreen';
 import KeycardScreen from '../screens/KeycardScreen';
 import QRResultScreen from '../screens/QRResultScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
+import SetCardNameScreen from '../screens/SetCardNameScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 
 // Address screens
@@ -65,6 +66,11 @@ export const routes: Route[] = [
   {
     name: 'InitCard',
     component: InitCardScreen,
+    options: defaultHeaderOptions,
+  },
+  {
+    name: 'SetCardName',
+    component: SetCardNameScreen,
     options: defaultHeaderOptions,
   },
   {

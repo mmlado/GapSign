@@ -61,6 +61,16 @@ describe('NFCBottomSheet', () => {
       renderSheet(makeNfc('nfc', { status: 'Waiting for card…' }));
       expect(screen.getByText('Waiting for card…')).toBeTruthy();
     });
+
+    it('shows the card name after it is read', () => {
+      renderSheet(makeNfc('nfc', { cardName: 'Main card' }));
+      expect(screen.getByText('Main card')).toBeTruthy();
+    });
+
+    it('shows unnamed placeholder for a blank card name', () => {
+      renderSheet(makeNfc('nfc', { cardName: '' }));
+      expect(screen.getByText('Unnamed card')).toBeTruthy();
+    });
   });
 
   describe('Cancel button — phase nfc (scanning)', () => {
