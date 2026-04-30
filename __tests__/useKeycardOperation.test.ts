@@ -1,3 +1,5 @@
+/* eslint-disable no-bitwise */
+
 import { act, renderHook } from '@testing-library/react-native';
 import { useKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
 import type { UseKeycardOperation } from '../src/hooks/keycard/useKeycardOperation';
@@ -88,6 +90,7 @@ describe('useKeycardOperation', () => {
       const { result } = renderHook(() => useKeycardOperation<string>());
       expect(result.current.phase).toBe('idle');
       expect(result.current.status).toBe('');
+      expect(result.current.cardName).toBeNull();
       expect(result.current.result).toBeNull();
     });
   });
@@ -239,6 +242,10 @@ describe('useKeycardOperation', () => {
       getPairing: jest.fn().mockReturnValue({ pairingIndex: 0 }),
       setPairing: jest.fn(),
       autoOpenSecureChannel: jest.fn().mockResolvedValue(undefined),
+      getData: jest.fn().mockResolvedValue({
+        sw: 0x9000,
+        data: new Uint8Array([0x20 | 9, ...Buffer.from('Main card')]),
+      }),
       verifyPIN: jest.fn().mockResolvedValue({
         sw: 0x9000,
         checkAuthOK: jest.fn(),
@@ -270,6 +277,35 @@ describe('useKeycardOperation', () => {
       });
       await triggerCardConnect(result.current);
       expect(mockCheckGenuine).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads the card name after select for the active NFC session', async () => {
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect(result.current);
+      expect(result.current.cardName).toBe('Main card');
+    });
+
+    it('enters error phase when reading the card name fails', async () => {
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        getData: jest.fn().mockResolvedValue({ sw: 0x6f00 }),
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('GET DATA failed: 0x6F00');
     });
 
     it('phase becomes genuine_warning when check fails', async () => {

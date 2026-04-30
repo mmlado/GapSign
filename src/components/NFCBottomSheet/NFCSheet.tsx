@@ -4,11 +4,13 @@ import { Text } from 'react-native-paper';
 
 import theme from '../../theme';
 import { Icons } from '../../assets/icons';
+import { displayKeycardName } from '../../utils/keycardName';
 import type { NFCVariant } from './index';
 
 type Props = {
   variant: NFCVariant;
   status: string;
+  cardName?: string | null;
   onCancel: () => void;
 };
 
@@ -57,7 +59,12 @@ function PulseRing({ delay, size }: { delay: number; size: number }) {
   );
 }
 
-export default function NFCSheet({ variant, status, onCancel }: Props) {
+export default function NFCSheet({
+  variant,
+  status,
+  cardName,
+  onCancel,
+}: Props) {
   const NfcIcon =
     variant === 'success'
       ? Icons.nfc.success
@@ -79,7 +86,9 @@ export default function NFCSheet({ variant, status, onCancel }: Props) {
       </View>
 
       <Text variant="titleLarge" style={styles.title}>
-        Tap your Keycard
+        {cardName === undefined || cardName === null
+          ? 'Tap your Keycard'
+          : displayKeycardName(cardName)}
       </Text>
       <Text variant="bodyMedium" style={styles.status}>
         {status}

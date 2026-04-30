@@ -12,6 +12,7 @@ export type NFCVariant = 'scanning' | 'success' | 'error' | 'genuine_warning';
 export type NFCOperation = {
   phase: string;
   status: string;
+  cardName?: string | null;
   pinError?: string | null;
   submitPin?: (pin: string) => void;
   proceedWithNonGenuine?: () => void;
@@ -25,7 +26,14 @@ type Props = {
 };
 
 export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
-  const { phase, status, pinError, submitPin, proceedWithNonGenuine } = nfc;
+  const {
+    phase,
+    status,
+    cardName,
+    pinError,
+    submitPin,
+    proceedWithNonGenuine,
+  } = nfc;
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(400)).current;
 
@@ -97,7 +105,12 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
               ]}
             >
               <View style={styles.handle} />
-              <NFCSheet variant={variant} status={status} onCancel={onCancel} />
+              <NFCSheet
+                variant={variant}
+                status={status}
+                cardName={cardName}
+                onCancel={onCancel}
+              />
             </Animated.View>
           </View>
         )}

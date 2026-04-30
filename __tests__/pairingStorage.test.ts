@@ -1,7 +1,7 @@
 import {
+  deletePairing,
   loadPairing,
   savePairing,
-  deletePairing,
 } from '../src/storage/pairingStorage';
 
 // ---------------------------------------------------------------------------
@@ -92,10 +92,11 @@ describe('pairingStorage', () => {
   });
 
   describe('deletePairing', () => {
-    it('removes the entry under the correct key', async () => {
+    it('removes the pairing entry under the correct key', async () => {
       mockRemoveItem.mockResolvedValue(undefined);
       await deletePairing('abc123');
       expect(mockRemoveItem).toHaveBeenCalledWith('pairing_abc123');
+      expect(mockRemoveItem).toHaveBeenCalledTimes(1);
     });
   });
 });

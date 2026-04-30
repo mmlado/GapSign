@@ -23,6 +23,10 @@ export default function KeycardMenuScreen({
       onPress: () => navigation.navigate('KeyPairMenu'),
     },
     {
+      label: 'Set card name',
+      onPress: () => navigation.navigate('SetCardName'),
+    },
+    {
       label: 'Secrets',
       onPress: () => navigation.navigate('SecretsMenu'),
     },

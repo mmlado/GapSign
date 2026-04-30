@@ -39,6 +39,7 @@ export type SecretType = 'pin' | 'puk' | 'pairing';
 export type RootStackParamList = {
   Dashboard: { toast?: string } | undefined;
   KeycardMenu: undefined;
+  SetCardName: undefined;
   InitCard: undefined;
   SecretsMenu: undefined;
   ChangeSecret: { secretType: SecretType };
@@ -84,6 +85,11 @@ export type InitCardScreenProps = NativeStackScreenProps<
 export type KeycardMenuScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'KeycardMenu'
+>;
+
+export type SetCardNameScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'SetCardName'
 >;
 
 export type QRScannerScreenProps = NativeStackScreenProps<
