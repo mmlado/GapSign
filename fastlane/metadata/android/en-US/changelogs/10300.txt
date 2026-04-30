@@ -1,0 +1,1 @@
+Read Keycard names during NFC sessions and add a Keycard menu action to set or clear the on-card name Self-hosted F-Droid repository at fdroid.gapsign.tech; published automatically on each tagged release via GitHub Actions
