@@ -1,0 +1,13 @@
+repo_name: "GapSign"
+repo_description: "Official GapSign release repository"
+repo_url: "https://fdroid.gapsign.tech/repo"
+repo_icon: icon.png
+repo_keyalias: repokey
+
+keystore: ./keystore.p12
+keystorepass: {env: FDROID_KEYSTORE_PASS}
+keypass: {env: FDROID_KEY_PASS}
+keydname: "CN=gapsign.tech, O=GapSign, C=RS"
+
+archive_older: 3
+allow_disabled_algorithms: false
