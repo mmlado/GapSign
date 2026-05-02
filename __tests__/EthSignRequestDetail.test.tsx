@@ -236,6 +236,25 @@ describe('EthSignRequestDetail — transaction type labels', () => {
   });
 });
 
+describe('EthSignRequestDetail — EIP-55 address display', () => {
+  it('checksums signer and transaction recipient addresses before display', () => {
+    renderDetail({
+      signData: legacyTxHex(),
+      dataType: 1,
+      derivationPath: "m/44'/60'/0'/0",
+      chainId: 1,
+      address: '0xabcdef1234567890abcdef1234567890abcdef12',
+    });
+
+    expect(
+      screen.getByText('0xabCDEF1234567890ABcDEF1234567890aBCDeF12'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('0xD3CDa913deb6F4967B2eF3Aa68F5a843da74c4Ef'),
+    ).toBeTruthy();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Zero value + decoded ERC-20 call hides native amount row
 // ---------------------------------------------------------------------------
@@ -298,6 +317,32 @@ describe('EthSignRequestDetail — amount row visibility', () => {
 });
 
 describe('EthSignRequestDetail — EIP-712 special renderers', () => {
+  it('shows message fields for generic EIP-712 typed data', () => {
+    renderDetail({
+      signData: typedDataHex({
+        types: {
+          EIP712Domain: [{ name: 'name', type: 'string' }],
+          Message: [{ name: 'contents', type: 'string' }],
+        },
+        primaryType: 'Message',
+        domain: { name: 'Example Dapp' },
+        message: {
+          contents: 'Approve login',
+          approved: true,
+        },
+      }),
+      dataType: 2,
+      derivationPath: "m/44'/60'/0'/0",
+      chainId: 1,
+    });
+
+    expect(screen.getByText('Message Fields')).toBeTruthy();
+    expect(screen.getByText('contents')).toBeTruthy();
+    expect(screen.getByText('Approve login')).toBeTruthy();
+    expect(screen.getByText('approved')).toBeTruthy();
+    expect(screen.getByText('true')).toBeTruthy();
+  });
+
   it('shows Permit allowance, spender, and deadline with token formatting', () => {
     renderDetail({
       signData: typedDataHex({
@@ -339,6 +384,9 @@ describe('EthSignRequestDetail — EIP-712 special renderers', () => {
     expect(screen.getByText('EIP-712 Permit')).toBeTruthy();
     expect(
       screen.getByText('0x1111111111111111111111111111111111111111'),
+    ).toBeTruthy();
+    expect(
+      screen.getByText('0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'),
     ).toBeTruthy();
     expect(screen.getByText('1 USDC')).toBeTruthy();
     expect(screen.getByText('1712345678')).toBeTruthy();

@@ -1,12 +1,15 @@
 import { useCallback, useLayoutEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Icons } from '../../assets/icons';
-import PrimaryButton from '../../components/PrimaryButton';
-import theme from '../../theme';
+
 import type { AddressDetailScreenProps } from '../../navigation/types';
+import theme from '../../theme';
+
+import { Icons } from '../../assets/icons';
+import AddressText from '../../components/AddressText';
+import PrimaryButton from '../../components/PrimaryButton';
 
 export default function AddressDetailScreen({
   route,
@@ -34,9 +37,7 @@ export default function AddressDetailScreen({
             backgroundColor="#ffffff"
           />
         </View>
-        <Text selectable style={styles.address}>
-          {address}
-        </Text>
+        <AddressText address={address} selectable style={styles.address} />
       </View>
       <PrimaryButton
         label="Copy Address"

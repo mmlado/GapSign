@@ -1,3 +1,4 @@
+import { HDKey } from '@scure/bip32';
 import {
   memo,
   useCallback,
@@ -14,16 +15,20 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Icons } from '../../assets/icons';
-import { HDKey } from '@scure/bip32';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAddresses } from '../../hooks/keycard/useAddresses';
-import { deriveAddresses } from '../../utils/hdAddress';
-import { pubKeyToEthAddress } from '../../utils/ethereumAddress';
-import { pubKeyToBtcAddress } from '../../utils/bitcoinAddress';
-import NFCBottomSheet from '../../components/NFCBottomSheet';
+
 import { AddressListScreenProps } from '../../navigation/types';
 import theme from '../../theme';
+
+import { Icons } from '../../assets/icons';
+import AddressText from '../../components/AddressText';
+import NFCBottomSheet from '../../components/NFCBottomSheet';
+
+import { useAddresses } from '../../hooks/keycard/useAddresses';
+
+import { pubKeyToBtcAddress } from '../../utils/bitcoinAddress';
+import { pubKeyToEthAddress } from '../../utils/ethereumAddress';
+import { deriveAddresses } from '../../utils/hdAddress';
 
 const BATCH = 20;
 const ADDR_FN = { eth: pubKeyToEthAddress, btc: pubKeyToBtcAddress };
@@ -37,7 +42,7 @@ type RowProps = {
 const AddressRow = memo(({ address, index, onNavigate }: RowProps) => (
   <Pressable style={styles.row} onPress={() => onNavigate(address, index)}>
     <Text style={styles.index}>{index}</Text>
-    <Text style={styles.address}>{address}</Text>
+    <AddressText address={address} style={styles.address} />
     <View style={styles.qrIcon}>
       <Icons.qr width={20} height={20} color={theme.colors.onSurfaceVariant} />
     </View>

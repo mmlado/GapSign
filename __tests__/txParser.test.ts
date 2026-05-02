@@ -6,7 +6,12 @@ import {
   parseAbiParameters,
 } from 'viem';
 
-import { decodeCalldata, getTxLabel, parseTx } from '../src/utils/txParser';
+import {
+  decodeCalldata,
+  getTxLabel,
+  parseTx,
+  validateEthTransactionSignData,
+} from '../src/utils/txParser';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -107,9 +112,7 @@ describe('parseTx', () => {
     it('parses to address', () => {
       const hex = buildLegacyTxHex();
       const tx = parseTx(hex, 1);
-      expect(tx?.to?.toLowerCase()).toBe(
-        '0xd3cda913deb6f4967b2ef3aa68f5a843da74c4ef',
-      );
+      expect(tx?.to).toBe('0xD3CDa913deb6F4967B2eF3Aa68F5a843da74c4Ef');
     });
 
     it('parses value as ETH string', () => {
@@ -127,15 +130,26 @@ describe('parseTx', () => {
         expect(tx.fees.gasLimit).toBe('21000');
       }
     });
+
+    it('handles contract creation and zero gas price', () => {
+      const hex = buildLegacyTxHex({
+        gasPrice: 0n,
+        to: '0x',
+      });
+      const tx = parseTx(hex, 1);
+      expect(tx?.to).toBeUndefined();
+      expect(tx?.fees.kind).toBe('legacy');
+      if (tx?.fees.kind === 'legacy') {
+        expect(tx.fees.gasPrice).toBe('0');
+      }
+    });
   });
 
   describe('EIP-2930 (dataType=1, 0x01 prefix)', () => {
     it('parses to address', () => {
       const hex = buildEIP2930TxHex();
       const tx = parseTx(hex, 1);
-      expect(tx?.to?.toLowerCase()).toBe(
-        '0xd3cda913deb6f4967b2ef3aa68f5a843da74c4ef',
-      );
+      expect(tx?.to).toBe('0xD3CDa913deb6F4967B2eF3Aa68F5a843da74c4Ef');
     });
 
     it('parses value as ETH string', () => {
@@ -186,6 +200,42 @@ describe('parseTx', () => {
 
   it('returns null for malformed hex', () => {
     expect(parseTx('zzzz', 1)).toBeNull();
+  });
+
+  it('returns null for incomplete legacy payloads', () => {
+    expect(parseTx(Buffer.from(RLP.encode([])).toString('hex'), 1)).toBeNull();
+  });
+
+  it('returns null when legacy fields are not byte values', () => {
+    const malformed = RLP.encode([
+      [], // nonce must be bytes
+      bigIntToMinBytes(1n),
+      bigIntToMinBytes(21000n),
+      hexToBytes('0x0000000000000000000000000000000000000001'),
+      bigIntToMinBytes(1n),
+      new Uint8Array(0),
+    ]);
+
+    expect(parseTx(Buffer.from(malformed).toString('hex'), 1)).toBeNull();
+  });
+
+  it('returns null for typed transaction payloads with wrong field counts', () => {
+    const eip1559 = Buffer.from(
+      new Uint8Array([0x02, ...RLP.encode([])]),
+    ).toString('hex');
+    const eip2930 = Buffer.from(
+      new Uint8Array([0x01, ...RLP.encode([])]),
+    ).toString('hex');
+
+    expect(parseTx(eip1559, 4)).toBeNull();
+    expect(parseTx(eip2930, 1)).toBeNull();
+  });
+
+  it('validates transaction sign data only for transaction data types', () => {
+    expect(() => validateEthTransactionSignData('deadbeef', 2)).not.toThrow();
+    expect(() => validateEthTransactionSignData('deadbeef', 1)).toThrow(
+      'Invalid Ethereum transaction payload',
+    );
   });
 
   describe('nativeCurrencySymbol param', () => {
@@ -502,6 +552,99 @@ describe('decodeCalldata', () => {
           rawInput: '0xdeadbeef',
         },
       ],
+    });
+  });
+
+  it('keeps unsupported Universal Router commands visible', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x0a', ['0x1234'], 1712345678n],
+    });
+
+    expect(decodeCalldata(data)).toMatchObject({
+      kind: 'universal-router-execute',
+      commands: [
+        {
+          command: '0x0a',
+          name: 'Permit2 Permit',
+          args: [],
+          rawInput: '0x1234',
+          error: 'Unsupported command input',
+        },
+      ],
+    });
+  });
+
+  it('keeps unknown Universal Router commands visible', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x1f', ['0x1234'], 1712345678n],
+    });
+
+    expect(decodeCalldata(data)).toMatchObject({
+      kind: 'universal-router-execute',
+      commands: [
+        {
+          command: '0x1f',
+          name: 'Unknown command 0x1f',
+          args: [],
+          rawInput: '0x1234',
+          error: 'Unknown command',
+        },
+      ],
+    });
+  });
+
+  it('shows Universal Router allow-revert flags', () => {
+    const input = encodeAbiParameters(
+      parseAbiParameters(
+        'address recipient, uint256 amountIn, uint256 amountOutMin, address[] path, bool payerIsUser',
+      ),
+      [
+        RECIPIENT,
+        1000000n,
+        990000n,
+        [
+          '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+          '0x6b175474e89094c44da98b954eedeac495271d0f',
+        ],
+        true,
+      ],
+    );
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x88', [input], 1712345678n],
+    });
+
+    expect(decodeCalldata(data)).toMatchObject({
+      kind: 'universal-router-execute',
+      commands: [{ command: '0x08', allowRevert: true }],
+    });
+  });
+
+  it('returns a Universal Router count mismatch error', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x0805', ['0x1234'], 1712345678n],
+    });
+
+    expect(decodeCalldata(data)).toEqual({
+      kind: 'universal-router-execute',
+      deadline: '1712345678',
+      commands: [],
+      error: 'Command count 2 does not match input count 1',
     });
   });
 

@@ -8,8 +8,10 @@ import {
   parseAbiParameters,
 } from 'viem';
 
-import { DATA_TYPE_LABELS } from '../types';
 import selectorsData from '../data/selectors.json';
+import { DATA_TYPE_LABELS } from '../types';
+
+import { checksumEthAddress } from './ethereumAddress';
 
 type SelectorArg = AbiParameter & { name: string };
 
@@ -362,7 +364,7 @@ function weiToGwei(wei: bigint): string {
 
 function toAddress(b: Uint8Array): string | undefined {
   if (b.length === 0) return undefined; // contract creation
-  return '0x' + Buffer.from(b).toString('hex');
+  return checksumEthAddress('0x' + Buffer.from(b).toString('hex'));
 }
 
 function isBytes(value: RlpValue | undefined): value is RlpBytes {

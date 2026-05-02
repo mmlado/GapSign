@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 - Add special review renderers for EIP-712 Permit, PermitSingle, SafeTx, and Uniswap Universal Router calls
+- Apply EIP-55 checksum formatting and shell-style address chunk coloring to displayed addresses
 - Bundle offline token logo assets for the no-INTERNET Android flavor while keeping remote token logos for network-enabled builds
 
 ## [1.4.0] - 2026-05-02

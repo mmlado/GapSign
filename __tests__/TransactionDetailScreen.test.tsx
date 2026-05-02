@@ -204,7 +204,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       request: fullRequest,
     });
     expect(
-      screen.getByText('0xabcdef1234567890abcdef1234567890abcdef12'),
+      screen.getByText('0xabCDEF1234567890ABcDEF1234567890aBCDeF12'),
     ).toBeTruthy();
     expect(screen.getByText('MetaMask')).toBeTruthy();
     expect(screen.getByText('01020304')).toBeTruthy();

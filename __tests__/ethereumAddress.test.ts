@@ -1,4 +1,7 @@
-import { pubKeyToEthAddress } from '../src/utils/ethereumAddress';
+import {
+  checksumEthAddress,
+  pubKeyToEthAddress,
+} from '../src/utils/ethereumAddress';
 
 // ---------------------------------------------------------------------------
 // Fixtures — secp256k1 generator point G (well-known, definitely on curve)
@@ -52,5 +55,17 @@ describe('pubKeyToEthAddress', () => {
 
   it('different keys produce different addresses', () => {
     expect(pubKeyToEthAddress(G)).not.toBe(pubKeyToEthAddress(G2));
+  });
+});
+
+describe('checksumEthAddress', () => {
+  it('applies EIP-55 checksum formatting to valid addresses', () => {
+    expect(
+      checksumEthAddress('0xabcdef1234567890abcdef1234567890abcdef12'),
+    ).toBe('0xabCDEF1234567890ABcDEF1234567890aBCDeF12');
+  });
+
+  it('returns the original value when the address is invalid', () => {
+    expect(checksumEthAddress('not-an-address')).toBe('not-an-address');
   });
 });
