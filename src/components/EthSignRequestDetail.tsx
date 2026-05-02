@@ -13,6 +13,7 @@ import {
   parseEip712Prehashed,
   parseEip712Summary,
 } from '../utils/eip712';
+import { checksumEthAddress } from '../utils/ethereumAddress';
 import { formatTokenAmount, lookupToken } from '../utils/tokenMetadata';
 import { getTxLabel, parseTx } from '../utils/txParser';
 
@@ -174,6 +175,9 @@ export default function EthSignRequestDetail({
       ? parseEip712Prehashed(request.signData)
       : null;
   const specialEip712 = eip712?.special;
+  const signer = request.address
+    ? checksumEthAddress(request.address)
+    : request.derivationPath;
 
   return (
     <>
@@ -185,10 +189,7 @@ export default function EthSignRequestDetail({
       </View>
 
       <View style={styles.row}>
-        <InfoRow
-          label="Signer"
-          value={request.address ?? request.derivationPath}
-        />
+        <InfoRow label="Signer" value={signer} />
       </View>
 
       {request.address && (

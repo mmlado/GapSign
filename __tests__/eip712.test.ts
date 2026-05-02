@@ -1,5 +1,9 @@
 import { parseEip712Prehashed, parseEip712Summary } from '../src/utils/eip712';
 
+function typedDataHex(payload: unknown): string {
+  return Buffer.from(JSON.stringify(payload), 'utf8').toString('hex');
+}
+
 describe('parseEip712Summary', () => {
   it('parses utf8 JSON typed data into domain and message summaries', () => {
     const signDataHex = Buffer.from(
@@ -66,6 +70,10 @@ describe('parseEip712Summary', () => {
 
   it('returns null for non-json data', () => {
     expect(parseEip712Summary('deadbeef')).toBeNull();
+  });
+
+  it('returns null for empty data', () => {
+    expect(parseEip712Summary('')).toBeNull();
   });
 
   it('returns null for JSON that is not an object', () => {
@@ -155,7 +163,7 @@ describe('parseEip712Summary', () => {
 
     expect(parseEip712Summary(signDataHex)?.special).toEqual({
       kind: 'permit',
-      tokenContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      tokenContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       chainId: 1,
       spender: '0x1111111111111111111111111111111111111111',
       amount: 1000000n,
@@ -208,7 +216,7 @@ describe('parseEip712Summary', () => {
 
     expect(parseEip712Summary(signDataHex)?.special).toEqual({
       kind: 'permit-single',
-      tokenContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      tokenContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       chainId: 1,
       spender: '0x1111111111111111111111111111111111111111',
       amount: 2n ** 160n - 1n,
@@ -264,13 +272,148 @@ describe('parseEip712Summary', () => {
       kind: 'safe-tx',
       safeAddress: '0x3333333333333333333333333333333333333333',
       chainId: 1,
-      to: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      to: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       operation: 'Call',
       nonce: '12',
       decodedCall: {
         kind: 'erc20-transfer',
         amount: 1000000n,
       },
+    });
+  });
+
+  it('does not treat incomplete Permit typed data as a special review', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [{ name: 'name', type: 'string' }],
+        Permit: [{ name: 'owner', type: 'address' }],
+      },
+      primaryType: 'Permit',
+      domain: {
+        name: 'Token',
+      },
+      message: {
+        owner: '0x2222222222222222222222222222222222222222',
+      },
+    };
+
+    expect(parseEip712Summary(typedDataHex(payload))).toMatchObject({
+      primaryType: 'Permit',
+      special: undefined,
+    });
+  });
+
+  it('flags max uint256 Permit approvals as unlimited', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        Permit: [
+          { name: 'owner', type: 'address' },
+          { name: 'spender', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      primaryType: 'Permit',
+      domain: {
+        chainId: 1,
+        verifyingContract: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+      },
+      message: {
+        owner: '0x2222222222222222222222222222222222222222',
+        spender: '0x1111111111111111111111111111111111111111',
+        value: (2n ** 256n - 1n).toString(),
+        nonce: '1',
+        deadline: 0,
+      },
+    };
+
+    expect(parseEip712Summary(typedDataHex(payload))?.special).toMatchObject({
+      kind: 'permit',
+      tokenContract: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+      unlimited: true,
+      deadline: '0',
+    });
+  });
+
+  it('does not treat incomplete PermitSingle typed data as a special review', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [{ name: 'name', type: 'string' }],
+        PermitSingle: [{ name: 'spender', type: 'address' }],
+      },
+      primaryType: 'PermitSingle',
+      domain: { name: 'Permit2' },
+      message: {
+        spender: '0x2222222222222222222222222222222222222222',
+      },
+    };
+
+    expect(parseEip712Summary(typedDataHex(payload))).toMatchObject({
+      primaryType: 'PermitSingle',
+      special: undefined,
+    });
+  });
+
+  it('detects SafeTx delegate calls and preserves fallback values', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        SafeTx: [
+          { name: 'to', type: 'address' },
+          { name: 'data', type: 'bytes' },
+          { name: 'operation', type: 'uint8' },
+          { name: 'gasToken', type: 'string' },
+          { name: 'refundReceiver', type: 'string' },
+        ],
+      },
+      primaryType: 'SafeTx',
+      domain: {
+        chainId: '1',
+        verifyingContract: '0x3333333333333333333333333333333333333333',
+      },
+      message: {
+        to: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+        data: '0x1234',
+        operation: 1,
+        gasToken: 'native',
+        refundReceiver: '',
+      },
+    };
+
+    expect(parseEip712Summary(typedDataHex(payload))?.special).toMatchObject({
+      kind: 'safe-tx',
+      to: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+      operation: 'Delegate call',
+      value: '0',
+      data: '0x1234',
+      gasToken: 'native',
+      refundReceiver: '',
+      nonce: '0',
+    });
+  });
+
+  it('does not treat SafeTx typed data without a target as a special review', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [{ name: 'chainId', type: 'uint256' }],
+        SafeTx: [{ name: 'nonce', type: 'uint256' }],
+      },
+      primaryType: 'SafeTx',
+      domain: { chainId: 1 },
+      message: { nonce: '1' },
+    };
+
+    expect(parseEip712Summary(typedDataHex(payload))).toMatchObject({
+      primaryType: 'SafeTx',
+      special: undefined,
     });
   });
 });

@@ -2,8 +2,10 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Icons } from '../../assets/icons';
 import theme from '../../theme';
+
+import { Icons } from '../../assets/icons';
+import AddressText from '../AddressText';
 
 const DONATION_ADDRESSES = [
   {
@@ -27,9 +29,7 @@ export default function DonationList({ onShowQR }: DonationListProps) {
         <View key={label} style={styles.row}>
           <View style={styles.text}>
             <Text style={styles.label}>{label}</Text>
-            <Text style={styles.address} selectable>
-              {address}
-            </Text>
+            <AddressText address={address} style={styles.address} selectable />
           </View>
           <View style={styles.actions}>
             <Pressable

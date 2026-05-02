@@ -1,5 +1,6 @@
 import { validateTypedData } from 'viem';
 
+import { checksumEthAddress } from './ethereumAddress';
 import { ensureHexPrefix } from './hex';
 import { decodeCalldata, type DecodedCall } from './txParser';
 
@@ -122,7 +123,9 @@ function toDisplayMap(value: unknown): Record<string, string> {
 
 function toAddress(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  return /^0x[0-9a-fA-F]{40}$/.test(value) ? value : undefined;
+  return /^0x[0-9a-fA-F]{40}$/.test(value)
+    ? checksumEthAddress(value)
+    : undefined;
 }
 
 function toHexBytes(value: unknown): string | undefined {
