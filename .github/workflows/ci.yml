@@ -27,8 +27,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Lint
         run: npm run lint
+
+      - name: Kotlin lint
+        working-directory: android
+        run: ./gradlew ktlintCheck
 
       - name: Run tests with coverage
         run: npm test -- --watchAll=false --coverage --coverageReporters=lcov --coverageReporters=text-summary

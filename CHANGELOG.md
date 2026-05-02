@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Replace ML Kit barcode scanner with ZXing; offline flavor no longer declares INTERNET or storage permissions
+
 ## [1.3.0] - 2026-04-30
 
 ### Added
