@@ -116,6 +116,163 @@ describe('parseEip712Summary', () => {
       verified: 'true',
     });
   });
+
+  it('detects EIP-2612 Permit typed data', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [
+          { name: 'name', type: 'string' },
+          { name: 'version', type: 'string' },
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        Permit: [
+          { name: 'owner', type: 'address' },
+          { name: 'spender', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'deadline', type: 'uint256' },
+        ],
+      },
+      primaryType: 'Permit',
+      domain: {
+        name: 'USD Coin',
+        version: '2',
+        chainId: 1,
+        verifyingContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      },
+      message: {
+        owner: '0x2222222222222222222222222222222222222222',
+        spender: '0x1111111111111111111111111111111111111111',
+        value: '1000000',
+        nonce: '7',
+        deadline: '1712345678',
+      },
+    };
+    const signDataHex = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'hex',
+    );
+
+    expect(parseEip712Summary(signDataHex)?.special).toEqual({
+      kind: 'permit',
+      tokenContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      chainId: 1,
+      spender: '0x1111111111111111111111111111111111111111',
+      amount: 1000000n,
+      deadline: '1712345678',
+      unlimited: false,
+    });
+  });
+
+  it('detects PermitSingle typed data and flags max uint160 as unlimited', () => {
+    const maxUint160 = (2n ** 160n - 1n).toString();
+    const payload = {
+      types: {
+        EIP712Domain: [
+          { name: 'name', type: 'string' },
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        PermitSingle: [
+          { name: 'details', type: 'PermitDetails' },
+          { name: 'spender', type: 'address' },
+          { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: [
+          { name: 'token', type: 'address' },
+          { name: 'amount', type: 'uint160' },
+          { name: 'expiration', type: 'uint48' },
+          { name: 'nonce', type: 'uint48' },
+        ],
+      },
+      primaryType: 'PermitSingle',
+      domain: {
+        name: 'Permit2',
+        chainId: 1,
+        verifyingContract: '0x000000000022d473030f116ddee9f6b43ac78ba3',
+      },
+      message: {
+        details: {
+          token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+          amount: maxUint160,
+          expiration: '1712345000',
+          nonce: '1',
+        },
+        spender: '0x1111111111111111111111111111111111111111',
+        sigDeadline: '1712345678',
+      },
+    };
+    const signDataHex = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'hex',
+    );
+
+    expect(parseEip712Summary(signDataHex)?.special).toEqual({
+      kind: 'permit-single',
+      tokenContract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      chainId: 1,
+      spender: '0x1111111111111111111111111111111111111111',
+      amount: 2n ** 160n - 1n,
+      deadline: '1712345678',
+      expiration: '1712345000',
+      unlimited: true,
+    });
+  });
+
+  it('detects SafeTx typed data and decodes embedded calldata', () => {
+    const payload = {
+      types: {
+        EIP712Domain: [
+          { name: 'chainId', type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        SafeTx: [
+          { name: 'to', type: 'address' },
+          { name: 'value', type: 'uint256' },
+          { name: 'data', type: 'bytes' },
+          { name: 'operation', type: 'uint8' },
+          { name: 'safeTxGas', type: 'uint256' },
+          { name: 'baseGas', type: 'uint256' },
+          { name: 'gasPrice', type: 'uint256' },
+          { name: 'gasToken', type: 'address' },
+          { name: 'refundReceiver', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+        ],
+      },
+      primaryType: 'SafeTx',
+      domain: {
+        chainId: 1,
+        verifyingContract: '0x3333333333333333333333333333333333333333',
+      },
+      message: {
+        to: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+        value: '0',
+        data: '0xa9059cbb000000000000000000000000d8da6bf26964af9d7eed9e03e53415d37aa9604500000000000000000000000000000000000000000000000000000000000f4240',
+        operation: 0,
+        safeTxGas: '100000',
+        baseGas: '21000',
+        gasPrice: '0',
+        gasToken: '0x0000000000000000000000000000000000000000',
+        refundReceiver: '0x0000000000000000000000000000000000000000',
+        nonce: '12',
+      },
+    };
+    const signDataHex = Buffer.from(JSON.stringify(payload), 'utf8').toString(
+      'hex',
+    );
+
+    expect(parseEip712Summary(signDataHex)?.special).toMatchObject({
+      kind: 'safe-tx',
+      safeAddress: '0x3333333333333333333333333333333333333333',
+      chainId: 1,
+      to: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+      operation: 'Call',
+      nonce: '12',
+      decodedCall: {
+        kind: 'erc20-transfer',
+        amount: 1000000n,
+      },
+    });
+  });
 });
 
 describe('parseEip712Prehashed', () => {

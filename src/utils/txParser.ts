@@ -1,9 +1,11 @@
+/* eslint-disable no-bitwise */
 import { RLP } from '@ethereumjs/rlp';
 import {
   decodeAbiParameters,
   formatEther,
   formatGwei,
   type AbiParameter,
+  parseAbiParameters,
 } from 'viem';
 
 import { DATA_TYPE_LABELS } from '../types';
@@ -29,10 +31,26 @@ export type DecodedCallArg = {
   value: string;
 };
 
+export type UniversalRouterCommand = {
+  index: number;
+  command: string;
+  name: string;
+  allowRevert: boolean;
+  args: DecodedCallArg[];
+  rawInput?: string;
+  error?: string;
+};
+
 export type DecodedCall =
   | { kind: 'erc20-transfer'; to: string; amount: bigint }
   | { kind: 'erc20-transferFrom'; from: string; to: string; amount: bigint }
   | { kind: 'erc20-approve'; spender: string; amount: bigint }
+  | {
+      kind: 'universal-router-execute';
+      deadline?: string;
+      commands: UniversalRouterCommand[];
+      error?: string;
+    }
   | {
       kind: 'contract-call';
       selector: string;
@@ -46,6 +64,87 @@ export type DecodedCall =
 
 const selectors = (selectorsData as SelectorsData).selectors;
 
+const UNIVERSAL_ROUTER_COMMAND_MASK = 0x1f;
+const UNIVERSAL_ROUTER_ALLOW_REVERT = 0x80;
+
+const UNIVERSAL_ROUTER_COMMANDS: Record<
+  number,
+  { name: string; params?: string }
+> = {
+  0x00: {
+    name: 'V3 Swap Exact In',
+    params:
+      'address recipient, uint256 amountIn, uint256 amountOutMin, bytes path, bool payerIsUser',
+  },
+  0x01: {
+    name: 'V3 Swap Exact Out',
+    params:
+      'address recipient, uint256 amountOut, uint256 amountInMax, bytes path, bool payerIsUser',
+  },
+  0x02: {
+    name: 'Permit2 Transfer From',
+    params: 'address token, address recipient, uint160 amount',
+  },
+  0x03: {
+    name: 'Permit2 Permit Batch',
+  },
+  0x04: {
+    name: 'Sweep',
+    params: 'address token, address recipient, uint256 amountMin',
+  },
+  0x05: {
+    name: 'Transfer',
+    params: 'address token, address recipient, uint256 value',
+  },
+  0x06: {
+    name: 'Pay Portion',
+    params: 'address token, address recipient, uint256 bips',
+  },
+  0x08: {
+    name: 'V2 Swap Exact In',
+    params:
+      'address recipient, uint256 amountIn, uint256 amountOutMin, address[] path, bool payerIsUser',
+  },
+  0x09: {
+    name: 'V2 Swap Exact Out',
+    params:
+      'address recipient, uint256 amountOut, uint256 amountInMax, address[] path, bool payerIsUser',
+  },
+  0x0a: {
+    name: 'Permit2 Permit',
+  },
+  0x0b: {
+    name: 'Wrap ETH',
+    params: 'address recipient, uint256 amountMin',
+  },
+  0x0c: {
+    name: 'Unwrap WETH',
+    params: 'address recipient, uint256 amountMin',
+  },
+  0x0d: {
+    name: 'Permit2 Transfer From Batch',
+  },
+  0x0e: {
+    name: 'Balance Check ERC-20',
+    params: 'address owner, address token, uint256 minBalance',
+  },
+  0x10: {
+    name: 'V4 Swap',
+  },
+  0x11: {
+    name: 'V3 Position Manager Permit',
+  },
+  0x12: {
+    name: 'V3 Position Manager Call',
+  },
+  0x13: {
+    name: 'V4 Initialize Pool',
+  },
+  0x14: {
+    name: 'V4 Position Manager Call',
+  },
+};
+
 function formatDecodedValue(value: unknown): string {
   if (typeof value === 'bigint') return value.toString();
   if (typeof value === 'string') return value;
@@ -56,10 +155,93 @@ function formatDecodedValue(value: unknown): string {
   );
 }
 
+function formatCommandByte(command: number): string {
+  return `0x${command.toString(16).padStart(2, '0')}`;
+}
+
+function decodeUniversalRouterCommand(
+  input: string,
+  commandByte: number,
+  index: number,
+): UniversalRouterCommand {
+  const command = commandByte & UNIVERSAL_ROUTER_COMMAND_MASK;
+  const definition = UNIVERSAL_ROUTER_COMMANDS[command];
+  const name =
+    definition?.name ?? `Unknown command ${formatCommandByte(command)}`;
+  const base = {
+    index,
+    command: formatCommandByte(command),
+    name,
+    allowRevert: (commandByte & UNIVERSAL_ROUTER_ALLOW_REVERT) !== 0,
+  };
+
+  if (!definition?.params) {
+    return {
+      ...base,
+      args: [],
+      rawInput: input,
+      error: definition ? 'Unsupported command input' : 'Unknown command',
+    };
+  }
+
+  try {
+    const params = parseAbiParameters(definition.params);
+    const decodedArgs = decodeAbiParameters(params, input as `0x${string}`);
+    return {
+      ...base,
+      args: params.map((arg, argIndex) => ({
+        name: arg.name || `arg${argIndex}`,
+        type: arg.type,
+        value: formatDecodedValue(decodedArgs[argIndex]),
+      })),
+    };
+  } catch {
+    return {
+      ...base,
+      args: [],
+      rawInput: input,
+      error: 'Could not decode command input',
+    };
+  }
+}
+
+function decodeUniversalRouterExecute(
+  decodedArgs: readonly unknown[],
+): DecodedCall | null {
+  const commandsHex = decodedArgs[0];
+  const inputs = decodedArgs[1];
+  const deadline = decodedArgs[2];
+
+  if (typeof commandsHex !== 'string' || !Array.isArray(inputs)) {
+    return null;
+  }
+
+  const commands = Buffer.from(commandsHex.replace(/^0x/, ''), 'hex');
+  if (commands.length !== inputs.length) {
+    return {
+      kind: 'universal-router-execute',
+      deadline: typeof deadline === 'bigint' ? deadline.toString() : undefined,
+      commands: [],
+      error: `Command count ${commands.length} does not match input count ${inputs.length}`,
+    };
+  }
+
+  return {
+    kind: 'universal-router-execute',
+    deadline: typeof deadline === 'bigint' ? deadline.toString() : undefined,
+    commands: Array.from(commands).map((command, index) =>
+      decodeUniversalRouterCommand(String(inputs[index]), command, index),
+    ),
+  };
+}
+
 function toSpecializedDecodedCall(
   entry: SelectorEntry,
   decodedArgs: readonly unknown[],
 ): DecodedCall | null {
+  if (entry.signature === 'execute(bytes,bytes[],uint256)') {
+    return decodeUniversalRouterExecute(decodedArgs);
+  }
   if (entry.signature === 'transfer(address,uint256)') {
     return {
       kind: 'erc20-transfer',

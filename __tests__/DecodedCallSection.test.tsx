@@ -188,6 +188,68 @@ describe('DecodedCallSection', () => {
     });
   });
 
+  describe('universal-router-execute', () => {
+    it('lists Universal Router subcommands with decoded parameters', () => {
+      const call: DecodedCall = {
+        kind: 'universal-router-execute',
+        deadline: '1712345678',
+        commands: [
+          {
+            index: 0,
+            command: '0x08',
+            name: 'V2 Swap Exact In',
+            allowRevert: false,
+            args: [
+              { name: 'recipient', type: 'address', value: ADDR_A },
+              { name: 'amountIn', type: 'uint256', value: '1000000' },
+            ],
+          },
+          {
+            index: 1,
+            command: '0x05',
+            name: 'Transfer',
+            allowRevert: true,
+            args: [{ name: 'value', type: 'uint256', value: '500' }],
+          },
+        ],
+      };
+      render(<DecodedCallSection call={call} />);
+
+      expect(screen.getByText('Uniswap Universal Router')).toBeTruthy();
+      expect(screen.getByText('Deadline: 1712345678')).toBeTruthy();
+      expect(screen.getByText('Command 1: V2 Swap Exact In')).toBeTruthy();
+      expect(screen.getByText(`recipient (address): ${ADDR_A}`)).toBeTruthy();
+      expect(screen.getByText('amountIn (uint256): 1000000')).toBeTruthy();
+      expect(
+        screen.getByText('Command 2: Transfer (allow revert)'),
+      ).toBeTruthy();
+      expect(screen.getByText('value (uint256): 500')).toBeTruthy();
+    });
+
+    it('shows Universal Router decode errors without dropping raw input', () => {
+      const call: DecodedCall = {
+        kind: 'universal-router-execute',
+        commands: [
+          {
+            index: 0,
+            command: '0x08',
+            name: 'V2 Swap Exact In',
+            allowRevert: false,
+            args: [],
+            error: 'Could not decode command input',
+            rawInput: '0xdeadbeef',
+          },
+        ],
+      };
+      render(<DecodedCallSection call={call} />);
+
+      expect(
+        screen.getByText('Decode: Could not decode command input'),
+      ).toBeTruthy();
+      expect(screen.getByText('Input: 0xdeadbeef')).toBeTruthy();
+    });
+  });
+
   describe('with token metadata (chainId + known contract)', () => {
     it('shows symbol and formatted amount for a known ERC-20 transfer', () => {
       const call: DecodedCall = {
