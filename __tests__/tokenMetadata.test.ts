@@ -41,7 +41,49 @@ describe('lookupToken', () => {
 
   it('includes logoURI when present', () => {
     const token = lookupToken(MAINNET, USDC_ADDRESS);
-    expect(token!.logoURI).toMatch(/^https:\/\//);
+    expect(token!.logoURI).toMatch(/^(https?:\/\/|asset:\/)/);
+  });
+});
+
+describe('lookupToken logo source', () => {
+  afterEach(() => {
+    jest.resetModules();
+    jest.dontMock('../src/data/token-logos-index.json');
+    jest.dontMock('../src/utils/buildConfig');
+  });
+
+  it('uses bundled asset URIs when INTERNET is disabled and a local logo exists', () => {
+    jest.doMock('../src/utils/buildConfig', () => ({
+      INTERNET_ENABLED: false,
+    }));
+    jest.doMock('../src/data/token-logos-index.json', () => ({
+      [`${MAINNET}:${USDC_ADDRESS}`]: 'png',
+    }));
+
+    jest.isolateModules(() => {
+      const { lookupToken: lookupWithLocalLogo } =
+        require('../src/utils/tokenMetadata') as typeof import('../src/utils/tokenMetadata');
+
+      expect(lookupWithLocalLogo(MAINNET, USDC_ADDRESS)!.logoURI).toBe(
+        `asset:/token-logos/${MAINNET}-${USDC_ADDRESS}.png`,
+      );
+    });
+  });
+
+  it('keeps remote logo URIs when INTERNET is enabled', () => {
+    jest.doMock('../src/utils/buildConfig', () => ({ INTERNET_ENABLED: true }));
+    jest.doMock('../src/data/token-logos-index.json', () => ({
+      [`${MAINNET}:${USDC_ADDRESS}`]: 'png',
+    }));
+
+    jest.isolateModules(() => {
+      const { lookupToken: lookupWithRemoteLogo } =
+        require('../src/utils/tokenMetadata') as typeof import('../src/utils/tokenMetadata');
+
+      expect(lookupWithRemoteLogo(MAINNET, USDC_ADDRESS)!.logoURI).toMatch(
+        /^https:\/\//,
+      );
+    });
   });
 });
 

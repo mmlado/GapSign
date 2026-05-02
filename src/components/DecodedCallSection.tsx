@@ -2,7 +2,9 @@ import { Image, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 
 import theme from '../theme';
+
 import InfoRow from './InfoRow';
+
 import { INTERNET_ENABLED } from '../utils/buildConfig';
 import type { DecodedCall } from '../utils/txParser';
 import { formatTokenAmount, lookupToken } from '../utils/tokenMetadata';
@@ -11,8 +13,10 @@ import type { TokenMetadata } from '../utils/tokenMetadata';
 const UINT256_MAX = 2n ** 256n - 1n;
 
 function TokenLogo({ uri }: { uri: string }) {
-  if (!INTERNET_ENABLED) return null; /* istanbul ignore next */
-  return <Image source={{ uri }} style={styles.tokenLogo} />;
+  if (!INTERNET_ENABLED && !uri.startsWith('asset:/')) return null;
+  return (
+    <Image source={{ uri }} style={styles.tokenLogo} testID="token-logo" />
+  );
 }
 
 function formatAmount(amount: bigint, token: TokenMetadata | null): string {

@@ -56,6 +56,9 @@ jobs:
       - name: Regenerate contributors from git history
         run: node scripts/generate-contributors.js
 
+      - name: Download token logos
+        run: node scripts/generate-logos.js
+
       - name: Install NDK
         run: echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "ndk;27.1.12297006"
 
