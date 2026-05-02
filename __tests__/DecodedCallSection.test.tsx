@@ -1,7 +1,8 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react-native';
+import React from 'react';
 
 import DecodedCallSection from '../src/components/DecodedCallSection';
+
 import type { DecodedCall } from '../src/utils/txParser';
 
 jest.mock('react-native-paper', () => {
@@ -24,12 +25,21 @@ jest.mock('../src/components/InfoRow', () => {
   );
 });
 
+jest.mock('../src/utils/buildConfig', () => ({
+  INTERNET_ENABLED: false,
+}));
+
+jest.mock('../src/data/token-logos-index.json', () => ({
+  '1:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'png',
+}));
+
 const ADDR_A = '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 const ADDR_B = '0xBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 const UINT256_MAX = 2n ** 256n - 1n;
 
 // Real addresses from the bundled token list
 const USDC_ADDRESS = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48';
+const DAI_ADDRESS = '0x6b175474e89094c44da98b954eedeac495271d0f';
 const MAINNET = 1;
 
 describe('DecodedCallSection', () => {
@@ -194,6 +204,40 @@ describe('DecodedCallSection', () => {
       );
       expect(screen.getByText('USDC')).toBeTruthy();
       expect(screen.getByText('Amount: 1 USDC')).toBeTruthy();
+    });
+
+    it('renders bundled token logos when INTERNET is disabled', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transfer',
+        to: ADDR_A,
+        amount: 1_000_000n,
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={USDC_ADDRESS}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.getByTestId('token-logo').props.source).toEqual({
+        uri: `asset:/token-logos/${MAINNET}-${USDC_ADDRESS}.png`,
+      });
+    });
+
+    it('omits remote token logos when INTERNET is disabled', () => {
+      const call: DecodedCall = {
+        kind: 'erc20-transfer',
+        to: ADDR_A,
+        amount: 1_000_000_000_000_000_000n,
+      };
+      render(
+        <DecodedCallSection
+          call={call}
+          tokenContract={DAI_ADDRESS}
+          chainId={MAINNET}
+        />,
+      );
+      expect(screen.queryByTestId('token-logo')).toBeNull();
     });
 
     it('shows "Unlimited USDC" for max uint256 approve', () => {

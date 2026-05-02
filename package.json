@@ -15,6 +15,8 @@
     "generate:selectors": "node scripts/generate-selectors.js",
     "generate:tokens": "node scripts/generate-tokens.js",
     "generate:chains": "node scripts/generate-chains.js",
+    "generate:logos": "node scripts/generate-logos.js",
+    "generate:logos:clean": "node scripts/generate-logos.js --clean",
     "generate": "npm run generate:tokens && npm run generate:chains && npm run generate:abi && npm run generate:selectors"
   },
   "dependencies": {
