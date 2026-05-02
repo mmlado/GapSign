@@ -1,0 +1,1 @@
+Replace ML Kit barcode scanner with ZXing; offline flavor no longer declares INTERNET or storage permissions
