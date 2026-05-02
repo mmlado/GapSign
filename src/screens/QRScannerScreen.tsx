@@ -12,15 +12,16 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text, Button, ActivityIndicator, Icon } from 'react-native-paper';
-import { Camera } from 'react-native-camera-kit';
-import type { OnReadCodeData } from 'react-native-camera-kit/src/CameraProps';
 import { URDecoder } from '@ngraveio/bc-ur';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
-import theme from '../theme';
-import { handleUR } from '../utils/ur';
+import { Text, Button, ActivityIndicator, Icon } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import type { QRScannerScreenProps } from '../navigation/types';
+import theme from '../theme';
+
+import { Camera, type ReadCodeEvent } from '../components/Camera';
+import { handleUR } from '../utils/ur';
 
 export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   const insets = useSafeAreaInsets();
@@ -57,7 +58,7 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   );
 
   const onCodeScanned = useCallback(
-    (event: OnReadCodeData) => {
+    (event: ReadCodeEvent) => {
       if (scannedRef.current) {
         return;
       }
@@ -139,12 +140,7 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   return (
     <View style={styles.fullscreen}>
       {isFocused && (
-        <Camera
-          style={StyleSheet.absoluteFill}
-          scanBarcode
-          onReadCode={onCodeScanned}
-          showFrame={false}
-        />
+        <Camera style={StyleSheet.absoluteFill} onReadCode={onCodeScanned} />
       )}
 
       <View style={styles.viewfinderContainer}>

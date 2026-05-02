@@ -27,7 +27,7 @@ jest.mock('react-native-paper', () => {
 // Capture the Camera's onReadCode so tests can trigger scan events.
 let capturedOnReadCode: ((event: any) => void) | null = null;
 
-jest.mock('react-native-camera-kit', () => ({
+jest.mock('../src/components/Camera', () => ({
   Camera: (props: any) => {
     capturedOnReadCode = props.onReadCode;
     return null;

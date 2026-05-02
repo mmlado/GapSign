@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "org.jlleitschuh.gradle.ktlint"
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -168,4 +169,14 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // ZXing barcode scanner — Apache 2.0, zero network dependencies
+    implementation("com.google.zxing:core:3.5.3")
+
+    // CameraX (previously transitive via react-native-camera-kit, now declared explicitly)
+    def camerax_version = "1.4.1"
+    implementation("androidx.camera:camera-core:${camerax_version}")
+    implementation("androidx.camera:camera-camera2:${camerax_version}")
+    implementation("androidx.camera:camera-lifecycle:${camerax_version}")
+    implementation("androidx.camera:camera-view:${camerax_version}")
 }
