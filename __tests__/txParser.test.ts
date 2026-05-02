@@ -1,5 +1,10 @@
 import { RLP } from '@ethereumjs/rlp';
-import { encodeFunctionData, parseAbi } from 'viem';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+  parseAbi,
+  parseAbiParameters,
+} from 'viem';
 
 import { decodeCalldata, getTxLabel, parseTx } from '../src/utils/txParser';
 
@@ -413,6 +418,91 @@ describe('decodeCalldata', () => {
   it('returns null for empty calldata', () => {
     expect(decodeCalldata('0x')).toBeNull();
     expect(decodeCalldata('')).toBeNull();
+  });
+
+  it('decodes Uniswap Universal Router execute commands individually', () => {
+    const swapInput = encodeAbiParameters(
+      parseAbiParameters(
+        'address recipient, uint256 amountIn, uint256 amountOutMin, address[] path, bool payerIsUser',
+      ),
+      [
+        RECIPIENT,
+        1000000n,
+        990000n,
+        [
+          '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+          '0x6b175474e89094c44da98b954eedeac495271d0f',
+        ],
+        true,
+      ],
+    );
+    const transferInput = encodeAbiParameters(
+      parseAbiParameters('address token, address recipient, uint256 value'),
+      ['0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', RECIPIENT, 1000000n],
+    );
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x0805', [swapInput, transferInput], 1712345678n],
+    });
+
+    const result = decodeCalldata(data);
+    expect(result).toMatchObject({
+      kind: 'universal-router-execute',
+      deadline: '1712345678',
+      commands: [
+        {
+          index: 0,
+          command: '0x08',
+          name: 'V2 Swap Exact In',
+          allowRevert: false,
+          args: expect.arrayContaining([
+            { name: 'recipient', type: 'address', value: RECIPIENT },
+            { name: 'amountIn', type: 'uint256', value: '1000000' },
+            { name: 'amountOutMin', type: 'uint256', value: '990000' },
+            { name: 'payerIsUser', type: 'bool', value: 'true' },
+          ]),
+        },
+        {
+          index: 1,
+          command: '0x05',
+          name: 'Transfer',
+          allowRevert: false,
+          args: expect.arrayContaining([
+            {
+              name: 'token',
+              type: 'address',
+              value: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+            },
+            { name: 'recipient', type: 'address', value: RECIPIENT },
+            { name: 'value', type: 'uint256', value: '1000000' },
+          ]),
+        },
+      ],
+    });
+  });
+
+  it('keeps malformed Universal Router command inputs visible', () => {
+    const data = encodeFunctionData({
+      abi: parseAbi([
+        'function execute(bytes commands, bytes[] inputs, uint256 deadline)',
+      ]),
+      functionName: 'execute',
+      args: ['0x08', ['0xdeadbeef'], 1712345678n],
+    });
+
+    expect(decodeCalldata(data)).toMatchObject({
+      kind: 'universal-router-execute',
+      commands: [
+        {
+          name: 'V2 Swap Exact In',
+          error: 'Could not decode command input',
+          rawInput: '0xdeadbeef',
+        },
+      ],
+    });
   });
 
   it('parseTx includes decodedCall for ERC-20 transfer in legacy tx', () => {
