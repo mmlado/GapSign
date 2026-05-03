@@ -30,7 +30,7 @@ export function useSetCardName() {
             );
           }
         },
-        { requiresPin: true },
+        { requiresPin: true, requiresMasterKey: false },
       );
     },
     [keycard],

@@ -19,7 +19,7 @@ export function useLoadKey() {
           const response = await cmdSet.loadBIP32KeyPair(keyPair);
           response.checkOK();
         },
-        { requiresPin: true },
+        { requiresPin: true, requiresMasterKey: false },
       );
     },
     [keycard],

@@ -234,7 +234,7 @@ describe('useKeycardOperation', () => {
         instanceUID: new Uint8Array([0xaa, 0xbb]),
         initializedCard: true,
         freePairingSlots: 5,
-        hasMasterKey: () => false,
+        hasMasterKey: () => true,
       },
       select: jest.fn().mockResolvedValue({ sw: 0x9000 }),
       identifyCard: jest.fn(),
@@ -393,6 +393,55 @@ describe('useKeycardOperation', () => {
       });
       expect(result.current.phase).toBe('idle');
       expect(result.current.result).toBeNull();
+    });
+
+    it('enters error phase with friendly message when card has no master key', async () => {
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        applicationInfo: {
+          instanceUID: new Uint8Array([0xaa, 0xbb]),
+          initializedCard: true,
+          freePairingSlots: 5,
+          hasMasterKey: () => false,
+        },
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+        });
+      });
+      await triggerCardConnect(result.current);
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'This card has no master key. Generate or import a key first.',
+      );
+    });
+
+    it('skips master key check when requiresMasterKey is false', async () => {
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        applicationInfo: {
+          instanceUID: new Uint8Array([0xaa, 0xbb]),
+          initializedCard: true,
+          freePairingSlots: 5,
+          hasMasterKey: () => false,
+        },
+      }));
+
+      const mockOp = jest.fn().mockResolvedValue('ok');
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(mockOp, {
+          requiresPin: false,
+          requiresMasterKey: false,
+        });
+      });
+      await triggerCardConnect(result.current);
+      expect(mockOp).toHaveBeenCalledTimes(1);
     });
   });
 });
