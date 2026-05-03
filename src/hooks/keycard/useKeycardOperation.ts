@@ -31,6 +31,7 @@ export type KeycardOperationFn<T> = (
 
 export interface ExecuteOptions {
   requiresPin?: boolean;
+  requiresMasterKey?: boolean;
 }
 
 export interface UseKeycardOperation<T> {
@@ -57,6 +58,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
   const requiresPinRef = useRef(true);
+  const requiresMasterKeyRef = useRef(true);
   const operationRunningRef = useRef(false);
   const approvedNonGenuineUidsRef = useRef<Set<string>>(new Set());
   const pendingUidRef = useRef<string | null>(null);
@@ -138,6 +140,12 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
           }, hasMasterKey: ${appInfo.hasMasterKey()}`,
       );
 
+      if (requiresMasterKeyRef.current && !appInfo.hasMasterKey()) {
+        throw new Error(
+          'This card has no master key. Generate or import a key first.',
+        );
+      }
+
       const dataResp = await cmdSet.getData(0x00);
       if (dataResp.sw !== 0x9000) {
         throw new Error(
@@ -187,6 +195,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     (op: KeycardOperationFn<T>, options: ExecuteOptions = {}) => {
       operationRef.current = op;
       requiresPinRef.current = options.requiresPin ?? true;
+      requiresMasterKeyRef.current = options.requiresMasterKey ?? true;
       operationRunningRef.current = false;
 
       if (!requiresPinRef.current) {

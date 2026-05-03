@@ -20,7 +20,7 @@ export function useGenerateKey(size: 12 | 24) {
         mnemonic.setWordlist(wordlist);
         return mnemonic.getWords();
       },
-      { requiresPin: false },
+      { requiresPin: false, requiresMasterKey: false },
     );
   }, [keycard, size]);
 

@@ -7,10 +7,16 @@ import { useSetCardName } from '../src/hooks/keycard/useSetCardName';
 type OperationFn = (cmdSet: any, helpers: any) => Promise<void>;
 
 let capturedOperation: OperationFn | null = null;
-let capturedOptions: { requiresPin?: boolean } | null = null;
+let capturedOptions: {
+  requiresPin?: boolean;
+  requiresMasterKey?: boolean;
+} | null = null;
 
 const mockExecute = jest.fn(
-  (fn: OperationFn, opts: { requiresPin?: boolean }) => {
+  (
+    fn: OperationFn,
+    opts: { requiresPin?: boolean; requiresMasterKey?: boolean },
+  ) => {
     capturedOperation = fn;
     capturedOptions = opts;
   },
@@ -42,7 +48,10 @@ describe('useSetCardName', () => {
       result.current.start('Vault');
     });
 
-    expect(capturedOptions).toEqual({ requiresPin: true });
+    expect(capturedOptions).toEqual({
+      requiresPin: true,
+      requiresMasterKey: false,
+    });
 
     const storeData = jest.fn().mockResolvedValue({ sw: 0x9000 });
     const getData = jest.fn().mockResolvedValue({

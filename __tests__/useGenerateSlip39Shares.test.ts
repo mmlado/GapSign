@@ -5,10 +5,16 @@ import { useGenerateSlip39Shares } from '../src/hooks/keycard/useGenerateSlip39S
 type OperationFn = (cmdSet: any, helpers: any) => Promise<Uint8Array>;
 
 let capturedOperation: OperationFn | null = null;
-let capturedOptions: { requiresPin?: boolean } | null = null;
+let capturedOptions: {
+  requiresPin?: boolean;
+  requiresMasterKey?: boolean;
+} | null = null;
 
 const mockExecute = jest.fn(
-  (fn: OperationFn, opts: { requiresPin?: boolean }) => {
+  (
+    fn: OperationFn,
+    opts: { requiresPin?: boolean; requiresMasterKey?: boolean },
+  ) => {
     capturedOperation = fn;
     capturedOptions = opts;
   },
@@ -40,7 +46,10 @@ describe('useGenerateSlip39Shares', () => {
     });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
-    expect(capturedOptions).toEqual({ requiresPin: false });
+    expect(capturedOptions).toEqual({
+      requiresPin: false,
+      requiresMasterKey: false,
+    });
 
     const entropy = new Uint8Array([1, 2, 3]);
     const checkOK = jest.fn();

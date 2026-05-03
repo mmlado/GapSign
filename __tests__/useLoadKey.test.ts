@@ -11,10 +11,16 @@ const mockFromBinarySeed = jest.fn().mockReturnValue({ type: 'keypair' });
 type OperationFn = (cmdSet: any) => Promise<void>;
 
 let capturedOperation: OperationFn | null = null;
-let capturedOptions: { requiresPin?: boolean } | null = null;
+let capturedOptions: {
+  requiresPin?: boolean;
+  requiresMasterKey?: boolean;
+} | null = null;
 
 const mockExecute = jest.fn(
-  (fn: OperationFn, opts: { requiresPin?: boolean }) => {
+  (
+    fn: OperationFn,
+    opts: { requiresPin?: boolean; requiresMasterKey?: boolean },
+  ) => {
     capturedOperation = fn;
     capturedOptions = opts;
   },
@@ -106,7 +112,10 @@ describe('useLoadKey', () => {
     });
 
     expect(mockExecute).toHaveBeenCalledTimes(1);
-    expect(capturedOptions).toEqual({ requiresPin: true });
+    expect(capturedOptions).toEqual({
+      requiresPin: true,
+      requiresMasterKey: false,
+    });
   });
 
   it('loads the prepared BIP32 keypair onto an empty card', async () => {

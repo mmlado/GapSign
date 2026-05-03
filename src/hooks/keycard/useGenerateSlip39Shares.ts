@@ -21,7 +21,7 @@ export function useGenerateSlip39Shares(shareCount: number, threshold: number) {
         response.checkOK();
         return response.data;
       },
-      { requiresPin: false },
+      { requiresPin: false, requiresMasterKey: false },
     );
   }, [keycard, shareCount, threshold]);
 
