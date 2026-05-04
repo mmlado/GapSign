@@ -28,6 +28,7 @@ import PrimaryButton from '../../components/PrimaryButton';
 
 import { useGenerateSlip39Shares } from '../../hooks/keycard/useGenerateSlip39Shares';
 import { useLoadKey } from '../../hooks/keycard/useLoadKey';
+import { useSeedReviewTimer } from '../../hooks/useSeedReviewTimer';
 import { useVerifyFingerprint } from '../../hooks/keycard/useVerifyFingerprint';
 import { pubKeyFingerprint } from '../../utils/cryptoAccount';
 import {
@@ -67,6 +68,18 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
   const [backupStep, setBackupStep] = useState<'display' | 'confirm'>(
     'display',
   );
+  const shareTimer = useSeedReviewTimer();
+
+  useEffect(() => {
+    if (
+      mode === 'generate' &&
+      backupStep === 'display' &&
+      currentGeneratedShare !== null
+    ) {
+      shareTimer.start();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedShareIndex, backupStep]);
 
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -342,6 +355,10 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
     setBackupStep('display');
   }, []);
 
+  const handleShareVerifyFailure = useCallback(() => {
+    setBackupStep('display');
+  }, []);
+
   if (
     mode === 'generate' &&
     backupStep === 'confirm' &&
@@ -355,6 +372,7 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
             words={currentGeneratedWords}
             description="Confirm word positions in your backup share."
             onComplete={handleBackupComplete}
+            onFailure={handleShareVerifyFailure}
           />
         </View>
 
@@ -556,11 +574,14 @@ export default function Slip39Screen({ navigation, route }: Slip39ScreenProps) {
           currentGeneratedShare ? (
           <PrimaryButton
             label={
-              generatedShareIndex + 1 === generatedShares.length
+              !shareTimer.done
+                ? `Review this share (${shareTimer.timeLeft}s)`
+                : generatedShareIndex + 1 === generatedShares.length
                 ? 'I saved the last share'
                 : 'I saved this share'
             }
             onPress={handleGeneratedShareSaved}
+            disabled={!shareTimer.done}
           />
         ) : mode !== 'generate' && !importComplete && !isPreparingSlip39 ? (
           <PrimaryButton

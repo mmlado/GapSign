@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+- Enforce seed review on generate: 30s mandatory timer on word/share display, return to word list after 3 wrong verify answers (keycard-shell parity)
 - Show friendly error when tapping a card with no master key instead of crashing with SW 0x6985
 - Add special review renderers for EIP-712 Permit, PermitSingle, SafeTx, and Uniswap Universal Router calls
 - Apply EIP-55 checksum formatting and shell-style address chunk coloring to displayed addresses

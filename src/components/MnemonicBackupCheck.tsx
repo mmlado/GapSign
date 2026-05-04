@@ -5,6 +5,7 @@ import { Text } from 'react-native-paper';
 import theme from '../theme';
 
 import { Icons } from '../assets/icons';
+import { SEED_VERIFY_FAILURE_THRESHOLD } from '../constants/backup';
 
 const DEFAULT_CHALLENGE_COUNT = 4;
 const DEFAULT_CHOICE_COUNT = 4;
@@ -30,16 +31,20 @@ type Props = {
   words: string[];
   description: string;
   onComplete: () => void;
+  onFailure?: () => void;
   challengeCount?: number;
   choiceCount?: number;
+  failureThreshold?: number;
 };
 
 export default function MnemonicBackupCheck({
   words,
   description,
   onComplete,
+  onFailure,
   challengeCount = DEFAULT_CHALLENGE_COUNT,
   choiceCount = DEFAULT_CHOICE_COUNT,
+  failureThreshold = SEED_VERIFY_FAILURE_THRESHOLD,
 }: Props) {
   const [challengePositions] = useState(() => {
     const indices = words.map((_, i) => i);
@@ -53,6 +58,8 @@ export default function MnemonicBackupCheck({
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wrongIndex, setWrongIndex] = useState<number | null>(null);
+  const [wrongCount, setWrongCount] = useState(0);
+  const [remainingRetries, setRemainingRetries] = useState(failureThreshold);
 
   const choices = useMemo(() => {
     if (currentIndex >= challengeCount) {
@@ -70,7 +77,14 @@ export default function MnemonicBackupCheck({
     (word: string) => {
       const correct = words[challengePositions[currentIndex]];
       if (word !== correct) {
+        const nextWrongCount = wrongCount + 1;
+        const remaining = failureThreshold - nextWrongCount;
         setWrongIndex(currentIndex);
+        setWrongCount(nextWrongCount);
+        setRemainingRetries(remaining);
+        if (remaining <= 0) {
+          onFailure?.();
+        }
         return;
       }
 
@@ -87,7 +101,16 @@ export default function MnemonicBackupCheck({
         onComplete();
       }
     },
-    [challengeCount, currentIndex, challengePositions, onComplete, words],
+    [
+      challengeCount,
+      currentIndex,
+      challengePositions,
+      failureThreshold,
+      onComplete,
+      onFailure,
+      words,
+      wrongCount,
+    ],
   );
 
   const allDone = currentIndex >= challengeCount;
@@ -136,6 +159,13 @@ export default function MnemonicBackupCheck({
           );
         })}
       </View>
+
+      {wrongIndex !== null && remainingRetries > 0 && (
+        <Text style={styles.wrongFeedback}>
+          Wrong answer · {remainingRetries}{' '}
+          {remainingRetries === 1 ? 'retry' : 'retries'} left
+        </Text>
+      )}
 
       <View style={styles.spacer} />
 
@@ -240,5 +270,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     letterSpacing: -0.135,
     lineHeight: 15 * 1.45,
+  },
+  wrongFeedback: {
+    color: theme.colors.error,
+    fontSize: 13,
+    marginBottom: 8,
+    textAlign: 'center',
   },
 });

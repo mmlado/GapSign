@@ -9,6 +9,12 @@ import PinPad from '../src/components/PinPad';
 // Mocks
 // ---------------------------------------------------------------------------
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (cb: () => void) => {
+    require('react').useEffect(cb, []);
+  },
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -203,6 +209,29 @@ describe('ConfirmKeyScreen', () => {
       renderScreen();
       await pressChoice(CORRECT_WORDS[0]);
       expect(mockStart).not.toHaveBeenCalled();
+    });
+
+    it('shows "Wrong answer · 2 retries left" after first wrong answer', async () => {
+      renderScreen();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(screen.getByText('Wrong answer · 2 retries left')).toBeTruthy();
+    });
+
+    it('shows "Wrong answer · 1 retry left" after second wrong answer', async () => {
+      renderScreen();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(screen.getByText('Wrong answer · 1 retry left')).toBeTruthy();
+    });
+
+    it('calls goBack only after third wrong answer', async () => {
+      renderScreen();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(navigation.goBack).not.toHaveBeenCalled();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(navigation.goBack).not.toHaveBeenCalled();
+      await pressChoice(WRONG_WORD_FOR_SLOT_0);
+      expect(navigation.goBack).toHaveBeenCalledTimes(1);
     });
   });
 
