@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import {
   Keyboard,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -9,12 +10,15 @@ import {
 } from 'react-native';
 import { validateMnemonic } from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english.js';
+import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MnemonicScreenProps } from '../../navigation/types';
 import theme from '../../theme';
 
 import { Icons } from '../../assets/icons';
+import CameraView from '../../components/CameraView';
+import { type ReadCodeEvent } from '../../components/Camera';
 import MnemonicWordEntry from '../../components/MnemonicWordEntry';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
@@ -25,6 +29,7 @@ import {
 } from '../../hooks/keycard/useLoadKey';
 import { useVerifyFingerprint } from '../../hooks/keycard/useVerifyFingerprint';
 import { deriveMnemonicFingerprint } from '../../hooks/keycard/useVerifyMnemonic';
+import { decodeSeedQr, isSeedQrPayload } from '../../utils/seedQr';
 
 export default function MnemonicScreen({
   navigation,
@@ -38,6 +43,8 @@ export default function MnemonicScreen({
   const [passphrase, setPassphrase] = useState('');
   const [phraseError, setPhraseError] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -110,14 +117,46 @@ export default function MnemonicScreen({
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      title:
-        phase === 'pin_entry'
-          ? 'Enter Keycard PIN'
-          : mode === 'verify'
-          ? 'Verify recovery phrase'
-          : 'Import recovery phrase',
+      title: scanning
+        ? 'Scan SeedQR'
+        : phase === 'pin_entry'
+        ? 'Enter Keycard PIN'
+        : mode === 'verify'
+        ? 'Verify recovery phrase'
+        : 'Import recovery phrase',
     });
-  }, [navigation, phase, mode]);
+  }, [navigation, phase, mode, scanning]);
+
+  useEffect(() => {
+    if (!scanning) return;
+    return navigation.addListener('beforeRemove', e => {
+      e.preventDefault();
+      setScanning(false);
+      setScanError(null);
+    });
+  }, [navigation, scanning]);
+
+  const handleCodeScanned = useCallback((event: ReadCodeEvent) => {
+    const value = event.nativeEvent.codeStringValue;
+    if (!value) return;
+
+    const cleaned = value.trim().toLowerCase();
+    if (!isSeedQrPayload(cleaned)) {
+      setScanError('Not a valid SeedQR. Scan a hex-encoded BIP39 entropy QR.');
+      return;
+    }
+
+    const decoded = decodeSeedQr(cleaned);
+    if (decoded.kind === 'error') {
+      setScanError(decoded.message);
+      return;
+    }
+
+    setInput(decoded.words.join(' '));
+    setWordCount(decoded.words.length === 24 ? 24 : 12);
+    setScanning(false);
+    setScanError(null);
+  }, []);
 
   const isComplete = words.length === wordCount;
 
@@ -141,7 +180,6 @@ export default function MnemonicScreen({
           onWordsChange={setWords}
         />
 
-        {/* Passphrase input */}
         <TextInput
           style={styles.passphraseInput}
           value={passphrase}
@@ -150,6 +188,16 @@ export default function MnemonicScreen({
           placeholderTextColor={theme.colors.onSurfacePlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
+        />
+
+        <PrimaryButton
+          label="Scan SeedQR"
+          icon={Icons.qr}
+          onPress={() => {
+            setScanError(null);
+            setScanning(true);
+          }}
+          testID="scan-seedqr-button"
         />
       </ScrollView>
 
@@ -168,6 +216,22 @@ export default function MnemonicScreen({
       </View>
 
       <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
+
+      {scanning && (
+        <CameraView
+          style={[StyleSheet.absoluteFill, { paddingTop: insets.top }]}
+          onReadCode={handleCodeScanned}
+        >
+          {scanError && (
+            <View style={styles.scanErrorContainer}>
+              <Text style={styles.scanErrorText}>{scanError}</Text>
+              <Pressable onPress={() => setScanError(null)}>
+                <Text style={styles.scanRetryText}>Tap to retry</Text>
+              </Pressable>
+            </View>
+          )}
+        </CameraView>
+      )}
     </View>
   );
 }
@@ -181,23 +245,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
     gap: 20,
+    padding: 16,
   },
   passphraseInput: {
     backgroundColor: theme.colors.surfaceVariant,
+    borderBottomColor: theme.colors.onSurface,
+    borderBottomWidth: 3,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
-    borderBottomWidth: 3,
-    borderBottomColor: theme.colors.onSurface,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 4,
     color: theme.colors.onSurface,
     fontSize: 16,
     height: 52,
+    paddingBottom: 4,
+    paddingHorizontal: 16,
+    paddingTop: 4,
   },
   buttonContainer: {
     paddingHorizontal: 16,
+  },
+  scanErrorContainer: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    bottom: 100,
+    left: 24,
+    padding: 16,
+    position: 'absolute',
+    right: 24,
+    borderRadius: 8,
+    gap: 8,
+  },
+  scanErrorText: {
+    color: theme.colors.error,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  scanRetryText: {
+    color: theme.colors.primary,
+    fontSize: 14,
   },
 });

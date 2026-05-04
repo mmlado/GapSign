@@ -20,7 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { QRScannerScreenProps } from '../navigation/types';
 import theme from '../theme';
 
-import { Camera, type ReadCodeEvent } from '../components/Camera';
+import CameraView from '../components/CameraView';
+import { type ReadCodeEvent } from '../components/Camera';
 import { handleUR } from '../utils/ur';
 
 export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
@@ -138,20 +139,7 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
   }
 
   return (
-    <View style={styles.fullscreen}>
-      {isFocused && (
-        <Camera style={StyleSheet.absoluteFill} onReadCode={onCodeScanned} />
-      )}
-
-      <View style={styles.viewfinderContainer}>
-        <View style={styles.viewfinder}>
-          <View style={[styles.corner, styles.cornerTL]} />
-          <View style={[styles.corner, styles.cornerTR]} />
-          <View style={[styles.corner, styles.cornerBL]} />
-          <View style={[styles.corner, styles.cornerBR]} />
-        </View>
-      </View>
-
+    <CameraView onReadCode={isFocused ? onCodeScanned : () => {}}>
       {progress > 0 && (
         <View style={styles.progressTrack}>
           <View
@@ -159,18 +147,11 @@ export default function QRScannerScreen({ navigation }: QRScannerScreenProps) {
           />
         </View>
       )}
-    </View>
+    </CameraView>
   );
 }
 
-const CORNER_SIZE = 24;
-const CORNER_WIDTH = 3;
-
 const styles = StyleSheet.create({
-  fullscreen: {
-    flex: 1,
-    backgroundColor: theme.colors.cameraBackground,
-  },
   centered: {
     flex: 1,
     justifyContent: 'center',
@@ -189,52 +170,6 @@ const styles = StyleSheet.create({
   },
   permissionButton: {
     marginTop: 8,
-  },
-  viewfinderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  viewfinder: {
-    width: 250,
-    height: 250,
-  },
-  corner: {
-    position: 'absolute',
-    width: CORNER_SIZE,
-    height: CORNER_SIZE,
-  },
-  cornerTL: {
-    top: 0,
-    left: 0,
-    borderTopWidth: CORNER_WIDTH,
-    borderLeftWidth: CORNER_WIDTH,
-    borderColor: theme.colors.primary,
-    borderTopLeftRadius: 8,
-  },
-  cornerTR: {
-    top: 0,
-    right: 0,
-    borderTopWidth: CORNER_WIDTH,
-    borderRightWidth: CORNER_WIDTH,
-    borderColor: theme.colors.primary,
-    borderTopRightRadius: 8,
-  },
-  cornerBL: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: CORNER_WIDTH,
-    borderLeftWidth: CORNER_WIDTH,
-    borderColor: theme.colors.primary,
-    borderBottomLeftRadius: 8,
-  },
-  cornerBR: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: CORNER_WIDTH,
-    borderRightWidth: CORNER_WIDTH,
-    borderColor: theme.colors.primary,
-    borderBottomRightRadius: 8,
   },
   progressTrack: {
     position: 'absolute',

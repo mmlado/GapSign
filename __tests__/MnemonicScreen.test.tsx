@@ -1,5 +1,5 @@
 import React, { act } from 'react';
-import { TextInput } from 'react-native';
+import { Keyboard, TextInput } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
@@ -26,7 +26,14 @@ const MockNFCBottomSheet = NFCBottomSheet as jest.MockedFunction<
 jest.mock('../src/components/PinPad', () => () => null);
 
 jest.mock('../src/assets/icons', () => ({
-  Icons: { nfcActivate: () => null },
+  Icons: { nfcActivate: () => null, qr: () => null },
+}));
+
+jest.mock('../src/components/Camera', () => ({
+  Camera: ({ onReadCode }: any) => {
+    const { View } = require('react-native');
+    return <View testID="camera" onReadCode={onReadCode} />;
+  },
 }));
 
 const mockStart = jest.fn();
@@ -51,14 +58,16 @@ jest.mock('../src/hooks/keycard/useVerifyFingerprint', () => ({
 const VALID_12 =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
-// 24 valid words
 const VALID_24 =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art';
+
+const VALID_12_HEX = '00000000000000000000000000000000';
 
 const navigation = {
   navigate: jest.fn(),
   reset: jest.fn(),
   setOptions: jest.fn(),
+  addListener: jest.fn(() => jest.fn()),
 } as any;
 
 const route = { key: 'Mnemonic', name: 'Mnemonic', params: undefined } as any;
@@ -126,6 +135,14 @@ function setInput(text: string) {
   });
 }
 
+function triggerScan(hex: string) {
+  act(() => {
+    screen.getByTestId('camera').props.onReadCode({
+      nativeEvent: { codeStringValue: hex },
+    });
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -165,6 +182,11 @@ describe('MnemonicScreen', () => {
       renderScreen();
       expect(screen.getByText('Continue')).toBeTruthy();
     });
+
+    it('renders Scan SeedQR button', async () => {
+      renderScreen();
+      expect(screen.getByText('Scan SeedQR')).toBeTruthy();
+    });
   });
 
   describe('word count selector', () => {
@@ -190,7 +212,6 @@ describe('MnemonicScreen', () => {
   describe('Continue button disabled state', () => {
     it('is disabled when input is empty', async () => {
       renderScreen();
-      // clear the test prefill
       await setInput('');
       expect(getButton().props.disabled).toBe(true);
     });
@@ -203,7 +224,6 @@ describe('MnemonicScreen', () => {
 
     it('remains disabled when word count does not match selector (24 mode, 12 words)', async () => {
       renderScreen();
-      // switch to 24-word mode
       await act(async () => {
         fireEvent.press(screen.getByText('24 words'));
       });
@@ -292,16 +312,102 @@ describe('MnemonicScreen', () => {
     });
   });
 
+  describe('SeedQR scanner', () => {
+    it('shows camera overlay when Scan SeedQR is pressed', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      expect(screen.getByTestId('camera')).toBeTruthy();
+    });
+
+    it('fills word input and dismisses overlay after valid scan', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      triggerScan(VALID_12_HEX);
+      expect(screen.queryByTestId('camera')).toBeNull();
+      expect(getWordInput().props.value).toBe(VALID_12);
+    });
+
+    it('shows error message for invalid QR payload', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      triggerScan('notahex!!!');
+      expect(screen.getByText(/Not a valid SeedQR/)).toBeTruthy();
+      expect(screen.getByTestId('camera')).toBeTruthy();
+    });
+
+    it('shows error when decodeSeedQr fails on valid-length hex', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      const bip39 = require('@scure/bip39');
+      jest.spyOn(bip39, 'entropyToMnemonic').mockImplementationOnce(() => {
+        throw new Error('decode failure');
+      });
+      triggerScan(VALID_12_HEX);
+      expect(screen.getByText(/decode failure/)).toBeTruthy();
+      expect(screen.getByTestId('camera')).toBeTruthy();
+      jest.restoreAllMocks();
+    });
+
+    it('clears error when Tap to retry is pressed', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      triggerScan('notahex!!!');
+      expect(screen.getByText(/Not a valid SeedQR/)).toBeTruthy();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Tap to retry'));
+      });
+      expect(screen.queryByText(/Not a valid SeedQR/)).toBeNull();
+    });
+
+    it('dismisses overlay when beforeRemove fires while scanning', async () => {
+      let capturedCallback: ((e: any) => void) | null = null;
+      navigation.addListener.mockImplementation(
+        (_event: string, cb: (e: any) => void) => {
+          capturedCallback = cb;
+          return jest.fn();
+        },
+      );
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      expect(screen.getByTestId('camera')).toBeTruthy();
+      await act(async () => {
+        capturedCallback!({ preventDefault: jest.fn() });
+      });
+      expect(screen.queryByTestId('camera')).toBeNull();
+    });
+
+    it('does not navigate anywhere on scan', async () => {
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByText('Scan SeedQR'));
+      });
+      triggerScan(VALID_12_HEX);
+      expect(navigation.navigate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('navigation', () => {
     it('navigates to Dashboard with toast when phase is done (import mode)', async () => {
-      await renderScreen('done');
+      renderScreen('done');
       expect(navigation.navigate).toHaveBeenCalledWith('Dashboard', {
         toast: 'Key pair has been added to Keycard',
       });
     });
 
     it('does not navigate when phase is not done', async () => {
-      await renderScreen('idle');
+      renderScreen('idle');
       expect(navigation.navigate).not.toHaveBeenCalled();
     });
   });
@@ -335,7 +441,7 @@ describe('MnemonicScreen', () => {
     });
 
     it('resets to Dashboard with match toast', async () => {
-      await renderVerify('done', 'match');
+      renderVerify('done', 'match');
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [
@@ -345,7 +451,7 @@ describe('MnemonicScreen', () => {
     });
 
     it('resets to Dashboard with mismatch toast', async () => {
-      await renderVerify('done', 'mismatch');
+      renderVerify('done', 'mismatch');
       expect(navigation.reset).toHaveBeenCalledWith({
         index: 0,
         routes: [
@@ -365,18 +471,70 @@ describe('MnemonicScreen', () => {
     }
 
     it('nfc.phase is idle when phase is idle', async () => {
-      await renderScreen('idle');
+      renderScreen('idle');
       expect(lastProps().nfc.phase).toBe('idle');
     });
 
     it('nfc.phase is nfc when phase is nfc', async () => {
-      await renderScreen('nfc');
+      renderScreen('nfc');
       expect(lastProps().nfc.phase).toBe('nfc');
     });
 
     it('nfc.phase is error when phase is error', async () => {
-      await renderScreen('error');
+      renderScreen('error');
       expect(lastProps().nfc.phase).toBe('error');
+    });
+  });
+
+  describe('keyboard handling', () => {
+    let listeners: Record<string, (e: any) => void>;
+
+    beforeEach(() => {
+      listeners = {};
+      jest
+        .spyOn(Keyboard, 'addListener')
+        .mockImplementation((event: string, cb: (e: any) => void) => {
+          listeners[event] = cb;
+          return { remove: jest.fn() } as any;
+        });
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('updates keyboardHeight when keyboard shows', async () => {
+      renderScreen();
+      await act(async () => {
+        listeners['keyboardDidShow']?.({
+          endCoordinates: { height: 300, screenX: 0, screenY: 0, width: 0 },
+        });
+      });
+      expect(screen.getByText('Continue')).toBeTruthy();
+    });
+
+    it('resets keyboardHeight when keyboard hides', async () => {
+      renderScreen();
+      await act(async () => {
+        listeners['keyboardDidShow']?.({
+          endCoordinates: { height: 300, screenX: 0, screenY: 0, width: 0 },
+        });
+      });
+      await act(async () => {
+        listeners['keyboardDidHide']?.({});
+      });
+      expect(screen.getByText('Continue')).toBeTruthy();
+    });
+  });
+
+  describe('NFC cancel', () => {
+    it('calls cancel() when NFCBottomSheet onCancel is triggered', async () => {
+      renderScreen();
+      const props = MockNFCBottomSheet.mock.calls[0][0];
+      act(() => {
+        props.onCancel();
+      });
+      expect(mockCancel).toHaveBeenCalledTimes(1);
     });
   });
 });
