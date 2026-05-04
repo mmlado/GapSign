@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ConfirmKeySreenProps } from '../../navigation/types';
@@ -46,6 +53,19 @@ export default function ConfirmKeyScreen({
     });
   }, [navigation, phase]);
 
+  const [attemptKey, setAttemptKey] = useState(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      setAttemptKey(k => k + 1);
+    }, []),
+  );
+
+  const handleFailure = useCallback(() => {
+    cancel();
+    navigation.goBack();
+  }, [cancel, navigation]);
+
   return (
     <View
       style={[
@@ -54,9 +74,11 @@ export default function ConfirmKeyScreen({
       ]}
     >
       <MnemonicBackupCheck
+        key={attemptKey}
         words={words}
         description="Confirm word positions in your recovery phrase."
         onComplete={() => start(keyPair)}
+        onFailure={handleFailure}
       />
 
       <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />

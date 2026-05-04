@@ -8,6 +8,12 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // Mocks
 // ---------------------------------------------------------------------------
 
+jest.mock('../src/hooks/useSeedReviewTimer', () => ({
+  useSeedReviewTimer: jest.fn(),
+}));
+const useSeedReviewTimerMock = require('../src/hooks/useSeedReviewTimer')
+  .useSeedReviewTimer as jest.Mock;
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -55,23 +61,49 @@ const WORDS = [
 
 const navigation = {
   goBack: jest.fn(),
-  replace: jest.fn(),
+  navigate: jest.fn(),
   setOptions: jest.fn(),
 } as any;
 
-const route = {
-  key: 'GenerateKey',
-  name: 'GenerateKey',
-  params: { size: 12 },
-} as any;
+const route = (withPassphrase = false) =>
+  ({
+    key: 'GenerateKey',
+    name: 'GenerateKey',
+    params: { size: 12, passphrase: withPassphrase },
+  } as any);
 
 function hookMock(phase: string, result: string[] | null = null) {
   return { phase, status: '', result, start: mockStart, cancel: mockCancel };
 }
 
-function renderScreen(phase = 'idle', result: string[] | null = null) {
+function renderScreen(
+  phase = 'idle',
+  result: string[] | null = null,
+  timer: { timeLeft: number; done: boolean; start: jest.Mock } = {
+    timeLeft: 0,
+    done: true,
+    start: jest.fn(),
+  },
+) {
+  useSeedReviewTimerMock.mockReturnValue(timer);
   mockUseGenerateKey.mockReturnValue(hookMock(phase, result));
-  return render(<GenerateKeyScreen navigation={navigation} route={route} />);
+  return render(<GenerateKeyScreen navigation={navigation} route={route()} />);
+}
+
+function renderScreenWithPassphrase(
+  phase = 'done',
+  result: string[] | null = WORDS,
+  timer: { timeLeft: number; done: boolean; start: jest.Mock } = {
+    timeLeft: 0,
+    done: true,
+    start: jest.fn(),
+  },
+) {
+  useSeedReviewTimerMock.mockReturnValue(timer);
+  mockUseGenerateKey.mockReturnValue(hookMock(phase, result));
+  return render(
+    <GenerateKeyScreen navigation={navigation} route={route(true)} />,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -84,8 +116,9 @@ describe('GenerateKeyScreen', () => {
     mockCancel.mockClear();
     MockNFCBottomSheet.mockClear();
     navigation.goBack.mockClear();
-    navigation.replace.mockClear();
+    navigation.navigate.mockClear();
     navigation.setOptions.mockClear();
+    useSeedReviewTimerMock.mockClear();
   });
 
   describe('on mount', () => {
@@ -127,25 +160,72 @@ describe('GenerateKeyScreen', () => {
       expect(screen.getByText('Reveal recovery phrase')).toBeTruthy();
     });
 
-    it('shows "Done" after revealing', async () => {
+    it('shows "I\'ve written it down" after revealing', async () => {
       renderScreen('done', WORDS);
       await act(async () => {
         fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
-      expect(screen.getByText('Done')).toBeTruthy();
+      expect(screen.getByText("I've written it down")).toBeTruthy();
     });
 
-    it('calls navigation.replace to ConfirmKey when "Done" is pressed', async () => {
+    it('calls navigation.navigate to ConfirmKey when "I\'ve written it down" is pressed', async () => {
       renderScreen('done', WORDS);
       await act(async () => {
         fireEvent.press(screen.getByText('Reveal recovery phrase'));
       });
       await act(async () => {
-        fireEvent.press(screen.getByText('Done'));
+        fireEvent.press(screen.getByText("I've written it down"));
       });
-      expect(navigation.replace).toHaveBeenCalledWith('ConfirmKey', {
+      expect(navigation.navigate).toHaveBeenCalledWith('ConfirmKey', {
         words: WORDS,
       });
+    });
+
+    it('passes passphrase to ConfirmKey when withPassphrase is true', async () => {
+      const timer = { timeLeft: 0, done: true, start: jest.fn() };
+      renderScreenWithPassphrase('done', WORDS, timer);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
+      });
+      const passphraseInput = screen.getByPlaceholderText('Enter passphrase');
+      fireEvent.changeText(passphraseInput, 'test-pass');
+      await act(async () => {
+        fireEvent.press(screen.getByText("I've written it down"));
+      });
+      expect(navigation.navigate).toHaveBeenCalledWith('ConfirmKey', {
+        words: WORDS,
+        passphrase: 'test-pass',
+      });
+    });
+
+    it('disables button while timer is running', async () => {
+      const timer = { timeLeft: 15, done: false, start: jest.fn() };
+      renderScreen('done', WORDS, timer);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
+      });
+      const btn = screen.getByTestId('primary-button');
+      expect(btn?.props?.accessibilityState?.disabled).toBe(true);
+    });
+
+    it('enables button after timer completes', async () => {
+      const timer = { timeLeft: 0, done: true, start: jest.fn() };
+      renderScreen('done', WORDS, timer);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
+      });
+      const btn = screen.getByTestId('primary-button');
+      expect(btn?.props?.accessibilityState?.disabled).toBe(false);
+    });
+
+    it('disables button when passphrase is required but empty', async () => {
+      const timer = { timeLeft: 0, done: true, start: jest.fn() };
+      renderScreenWithPassphrase('done', WORDS, timer);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Reveal recovery phrase'));
+      });
+      const btn = screen.getByTestId('primary-button');
+      expect(btn?.props?.accessibilityState?.disabled).toBe(true);
     });
   });
 

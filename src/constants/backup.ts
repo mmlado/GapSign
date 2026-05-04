@@ -1,0 +1,2 @@
+export const SEED_REVIEW_SECONDS = 30;
+export const SEED_VERIFY_FAILURE_THRESHOLD = 3;

@@ -11,6 +11,7 @@ import NFCBottomSheet from '../../components/NFCBottomSheet';
 import PrimaryButton from '../../components/PrimaryButton';
 
 import { useGenerateKey } from '../../hooks/keycard/useGenerateKey';
+import { useSeedReviewTimer } from '../../hooks/useSeedReviewTimer';
 
 export default function GenerateKeyScreen({
   navigation,
@@ -18,6 +19,7 @@ export default function GenerateKeyScreen({
 }: GenerateKeyScreenProps) {
   const insets = useSafeAreaInsets();
   const [revealed, setRevealed] = useState(false);
+  const timer = useSeedReviewTimer();
 
   const keycard = useGenerateKey(route.params.size);
   const { phase, result, start, cancel } = keycard;
@@ -28,17 +30,27 @@ export default function GenerateKeyScreen({
     start();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (revealed) {
+      timer.start();
+    }
+  }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleCancel = useCallback(() => {
     cancel();
     navigation.goBack();
   }, [cancel, navigation]);
+
+  const [hasAttemptedConfirm, setHasAttemptedConfirm] = useState(false);
+  const timerDone = timer.done || hasAttemptedConfirm;
 
   const handleButton = useCallback(() => {
     if (!revealed) {
       setRevealed(true);
       return;
     }
-    navigation.replace('ConfirmKey', {
+    setHasAttemptedConfirm(true);
+    navigation.navigate('ConfirmKey', {
       words: result ?? [],
       passphrase: withPassphrase ? passphrase : undefined,
     });
@@ -109,9 +121,19 @@ export default function GenerateKeyScreen({
       {phase === 'done' && (
         <View style={styles.buttonArea}>
           <PrimaryButton
-            label={revealed ? 'Done' : 'Reveal recovery phrase'}
+            testID="primary-button"
+            label={
+              !revealed
+                ? 'Reveal recovery phrase'
+                : !timerDone
+                ? `Write down your recovery phrase (${timer.timeLeft}s)`
+                : "I've written it down"
+            }
             onPress={handleButton}
-            disabled={revealed && withPassphrase && passphrase.trim() === ''}
+            disabled={
+              (revealed && !timerDone) ||
+              (revealed && withPassphrase && passphrase.trim() === '')
+            }
           />
         </View>
       )}

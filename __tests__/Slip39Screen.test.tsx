@@ -30,6 +30,10 @@ const mockUseLoadKey = jest.fn();
 const mockUseVerifyFingerprint = jest.fn();
 const mockGenerateSlip39SharesFromKeycardEntropy = jest.fn();
 
+jest.mock('../src/hooks/useSeedReviewTimer', () => ({
+  useSeedReviewTimer: () => ({ timeLeft: 0, done: true, start: jest.fn() }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -296,6 +300,67 @@ describe('Slip39Screen', () => {
     await flushTimers();
     expect(mockStartLoad).toHaveBeenCalledTimes(1);
     expect(mockResetGenerate).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows error when adding share with invalid word', async () => {
+    renderScreen('import');
+
+    await act(async () => {
+      fireEvent.changeText(
+        getTextInputs()[0],
+        'valid wordz here that are not slip39',
+      );
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Next share'));
+    });
+
+    expect(screen.getByText(/"wordz" is not a valid SLIP39 word/)).toBeTruthy();
+  });
+
+  it('shows error for invalid share in handleImportOrVerify', async () => {
+    renderScreen('import');
+
+    await act(async () => {
+      fireEvent.changeText(
+        getTextInputs()[0],
+        SHARE_1.replace('very', 'invalidword'),
+      );
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Next share'));
+    });
+
+    expect(
+      screen.getByText(/"invalidword" is not a valid SLIP39 word/),
+    ).toBeTruthy();
+  });
+
+  it('handles generateSlip39SharesFromKeycardEntropy error', async () => {
+    const entropy = new Uint8Array([1, 2, 3]);
+    renderScreen('generate', 'idle', null, 'done', entropy);
+    mockGenerateSlip39SharesFromKeycardEntropy.mockImplementation(() => {
+      throw new Error('entropy error');
+    });
+
+    await flushTimers();
+
+    expect(screen.getByText('entropy error')).toBeTruthy();
+  });
+
+  it('handles handleGenerateShares error', async () => {
+    renderScreen('generate');
+    mockStartGenerate.mockImplementation(() => {
+      throw new Error('generate error');
+    });
+
+    await act(async () => {
+      fireEvent.press(screen.getByText('Generate SLIP39 shares'));
+    });
+
+    expect(screen.getByText('generate error')).toBeTruthy();
   });
 
   it('passes NFC props through the bottom sheet', async () => {
