@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react';
-
 import Keycard from 'keycard-sdk';
 import { WrongPINException } from 'keycard-sdk/dist/apdu-exception';
 import { Commandset } from 'keycard-sdk/dist/commandset';
@@ -7,14 +6,9 @@ import { Commandset } from 'keycard-sdk/dist/commandset';
 import { PAIRING_PASSWORD } from '../../constants/keycard';
 import { loadPairing, savePairing } from '../../storage/pairingStorage';
 import { checkGenuine } from '../../utils/genuineCheck';
+import { toHex } from '../../utils/hex';
 import { displayKeycardName, parseKeycardName } from '../../utils/keycardName';
 import useNFCSession from './useNFCSession';
-
-function toHex(arr: Uint8Array): string {
-  return Array.from(arr)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 export type Phase =
   | 'idle'

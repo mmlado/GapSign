@@ -31,6 +31,11 @@ export default function KeycardMenuScreen({
       onPress: () => navigation.navigate('SecretsMenu'),
     },
     {
+      label: 'Manage pairing slots',
+      requiresNfc: true,
+      onPress: () => navigation.navigate('PairingSlots'),
+    },
+    {
       label: 'Factory reset',
       onPress: () => navigation.navigate('FactoryReset'),
     },

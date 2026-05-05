@@ -7,17 +7,18 @@ import type { RootStackParamList } from './types';
 // Top-level screens
 import AboutScreen from '../screens/AboutScreen';
 import DashboardScreen from '../screens/DashboardScreen';
-import LicenseDetailScreen from '../screens/LicenseDetailScreen';
-import UrlQRScreen from '../screens/UrlQRScreen';
 import ExportKeyScreen from '../screens/ExportKeyScreen';
 import FactoryResetScreen from '../screens/FactoryResetScreen';
 import InitCardScreen from '../screens/InitCardScreen';
 import KeycardMenuScreen from '../screens/KeycardMenuScreen';
 import KeycardScreen from '../screens/KeycardScreen';
+import LicenseDetailScreen from '../screens/LicenseDetailScreen';
+import PairingSlotsScreen from '../screens/PairingSlotsScreen';
 import QRResultScreen from '../screens/QRResultScreen';
 import QRScannerScreen from '../screens/QRScannerScreen';
 import SetCardNameScreen from '../screens/SetCardNameScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
+import UrlQRScreen from '../screens/UrlQRScreen';
 
 // Address screens
 import AddressDetailScreen from '../screens/address/AddressDetailScreen';
@@ -77,6 +78,11 @@ export const routes: Route[] = [
     name: 'FactoryReset',
     component: FactoryResetScreen,
     options: defaultHeaderOptions,
+  },
+  {
+    name: 'PairingSlots',
+    component: PairingSlotsScreen,
+    options: { ...defaultHeaderOptions, title: 'Pairing slots' },
   },
   {
     name: 'ExportKey',
