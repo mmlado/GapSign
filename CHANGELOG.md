@@ -6,13 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
 - Add pairing slot management screen: check remaining slots, unpair any slot
 - Add SeedQR scan support for mnemonic import/verify
-- Enforce seed review on generate: 30s mandatory timer on word/share display, return to word list after 3 wrong verify answers (keycard-shell parity)
-- Show friendly error when tapping a card with no master key instead of crashing with SW 0x6985
 - Add special review renderers for EIP-712 Permit, PermitSingle, SafeTx, and Uniswap Universal Router calls
-- Apply EIP-55 checksum formatting and shell-style address chunk coloring to displayed addresses
 - Bundle offline token logo assets for the no-INTERNET Android flavor while keeping remote token logos for network-enabled builds
+
+### Changed
+
+- Enforce seed review on generate: 30s mandatory timer on word/share display, return to word list after 3 wrong verify answers (keycard-shell parity)
+- Apply EIP-55 checksum formatting and shell-style address chunk coloring to displayed addresses
+- Optimize PIN pad key rendering for better responsiveness on older phones
+
+### Fixed
+
+- Show friendly error when tapping a card with no master key instead of crashing with SW 0x6985
 
 ## [1.4.0] - 2026-05-02
 
@@ -130,6 +139,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.7.0] - 2026-03-23
 
+### Added
+
 - Add Change Secrets flow
 
 ## [0.6.0] - 2026-03-21
@@ -142,7 +153,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - BIP39 passphrase support for key generation (12 and 24 word variants)
 - Mid-operation NFC disconnect shows nudge instead of error
 
-### Fix
+### Fixed
 
 - Address menu: removed duplicate top padding that caused a gap below the navigation header
 - Address list FlatList performance fix (memoized renderItem/keyExtractor)
