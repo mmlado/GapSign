@@ -1,11 +1,13 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import theme from '../theme';
+
 import { Icons } from '../assets/icons';
+import theme from '../theme';
 
 type Entry = {
   label: string;
   onPress: () => void;
   requiresNfc?: boolean;
+  detail?: string;
 };
 
 type Props = {
@@ -25,7 +27,24 @@ export default function Menu({ entries }: Props) {
             key={i}
             onPress={action.onPress}
           >
-            <Text style={styles.itemLabel}>{action.label}</Text>
+            <View style={styles.labelRow}>
+              <Text
+                style={styles.itemLabel}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {action.label}
+              </Text>
+              {action.detail ? (
+                <Text
+                  style={styles.itemDetail}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {action.detail}
+                </Text>
+              ) : null}
+            </View>
             <View style={styles.trailingIcons}>
               {action.requiresNfc ? (
                 <Icons.nfcActivate
@@ -77,6 +96,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.surface,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+    marginRight: 12,
+  },
   itemLabel: {
     fontFamily: 'Inter_18pt-Medium',
     fontWeight: '500',
@@ -84,6 +110,14 @@ const styles = StyleSheet.create({
     lineHeight: 15 * 1.45,
     letterSpacing: -0.135,
     color: theme.colors.onSurface,
+    flexShrink: 1,
+  },
+  itemDetail: {
+    fontFamily: 'Inter_18pt-Regular',
+    fontSize: 13,
+    lineHeight: 13 * 1.45,
+    color: theme.colors.onSurfaceMuted,
+    flexShrink: 1,
   },
   trailingIcons: {
     flexDirection: 'row',

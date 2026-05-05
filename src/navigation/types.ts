@@ -54,6 +54,7 @@ export type RootStackParamList = {
   Mnemonic: { mode?: 'import' | 'verify' } | undefined;
   Slip39: { mode: 'generate' | 'import' | 'verify' };
   FactoryReset: undefined;
+  PairingSlots: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
   AddressDetail: { address: string; index: number; title?: string };
@@ -130,6 +131,11 @@ export type Slip39ScreenProps = NativeStackScreenProps<
 export type FactoryResetSreenProps = NativeStackScreenProps<
   RootStackParamList,
   'FactoryReset'
+>;
+
+export type PairingSlotsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'PairingSlots'
 >;
 
 export type KeyPairMenuScreenProps = NativeStackScreenProps<
