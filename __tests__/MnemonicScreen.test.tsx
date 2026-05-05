@@ -506,7 +506,7 @@ describe('MnemonicScreen', () => {
     it('updates keyboardHeight when keyboard shows', async () => {
       renderScreen();
       await act(async () => {
-        listeners['keyboardDidShow']?.({
+        listeners.keyboardDidShow?.({
           endCoordinates: { height: 300, screenX: 0, screenY: 0, width: 0 },
         });
       });
@@ -516,12 +516,12 @@ describe('MnemonicScreen', () => {
     it('resets keyboardHeight when keyboard hides', async () => {
       renderScreen();
       await act(async () => {
-        listeners['keyboardDidShow']?.({
+        listeners.keyboardDidShow?.({
           endCoordinates: { height: 300, screenX: 0, screenY: 0, width: 0 },
         });
       });
       await act(async () => {
-        listeners['keyboardDidHide']?.({});
+        listeners.keyboardDidHide?.({});
       });
       expect(screen.getByText('Continue')).toBeTruthy();
     });

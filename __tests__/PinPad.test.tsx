@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+
 import PinPad from '../src/components/PinPad';
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,13 @@ function getPressableNodesFromJSON(json: any): any[] {
   return nodes;
 }
 
+function getDigitOrder(json: any): string[] {
+  return getPressableNodesFromJSON(json)
+    .map(node => JSON.stringify(node.children))
+    .flatMap(text => text.match(/"[0-9]"/g) ?? [])
+    .map(match => match.replace(/"/g, ''));
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -60,6 +68,19 @@ describe('PinPad', () => {
       render(<PinPad onComplete={onComplete} length={12} />);
       expect(screen.getByText('12 digits')).toBeTruthy();
       expect(screen.queryByText('6 digits')).toBeNull();
+    });
+
+    it('normalizes invalid lengths before rendering the field label', () => {
+      const { rerender } = render(
+        <PinPad onComplete={onComplete} length={0} />,
+      );
+      expect(screen.getByText('1 digits')).toBeTruthy();
+
+      rerender(<PinPad onComplete={onComplete} length={2.8} />);
+      expect(screen.getByText('2 digits')).toBeTruthy();
+
+      rerender(<PinPad onComplete={onComplete} length={Number.NaN} />);
+      expect(screen.getByText('6 digits')).toBeTruthy();
     });
   });
 
@@ -103,15 +124,12 @@ describe('PinPad', () => {
     });
 
     it('backspace removes the last entered digit', async () => {
-      const { toJSON } = render(<PinPad onComplete={onComplete} />);
+      render(<PinPad onComplete={onComplete} />);
       await act(async () => {
         fireEvent.press(screen.getByText('2'));
       });
-      // press backspace — the node at index 11 (bottom-right) in the grid
-      const pressables = getPressableNodesFromJSON(toJSON());
-      const backspace = pressables[pressables.length - 1];
       await act(async () => {
-        backspace.props.onClick();
+        fireEvent.press(screen.getByLabelText('Backspace'));
       });
       for (let i = 0; i < 6; i++) {
         await act(async () => {
@@ -119,6 +137,30 @@ describe('PinPad', () => {
         });
       }
       expect(onComplete).toHaveBeenCalledWith('111111');
+    });
+
+    it('ignores digit presses when the current entry exceeds a shorter length', async () => {
+      const { rerender } = render(<PinPad onComplete={onComplete} />);
+      await act(async () => {
+        fireEvent.press(screen.getByText('1'));
+      });
+
+      rerender(<PinPad onComplete={onComplete} length={1} />);
+      await act(async () => {
+        fireEvent.press(screen.getByText('2'));
+      });
+
+      expect(onComplete).not.toHaveBeenCalled();
+    });
+
+    it('uses the normalized length for completion', async () => {
+      render(<PinPad onComplete={onComplete} length={0} />);
+
+      await act(async () => {
+        fireEvent.press(screen.getByText('1'));
+      });
+
+      expect(onComplete).toHaveBeenCalledWith('1');
     });
   });
 
@@ -132,27 +174,22 @@ describe('PinPad', () => {
     });
 
     it('calls onType when backspace is pressed', async () => {
-      const { toJSON } = render(
-        <PinPad onComplete={onComplete} onType={onType} />,
-      );
+      render(<PinPad onComplete={onComplete} onType={onType} />);
       await act(async () => {
         fireEvent.press(screen.getByText('1'));
       });
       onType.mockClear();
-      const pressables = getPressableNodesFromJSON(toJSON());
-      const backspace = pressables[pressables.length - 1];
       await act(async () => {
-        backspace.props.onClick();
+        fireEvent.press(screen.getByLabelText('Backspace'));
       });
       expect(onType).toHaveBeenCalledTimes(1);
     });
 
     it('does not throw when onType is not provided', async () => {
-      const { toJSON } = render(<PinPad onComplete={onComplete} />); // no onType prop
-      const pressables = getPressableNodesFromJSON(toJSON());
+      render(<PinPad onComplete={onComplete} />); // no onType prop
       await expect(
         act(async () => {
-          pressables[0].props.onClick();
+          fireEvent.press(screen.getByText('1'));
         }),
       ).resolves.toBeUndefined();
     });
@@ -203,6 +240,27 @@ describe('PinPad', () => {
         rerender(<PinPad onComplete={onComplete} error="Wrong PIN" />);
       });
       expect(JSON.stringify(toJSON())).toBe(before);
+    });
+
+    it('keeps the same key order while digits are entered', async () => {
+      const { toJSON } = render(<PinPad onComplete={onComplete} />);
+      const before = getDigitOrder(toJSON());
+
+      await act(async () => {
+        fireEvent.press(screen.getByText('1'));
+      });
+
+      expect(getDigitOrder(toJSON())).toEqual(before);
+    });
+
+    it('applies pressed styling while a digit key is pressed', async () => {
+      render(<PinPad onComplete={onComplete} />);
+
+      await act(async () => {
+        fireEvent(screen.getByText('1'), 'pressIn');
+      });
+
+      expect(screen.getByText('1')).toBeTruthy();
     });
   });
 

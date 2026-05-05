@@ -153,7 +153,9 @@ describe('usePairingSlots', () => {
       });
 
       expect(result.current.phase).toBe('error');
-      expect(result.current.status).toBe('No application info in SELECT response');
+      expect(result.current.status).toBe(
+        'No application info in SELECT response',
+      );
     });
   });
 
