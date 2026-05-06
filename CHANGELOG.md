@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-05-06
+
 ### Added
 
 - Add pairing slot management screen: check remaining slots, unpair any slot
@@ -197,7 +199,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/mmlado/GapSign/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/mmlado/GapSign/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/mmlado/GapSign/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/mmlado/GapSign/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/mmlado/GapSign/compare/v1.1.0...v1.2.0
