@@ -501,7 +501,7 @@ function parseEIP2930(bytes: Buffer, symbol: string): ParsedTx {
 
 /**
  * dataType 1 = Legacy transaction (or EIP-2930 if first byte is 0x01)
- * dataType 4 = EIP-1559 transaction
+ * dataType 4 = EIP-2718 typed transaction (0x01 EIP-2930 or 0x02 EIP-1559)
  * Others (EIP-712, personal sign) are not transactions — return null.
  */
 export function parseTx(
@@ -514,7 +514,10 @@ export function parseTx(
     if (dataType === 1 && bytes[0] === 0x01)
       return parseEIP2930(bytes, nativeCurrencySymbol);
     if (dataType === 1) return parseLegacy(bytes, nativeCurrencySymbol);
-    if (dataType === 4) return parseEIP1559(bytes, nativeCurrencySymbol);
+    if (dataType === 4 && bytes[0] === 0x01)
+      return parseEIP2930(bytes, nativeCurrencySymbol);
+    if (dataType === 4 && bytes[0] === 0x02)
+      return parseEIP1559(bytes, nativeCurrencySymbol);
     return null;
   } catch {
     return null;
@@ -537,12 +540,15 @@ export function validateEthTransactionSignData(
 
 /**
  * Returns a human-readable label for the transaction type.
- * Distinguishes EIP-2930 from legacy even though both arrive with dataType=1.
+ * Distinguishes typed transaction envelopes by the first byte.
  */
 export function getTxLabel(signDataHex: string, dataType: number): string {
-  if (dataType === 1) {
+  if (dataType === 1 || dataType === 4) {
     const bytes = Buffer.from(signDataHex, 'hex');
     if (bytes[0] === 0x01) return 'EIP-2930 Transaction';
+    if (bytes[0] === 0x02) return 'EIP-1559 Transaction';
+  }
+  if (dataType === 1) {
     return 'Legacy Transaction';
   }
   return DATA_TYPE_LABELS[dataType] ?? `Unknown (${dataType})`;

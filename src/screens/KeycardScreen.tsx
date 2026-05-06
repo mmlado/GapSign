@@ -38,7 +38,8 @@ function buildEthResultUR(
   const firstByte = params.signData
     ? parseInt(params.signData.slice(0, 2), 16)
     : undefined;
-  const txType = firstByte === 0x01 ? 0x01 : undefined;
+  const txType =
+    firstByte === 0x01 || firstByte === 0x02 ? firstByte : undefined;
   return buildEthSignatureUR(
     Array.from(result)
       .map(b => b.toString(16).padStart(2, '0'))

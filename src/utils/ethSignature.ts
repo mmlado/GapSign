@@ -45,10 +45,10 @@ function encodeV(v: number): Uint8Array {
  *
  * @param signRespDataHex - hex string of `signResp.data` (TLV from Keycard)
  * @param hash            - the 32-byte hash that was signed (for recId recovery)
- * @param dataType        - eth-sign-request dataType (1=legacy, 2=typed, 3=personal, 4=EIP-1559)
+ * @param dataType        - eth-sign-request dataType (1=legacy, 2=typed, 3=personal, 4=typed transaction)
  * @param chainId         - chain ID (used for legacy tx v calculation)
  * @param requestId       - optional UUID hex from the original eth-sign-request
- * @param txType          - optional EIP-2718 transaction type byte (e.g. 0x01 for EIP-2930)
+ * @param txType          - optional EIP-2718 transaction type byte (0x01 EIP-2930, 0x02 EIP-1559)
  */
 export function buildEthSignatureUR(
   signRespDataHex: string,
@@ -68,15 +68,15 @@ export function buildEthSignatureUR(
   const s = pad32(sig.s!);
 
   let v: number;
-  if (txType === 0x01) {
-    // EIP-2930: v = recId (same as EIP-1559, no chain ID encoding)
+  if (txType === 0x01 || txType === 0x02) {
+    // Typed transactions use yParity directly: v = recId.
     v = recId;
   } else {
     switch (dataType) {
       case 1: // legacy transaction (EIP-155)
         v = V_BASE_EIP155 + 2 * (chainId ?? 0) + recId;
         break;
-      case 4: // EIP-1559
+      case 4: // typed transaction without an explicit txType
         v = recId;
         break;
       default: // EIP-712 (2), personal_sign (3), unknown

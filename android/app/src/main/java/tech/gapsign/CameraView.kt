@@ -100,9 +100,7 @@ class CameraView
 
         private fun analyzeImage(imageProxy: ImageProxy) {
             try {
-                val buffer = imageProxy.planes[0].buffer
-                val data = ByteArray(buffer.remaining())
-                buffer.get(data)
+                val data = extractLuminanceData(imageProxy)
 
                 val source =
                     PlanarYUVLuminanceSource(
@@ -124,6 +122,27 @@ class CameraView
                 reader.reset()
                 imageProxy.close()
             }
+        }
+
+        private fun extractLuminanceData(imageProxy: ImageProxy): ByteArray {
+            val plane = imageProxy.planes[0]
+            val buffer = plane.buffer
+            val width = imageProxy.width
+            val height = imageProxy.height
+            val rowStride = plane.rowStride
+            val pixelStride = plane.pixelStride
+
+            if (rowStride == width && pixelStride == 1) {
+                return ByteArray(buffer.remaining()).also { buffer.get(it) }
+            }
+
+            val data = ByteArray(width * height)
+            for (row in 0 until height) {
+                for (col in 0 until width) {
+                    data[row * width + col] = buffer.get(row * rowStride + col * pixelStride)
+                }
+            }
+            return data
         }
 
         private fun dispatchCodeEvent(value: String) {
