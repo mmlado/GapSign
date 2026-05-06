@@ -97,6 +97,7 @@ describe('buildExportUr', () => {
       {
         exportRespData: new Uint8Array([1, 2, 3]),
         sourceFingerprint: 0xdeadbeef,
+        parentFingerprint: 0xaabbccdd,
       },
       "m/44'/60'/0'",
       'MetaMask',
@@ -105,6 +106,7 @@ describe('buildExportUr', () => {
       new Uint8Array([1, 2, 3]),
       "m/44'/60'/0'",
       0xdeadbeef,
+      0xaabbccdd,
       'MetaMask',
     );
     expect(result).toBe('ur:crypto-hdkey/mock');
@@ -151,17 +153,24 @@ describe('exportKeyForWallet', () => {
     expect(exportKeysForBitget).toHaveBeenCalledWith(cmdSet, setStatus);
   });
 
-  it('exports an Ethereum hdkey with the parent fingerprint', async () => {
+  it('exports an Ethereum hdkey with master and parent fingerprints', async () => {
+    const masterResp = response([0, 1, 2]);
     const parentResp = response([1, 2, 3]);
     const extendedResp = response([4, 5, 6]);
+    pubKeyFingerprint.mockReturnValueOnce(0xaaaa).mockReturnValueOnce(0xbbbb);
     const cmdSet = {
-      exportKey: jest.fn().mockResolvedValue(parentResp),
+      exportKey: jest
+        .fn()
+        .mockResolvedValueOnce(masterResp)
+        .mockResolvedValueOnce(parentResp),
       exportExtendedKey: jest.fn().mockResolvedValue(extendedResp),
     } as any;
 
     const result = await exportKeyForWallet(cmdSet, "m/44'/60'/0'/0/0");
 
-    expect(cmdSet.exportKey).toHaveBeenCalledWith(
+    expect(cmdSet.exportKey).toHaveBeenNthCalledWith(1, 0, true, 'm', false);
+    expect(cmdSet.exportKey).toHaveBeenNthCalledWith(
+      2,
       0,
       true,
       "m/44'/60'/0'/0",
@@ -172,11 +181,13 @@ describe('exportKeyForWallet', () => {
       "m/44'/60'/0'/0/0",
       false,
     );
+    expect(masterResp.checkOK).toHaveBeenCalled();
     expect(parentResp.checkOK).toHaveBeenCalled();
     expect(extendedResp.checkOK).toHaveBeenCalled();
     expect(result).toEqual({
       exportRespData: new Uint8Array([4, 5, 6]),
-      sourceFingerprint: 0xdeadbeef,
+      sourceFingerprint: 0xaaaa,
+      parentFingerprint: 0xbbbb,
     });
   });
 

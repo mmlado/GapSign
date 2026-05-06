@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardAction, ExportKeyScreenProps } from '../navigation/types';
 import theme from '../theme';
+
 import Menu from '../components/Menu';
 
 export const dashboardEntry: DashboardAction = {
@@ -21,6 +22,7 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
         navigation.navigate('Keycard', {
           operation: 'export_key',
           derivationPath: "m/44'/60'/0'",
+          source: 'account.standard',
         }),
     },
     {

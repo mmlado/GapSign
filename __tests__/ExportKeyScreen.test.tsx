@@ -84,6 +84,7 @@ describe('ExportKeyScreen', () => {
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
         derivationPath: "m/44'/60'/0'",
+        source: 'account.standard',
       });
     });
 
