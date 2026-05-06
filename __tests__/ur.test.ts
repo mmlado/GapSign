@@ -169,6 +169,27 @@ describe('handleUR', () => {
       expect(result.message).toMatch(/Failed to parse sign request/);
     }
   });
+
+  it('parses an EIP-2930 eth-sign-request encoded as ERC-4527 typed transaction', () => {
+    const eip2930Tx =
+      '01eb010285037e11d60082753094d3cda913deb6f4967b2ef3aa68f5a843da74c4ef8806f05b59d3b2000080c0';
+    const cbor = buildCbor(eip2930Tx, 4, "m/44'/60'/0'/0/0", {
+      uuid: 'b3281a82-950d-4076-934b-1aa8b4f87492',
+      chainId: 1,
+      address: '0xa786ec7488a340964fc4a0367144436beb7904ce',
+      origin: 'ERC-4527 Wallet',
+    });
+
+    const result = handleUR('eth-sign-request', cbor);
+
+    expect(result.kind).toBe('eth-sign-request');
+    if (result.kind === 'eth-sign-request') {
+      expect(result.request.signData).toBe(eip2930Tx);
+      expect(result.request.dataType).toBe(4);
+      expect(result.request.chainId).toBe(1);
+      expect(result.request.origin).toBe('ERC-4527 Wallet');
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -290,6 +311,6 @@ describe('DATA_TYPE_LABELS', () => {
     expect(DATA_TYPE_LABELS[1]).toBe('Legacy Transaction');
     expect(DATA_TYPE_LABELS[2]).toBe('EIP-712 Typed Data');
     expect(DATA_TYPE_LABELS[3]).toBe('Personal Message');
-    expect(DATA_TYPE_LABELS[4]).toBe('EIP-1559 Transaction');
+    expect(DATA_TYPE_LABELS[4]).toBe('Typed Transaction');
   });
 });

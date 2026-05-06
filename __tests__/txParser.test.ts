@@ -175,6 +175,24 @@ describe('parseTx', () => {
     });
   });
 
+  describe('EIP-2930 encoded as ERC-4527 typed transaction (dataType=4, 0x01 prefix)', () => {
+    it('parses to address', () => {
+      const hex = buildEIP2930TxHex();
+      const tx = parseTx(hex, 4);
+      expect(tx?.to).toBe('0xD3CDa913deb6F4967B2eF3Aa68F5a843da74c4Ef');
+    });
+
+    it('parses fees as legacy kind (gasPrice)', () => {
+      const hex = buildEIP2930TxHex();
+      const tx = parseTx(hex, 4);
+      expect(tx?.fees.kind).toBe('legacy');
+      if (tx?.fees.kind === 'legacy') {
+        expect(tx.fees.gasPrice).toMatch(/Gwei/);
+        expect(tx.fees.gasLimit).toBe('30000');
+      }
+    });
+  });
+
   describe('EIP-1559 (dataType=4, 0x02 prefix)', () => {
     it('parses a valid type-2 transaction with an empty access list', () => {
       const tx = parseTx(buildEIP1559TxHex(), 4);
@@ -233,6 +251,9 @@ describe('parseTx', () => {
 
   it('validates transaction sign data only for transaction data types', () => {
     expect(() => validateEthTransactionSignData('deadbeef', 2)).not.toThrow();
+    expect(() =>
+      validateEthTransactionSignData(buildEIP2930TxHex(), 4),
+    ).not.toThrow();
     expect(() => validateEthTransactionSignData('deadbeef', 1)).toThrow(
       'Invalid Ethereum transaction payload',
     );
@@ -256,6 +277,12 @@ describe('parseTx', () => {
       const tx = parseTx(hex, 1, 'AVAX');
       expect(tx?.value).toBe('1 AVAX');
     });
+
+    it('uses custom symbol in value for dataType=4 EIP-2930 tx', () => {
+      const hex = buildEIP2930TxHex({ value: 1_000_000_000_000_000_000n });
+      const tx = parseTx(hex, 4, 'AVAX');
+      expect(tx?.value).toBe('1 AVAX');
+    });
   });
 });
 
@@ -268,12 +295,20 @@ describe('getTxLabel', () => {
     expect(getTxLabel(buildEIP2930TxHex(), 1)).toBe('EIP-2930 Transaction');
   });
 
+  it('returns "EIP-2930 Transaction" for 0x01-prefixed dataType=4', () => {
+    expect(getTxLabel(buildEIP2930TxHex(), 4)).toBe('EIP-2930 Transaction');
+  });
+
   it('returns "Legacy Transaction" for plain dataType=1', () => {
     expect(getTxLabel(buildLegacyTxHex(), 1)).toBe('Legacy Transaction');
   });
 
   it('returns "EIP-1559 Transaction" for dataType=4', () => {
     expect(getTxLabel('02' + 'deadbeef', 4)).toBe('EIP-1559 Transaction');
+  });
+
+  it('returns the typed transaction fallback for unknown type bytes', () => {
+    expect(getTxLabel('03' + 'deadbeef', 4)).toBe('Typed Transaction');
   });
 
   it('returns "EIP-712 Typed Data" for dataType=2', () => {
