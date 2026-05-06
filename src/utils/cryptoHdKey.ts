@@ -6,9 +6,13 @@ import {
 import { UR, UREncoder } from '@ngraveio/bc-ur';
 import Keycard from 'keycard-sdk';
 
-import { derivationPathToKeypath } from './hdKeyUtils';
+import {
+  derivationPathToKeypath,
+  numberToFingerprintBuffer,
+} from './hdKeyUtils';
 
 const LEDGER_LEGACY_SOURCE = 'account.ledger_legacy';
+const CRYPTO_HDKEY_NAME = 'GapSign';
 
 /**
  * Parse the raw Keycard exportKey TLV response, encode it as a
@@ -24,16 +28,19 @@ export function buildCryptoHdKeyUR(
   exportRespData: Uint8Array,
   derivationPath: string,
   sourceFingerprint: number,
+  parentFingerprint: number,
   source?: string,
 ): string {
   const parsed = Keycard.BIP32KeyPair.fromTLV(exportRespData);
 
   const hdKey = new CryptoHDKey({
     isMaster: false,
+    isPrivateKey: false,
     key: Buffer.from(Keycard.CryptoUtils.compressPublicKey(parsed.publicKey)),
     chainCode: Buffer.from(parsed.chainCode),
     origin: derivationPathToKeypath(derivationPath, sourceFingerprint),
-    name: 'GapSign',
+    parentFingerprint: numberToFingerprintBuffer(parentFingerprint),
+    name: CRYPTO_HDKEY_NAME,
     ...(source !== undefined && { note: source }),
     ...(source === LEDGER_LEGACY_SOURCE && {
       children: new CryptoKeypath([

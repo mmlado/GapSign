@@ -1,5 +1,6 @@
 import { URDecoder } from '@ngraveio/bc-ur';
 import CBOR from 'cbor-sync';
+
 import { buildCryptoHdKeyUR } from '../src/utils/cryptoHdKey';
 
 /* eslint-disable no-bitwise */
@@ -95,6 +96,7 @@ const CHAIN_CODE = new Uint8Array(32).fill(0xcc);
 
 const DERIVATION_PATH = "m/44'/60'/0'";
 const SOURCE_FINGERPRINT = 0xdeadbeef;
+const PARENT_FINGERPRINT = 0xcafebabe;
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -108,8 +110,13 @@ describe('buildCryptoHdKeyUR', () => {
   });
 
   it('returns a ur:crypto-hdkey string', () => {
-    const ur = buildCryptoHdKeyUR(tlvData, DERIVATION_PATH, SOURCE_FINGERPRINT);
-    expect(ur.toLowerCase()).toMatch(/^ur:crypto-hdkey\//);
+    const ur = buildCryptoHdKeyUR(
+      tlvData,
+      DERIVATION_PATH,
+      SOURCE_FINGERPRINT,
+      PARENT_FINGERPRINT,
+    );
+    expect(ur).toMatch(/^ur:crypto-hdkey\//);
   });
 
   describe('CBOR structure', () => {
@@ -120,6 +127,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
       );
       decoded = decodeUR(ur);
     });
@@ -154,6 +162,10 @@ describe('buildCryptoHdKeyUR', () => {
       expect(keypathMap[2]).toBe(SOURCE_FINGERPRINT);
     });
 
+    it('key 8 (parent-fingerprint) matches PARENT_FINGERPRINT', () => {
+      expect(decoded[8]).toBe(PARENT_FINGERPRINT);
+    });
+
     it('key 9 (name) is "GapSign"', () => {
       expect(decoded[9]).toBe('GapSign');
     });
@@ -165,6 +177,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
       );
       const decoded = decodeUR(ur);
       // The origin (key 6) is a CBOR tagged value (tag 304).
@@ -176,7 +189,12 @@ describe('buildCryptoHdKeyUR', () => {
     });
 
     it('encodes a non-hardened path correctly', () => {
-      const ur = buildCryptoHdKeyUR(tlvData, 'm/0/1', SOURCE_FINGERPRINT);
+      const ur = buildCryptoHdKeyUR(
+        tlvData,
+        'm/0/1',
+        SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
+      );
       const decoded = decodeUR(ur);
       const origin = decoded[6];
       const keypathMap = origin?.value ?? origin;
@@ -190,6 +208,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
         'account.ledger_live',
       );
       const decoded = decodeUR(ur);
@@ -201,6 +220,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
         'account.ledger_legacy',
       );
       const decoded = decodeUR(ur);
@@ -212,6 +232,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
         'account.ledger_live',
       );
       const decoded = decodeUR(ur);
@@ -223,6 +244,7 @@ describe('buildCryptoHdKeyUR', () => {
         tlvData,
         DERIVATION_PATH,
         SOURCE_FINGERPRINT,
+        PARENT_FINGERPRINT,
       );
       const decoded = decodeUR(ur);
       expect(decoded[10]).toBeUndefined();

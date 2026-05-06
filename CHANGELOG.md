@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Show friendly error when tapping a card with no master key instead of crashing with SW 0x6985
+- Fix `crypto-hdkey` ETH export: use master key (`m`) fingerprint as `origin.sourceFingerprint` and set `parentFingerprint` on the HDKey (fixes Ambire and strict BIP32 wallets)
 
 ## [1.4.0] - 2026-05-02
 

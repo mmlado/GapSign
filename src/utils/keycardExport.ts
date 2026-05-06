@@ -19,6 +19,7 @@ export type ExportKeyResult =
   | {
       exportRespData: Uint8Array;
       sourceFingerprint: number;
+      parentFingerprint: number;
     }
   | BitcoinCryptoAccount
   | BitgetExportResult;
@@ -59,6 +60,7 @@ export function buildExportUr(
       result.exportRespData,
       derivationPath,
       result.sourceFingerprint,
+      result.parentFingerprint,
       source,
     );
   }
@@ -78,6 +80,9 @@ export async function exportKeyForWallet(
   }
 
   if (!isBitcoinPath(derivationPath)) {
+    const masterResp = await cmdSet.exportKey(0, true, 'm', false);
+    masterResp.checkOK();
+
     const parentPath = derivationPath.split('/').slice(0, -1).join('/') || 'm';
     const parentResp = await cmdSet.exportKey(0, true, parentPath, false);
     parentResp.checkOK();
@@ -87,6 +92,9 @@ export async function exportKeyForWallet(
     return {
       exportRespData: resp.data,
       sourceFingerprint: pubKeyFingerprint(
+        Keycard.BIP32KeyPair.fromTLV(masterResp.data).publicKey,
+      ),
+      parentFingerprint: pubKeyFingerprint(
         Keycard.BIP32KeyPair.fromTLV(parentResp.data).publicKey,
       ),
     };

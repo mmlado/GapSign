@@ -123,6 +123,7 @@ const ethExportRoute = {
   params: {
     operation: 'export_key',
     derivationPath: "m/44'/60'/0'",
+    source: 'account.standard',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -294,6 +295,7 @@ describe('KeycardScreen', () => {
         result: {
           exportRespData: new Uint8Array([1, 2, 3]),
           sourceFingerprint: 0xdeadbeef,
+          parentFingerprint: 0xaabbccdd,
         },
       });
       await renderWithMockedHook(ethExportRoute);
@@ -305,7 +307,8 @@ describe('KeycardScreen', () => {
         new Uint8Array([1, 2, 3]),
         "m/44'/60'/0'",
         0xdeadbeef,
-        undefined,
+        0xaabbccdd,
+        'account.standard',
       );
       expect(navigation.reset).toHaveBeenCalledTimes(1);
     });
