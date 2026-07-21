@@ -4,12 +4,20 @@ import {
   BackHandler,
   Modal,
   Platform,
+  Pressable,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+  type Edge,
+} from 'react-native-safe-area-context';
 
 import theme from '@/theme';
+
+import { Icons } from '@/assets/icons';
 
 import PinPad from '@/components/PinPad';
 
@@ -17,6 +25,9 @@ import GenuineWarning from './GenuineWarning';
 import NFCError from './NFCError';
 import NFCSheet from './NFCSheet';
 import PairingPasswordEntry from './PairingPasswordEntry';
+
+/** Keeps the PIN modal inside the same bounds as a normal navigation screen. */
+const PIN_MODAL_EDGES: readonly Edge[] = ['top', 'bottom', 'left', 'right'];
 
 export type NFCVariant = 'scanning' | 'success' | 'error' | 'genuine_warning';
 
@@ -127,9 +138,21 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
         animationType="slide"
         onRequestClose={onCancel}
       >
-        <View style={[styles.pinModal, { paddingBottom: insets.bottom }]}>
+        <SafeAreaView style={styles.pinModal} edges={PIN_MODAL_EDGES}>
+          <View style={styles.header}>
+            <Pressable
+              onPress={onCancel}
+              hitSlop={12}
+              style={styles.headerBack}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Icons.arrowLeft />
+            </Pressable>
+            <Text style={styles.headerTitle}>Enter PIN</Text>
+          </View>
           <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {showIOSError && (
@@ -212,5 +235,25 @@ const styles = StyleSheet.create({
   pinModal: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  header: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  headerBack: {
+    position: 'absolute',
+    left: 8,
+    bottom: 0,
+    height: 56,
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  headerTitle: {
+    color: theme.colors.onSurface,
+    fontSize: 17,
+    fontWeight: '600',
   },
 });
