@@ -26,6 +26,7 @@ function mdi(name: MaterialDesignIconsIconName, defaultColor: string) {
 export const Icons = {
   scan: ScanIcon,
   keycard: KeycardIcon,
+  arrowLeft: mdi('arrow-left', theme.colors.onSurface),
   backspace: mdi('backspace-outline', theme.colors.onSurface),
   chevronRight: mdi('chevron-right', theme.colors.onSurface),
   close: mdi('close', theme.colors.onSurface),

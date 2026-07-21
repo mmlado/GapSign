@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
+
 ## [1.8.0] - 2026-06-30
 
 ### Added

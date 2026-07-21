@@ -8,9 +8,13 @@ import type { NFCOperation } from '../src/components/NFCBottomSheet';
 // Mocks
 // ---------------------------------------------------------------------------
 
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}));
+jest.mock('react-native-safe-area-context', () => {
+  const { View } = require('react-native');
+  return {
+    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+    SafeAreaView: View,
+  };
+});
 
 jest.mock('react-native-paper', () => {
   const { Text } = require('react-native');
@@ -187,24 +191,18 @@ describe('NFCBottomSheet — Android sheet', () => {
     });
 
     it('shows the pairing password title', () => {
-      renderSheet(
-        makeNfc('pairing_password', { submitPairingPassword }),
-      );
+      renderSheet(makeNfc('pairing_password', { submitPairingPassword }));
       expect(screen.getByText('Custom pairing password')).toBeTruthy();
     });
 
     it('shows Cancel and Continue buttons', () => {
-      renderSheet(
-        makeNfc('pairing_password', { submitPairingPassword }),
-      );
+      renderSheet(makeNfc('pairing_password', { submitPairingPassword }));
       expect(screen.getByText('Cancel')).toBeTruthy();
       expect(screen.getByText('Continue')).toBeTruthy();
     });
 
     it('calls onCancel when Cancel is pressed', () => {
-      renderSheet(
-        makeNfc('pairing_password', { submitPairingPassword }),
-      );
+      renderSheet(makeNfc('pairing_password', { submitPairingPassword }));
       fireEvent.press(screen.getByText('Cancel'));
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
@@ -222,9 +220,7 @@ describe('NFCBottomSheet — Android sheet', () => {
     });
 
     it('calls submitPairingPassword with the entered password', () => {
-      renderSheet(
-        makeNfc('pairing_password', { submitPairingPassword }),
-      );
+      renderSheet(makeNfc('pairing_password', { submitPairingPassword }));
       fireEvent.changeText(
         screen.getByPlaceholderText('Pairing password'),
         'mySecret',
@@ -234,9 +230,7 @@ describe('NFCBottomSheet — Android sheet', () => {
     });
 
     it('does not show the NFC icon area', () => {
-      renderSheet(
-        makeNfc('pairing_password', { submitPairingPassword }),
-      );
+      renderSheet(makeNfc('pairing_password', { submitPairingPassword }));
       expect(screen.queryByText('Tap your Keycard')).toBeNull();
     });
   });
@@ -252,6 +246,19 @@ describe('NFCBottomSheet — Android sheet', () => {
       const submitPin = jest.fn();
       renderSheet(makeNfc('pin_entry', { submitPin }));
       expect(screen.queryByText('Tap your Keycard')).toBeNull();
+    });
+
+    it('shows the Enter PIN title bar', () => {
+      const submitPin = jest.fn();
+      renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(screen.getByText('Enter PIN')).toBeTruthy();
+    });
+
+    it('calls onCancel when the back button is pressed', () => {
+      const submitPin = jest.fn();
+      renderSheet(makeNfc('pin_entry', { submitPin }));
+      fireEvent.press(screen.getByLabelText('Go back'));
+      expect(onCancel).toHaveBeenCalledTimes(1);
     });
   });
 
