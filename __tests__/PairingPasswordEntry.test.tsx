@@ -66,21 +66,30 @@ describe('PairingPasswordEntry', () => {
 
   it('calls onSubmit with trimmed password when Continue is pressed', () => {
     renderEntry();
-    fireEvent.changeText(screen.getByPlaceholderText('Pairing password'), 'myPassword');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Pairing password'),
+      'myPassword',
+    );
     fireEvent.press(screen.getByText('Continue'));
     expect(onSubmit).toHaveBeenCalledWith('myPassword');
   });
 
   it('trims whitespace before submitting', () => {
     renderEntry();
-    fireEvent.changeText(screen.getByPlaceholderText('Pairing password'), '  secret  ');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Pairing password'),
+      '  secret  ',
+    );
     fireEvent.press(screen.getByText('Continue'));
     expect(onSubmit).toHaveBeenCalledWith('secret');
   });
 
   it('does not call onSubmit when input is only whitespace', () => {
     renderEntry();
-    fireEvent.changeText(screen.getByPlaceholderText('Pairing password'), '   ');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Pairing password'),
+      '   ',
+    );
     fireEvent.press(screen.getByText('Continue'));
     expect(onSubmit).not.toHaveBeenCalled();
   });

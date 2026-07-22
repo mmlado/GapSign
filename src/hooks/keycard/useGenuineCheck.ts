@@ -49,5 +49,10 @@ export function useGenuineCheck() {
     pendingUidRef.current = null;
   }, []);
 
-  return { showGenuineWarning, checkOrSkipGenuine, proceedWithNonGenuine, resetGenuineState };
+  return {
+    showGenuineWarning,
+    checkOrSkipGenuine,
+    proceedWithNonGenuine,
+    resetGenuineState,
+  };
 }

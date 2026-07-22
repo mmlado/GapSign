@@ -4,6 +4,7 @@ const DASHBOARD_KEYCARD_NOTICE_DISMISSED =
   'preference_dashboard_keycard_notice_dismissed';
 const PIN_PAD_SCRAMBLE = 'preference_pinpad_scramble';
 const TOKEN_IMAGES_ENABLED = 'preference_token_images_enabled';
+const XPUB_NOTICE_DISMISSED = 'preference_xpub_notice_dismissed';
 
 async function loadBoolean(key: string): Promise<boolean> {
   try {
@@ -41,4 +42,12 @@ export async function loadTokenImagesEnabled(): Promise<boolean> {
 
 export async function saveTokenImagesEnabled(value: boolean): Promise<void> {
   return saveBoolean(TOKEN_IMAGES_ENABLED, value);
+}
+
+export async function loadXpubNoticeDismissed(): Promise<boolean> {
+  return loadBoolean(XPUB_NOTICE_DISMISSED);
+}
+
+export async function saveXpubNoticeDismissed(value: boolean): Promise<void> {
+  return saveBoolean(XPUB_NOTICE_DISMISSED, value);
 }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { XPUB_EXPLAINER } from '../constants/exportKey';
 import type { KeycardScreenProps } from '../navigation/types';
 import theme from '../theme';
 
@@ -148,7 +149,11 @@ export default function KeycardScreen({
           { name: 'ExportKey' },
           {
             name: 'QRResult',
-            params: { urString, title: 'Show key to the wallet' },
+            params: {
+              urString,
+              title: 'Show key to the wallet',
+              description: XPUB_EXPLAINER,
+            },
           },
         ],
       });

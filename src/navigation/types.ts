@@ -64,6 +64,7 @@ export type RootStackParamList = {
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     title: string;
+    description?: string; // explanatory copy rendered above the QR code
   };
   About: undefined;
   LicenseDetail: {

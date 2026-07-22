@@ -599,12 +599,10 @@ describe('useKeycardOperation', () => {
         sw: 0x9000,
         data: new Uint8Array([0x20 | 0]), // length-0 name = unnamed card
       }),
-      exportKey: jest
-        .fn()
-        .mockResolvedValue({
-          data: new Uint8Array([0x02]),
-          checkOK: jest.fn(),
-        }),
+      exportKey: jest.fn().mockResolvedValue({
+        data: new Uint8Array([0x02]),
+        checkOK: jest.fn(),
+      }),
       ...overrides,
     });
 
