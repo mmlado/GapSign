@@ -89,6 +89,11 @@ export default function MnemonicScreen({
     cancel();
   }, [cancel]);
 
+  const handleScanPress = useCallback(() => {
+    setScanError(null);
+    setScanning(true);
+  }, []);
+
   useEffect(() => {
     if (phase !== 'done') {
       return;
@@ -178,6 +183,8 @@ export default function MnemonicScreen({
           placeholder="Enter your recovery phrase"
           errors={[phraseError]}
           onWordsChange={setWords}
+          onScanPress={handleScanPress}
+          scanTestID="scan-seedqr-button"
         />
 
         <TextInput
@@ -188,16 +195,6 @@ export default function MnemonicScreen({
           placeholderTextColor={theme.colors.onSurfacePlaceholder}
           autoCapitalize="none"
           autoCorrect={false}
-        />
-
-        <PrimaryButton
-          label="Scan SeedQR"
-          icon={Icons.qr}
-          onPress={() => {
-            setScanError(null);
-            setScanning(true);
-          }}
-          testID="scan-seedqr-button"
         />
       </ScrollView>
 

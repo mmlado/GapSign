@@ -183,9 +183,9 @@ describe('MnemonicScreen', () => {
       expect(screen.getByText('Continue')).toBeTruthy();
     });
 
-    it('renders Scan SeedQR button', async () => {
+    it('renders SeedQR scan icon inside the seed-phrase input', async () => {
       renderScreen();
-      expect(screen.getByText('Scan SeedQR')).toBeTruthy();
+      expect(screen.getByTestId('scan-seedqr-button')).toBeTruthy();
     });
   });
 
@@ -316,7 +316,7 @@ describe('MnemonicScreen', () => {
     it('shows camera overlay when Scan SeedQR is pressed', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       expect(screen.getByTestId('camera')).toBeTruthy();
     });
@@ -324,7 +324,7 @@ describe('MnemonicScreen', () => {
     it('fills word input and dismisses overlay after valid scan', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       triggerScan(VALID_12_HEX);
       expect(screen.queryByTestId('camera')).toBeNull();
@@ -334,7 +334,7 @@ describe('MnemonicScreen', () => {
     it('shows error message for invalid QR payload', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       triggerScan('notahex!!!');
       expect(screen.getByText(/Not a valid SeedQR/)).toBeTruthy();
@@ -344,7 +344,7 @@ describe('MnemonicScreen', () => {
     it('shows error when decodeSeedQr fails on valid-length hex', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       const bip39 = require('@scure/bip39');
       jest.spyOn(bip39, 'entropyToMnemonic').mockImplementationOnce(() => {
@@ -359,7 +359,7 @@ describe('MnemonicScreen', () => {
     it('clears error when Tap to retry is pressed', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       triggerScan('notahex!!!');
       expect(screen.getByText(/Not a valid SeedQR/)).toBeTruthy();
@@ -379,7 +379,7 @@ describe('MnemonicScreen', () => {
       );
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       expect(screen.getByTestId('camera')).toBeTruthy();
       await act(async () => {
@@ -391,7 +391,7 @@ describe('MnemonicScreen', () => {
     it('does not navigate anywhere on scan', async () => {
       renderScreen();
       await act(async () => {
-        fireEvent.press(screen.getByText('Scan SeedQR'));
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
       });
       triggerScan(VALID_12_HEX);
       expect(navigation.navigate).not.toHaveBeenCalled();
