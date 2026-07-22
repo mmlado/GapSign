@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
+- Explainer on the Connect-software-wallet screen and above the exported-key QR code
 
 ### Changed
 

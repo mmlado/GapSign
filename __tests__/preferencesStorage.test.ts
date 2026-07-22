@@ -2,9 +2,11 @@ import {
   loadDashboardKeycardNoticeDismissed,
   loadPinPadScramble,
   loadTokenImagesEnabled,
+  loadXpubNoticeDismissed,
   saveDashboardKeycardNoticeDismissed,
   savePinPadScramble,
   saveTokenImagesEnabled,
+  saveXpubNoticeDismissed,
 } from '../src/storage/preferencesStorage';
 
 const mockGetItem = jest.fn();
@@ -157,6 +159,51 @@ describe('preferencesStorage', () => {
       await saveTokenImagesEnabled(false);
       expect(mockSetItem).toHaveBeenCalledWith(
         'preference_token_images_enabled',
+        '0',
+      );
+    });
+  });
+
+  describe('loadXpubNoticeDismissed', () => {
+    it('reads the correct storage key', async () => {
+      mockGetItem.mockResolvedValue(null);
+      await loadXpubNoticeDismissed();
+      expect(mockGetItem).toHaveBeenCalledWith(
+        'preference_xpub_notice_dismissed',
+      );
+    });
+
+    it('returns true when stored value is "1"', async () => {
+      mockGetItem.mockResolvedValue('1');
+      expect(await loadXpubNoticeDismissed()).toBe(true);
+    });
+
+    it('returns false when nothing stored', async () => {
+      mockGetItem.mockResolvedValue(null);
+      expect(await loadXpubNoticeDismissed()).toBe(false);
+    });
+
+    it('returns false when storage throws', async () => {
+      mockGetItem.mockRejectedValue(new Error('storage failure'));
+      expect(await loadXpubNoticeDismissed()).toBe(false);
+    });
+  });
+
+  describe('saveXpubNoticeDismissed', () => {
+    it('stores true as "1"', async () => {
+      mockSetItem.mockResolvedValue(undefined);
+      await saveXpubNoticeDismissed(true);
+      expect(mockSetItem).toHaveBeenCalledWith(
+        'preference_xpub_notice_dismissed',
+        '1',
+      );
+    });
+
+    it('stores false as "0"', async () => {
+      mockSetItem.mockResolvedValue(undefined);
+      await saveXpubNoticeDismissed(false);
+      expect(mockSetItem).toHaveBeenCalledWith(
+        'preference_xpub_notice_dismissed',
         '0',
       );
     });
