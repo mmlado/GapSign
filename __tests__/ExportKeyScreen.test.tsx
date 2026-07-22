@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -99,11 +100,21 @@ describe('ExportKeyScreen', () => {
     });
 
     it('does not show the xpub notice when it was previously dismissed', async () => {
-      mockLoadXpubNoticeDismissed.mockResolvedValue(true);
+      let resolveLoad!: (dismissed: boolean) => void;
+      mockLoadXpubNoticeDismissed.mockReturnValue(
+        new Promise<boolean>(resolve => {
+          resolveLoad = resolve;
+        }),
+      );
       renderScreenRaw();
       await waitFor(() =>
         expect(mockLoadXpubNoticeDismissed).toHaveBeenCalled(),
       );
+
+      await act(async () => {
+        resolveLoad(true);
+      });
+
       expect(screen.queryByText(/extended public key \(xpub\)/)).toBeNull();
     });
 
