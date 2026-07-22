@@ -123,6 +123,8 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
             onPress={handleDismissNotice}
             hitSlop={8}
             testID="xpub-notice-close"
+            accessibilityRole="button"
+            accessibilityLabel="Close the extended public key notice"
           >
             <Icons.close
               width={18}
