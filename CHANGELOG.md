@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
 
+### Changed
+
+- SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
+
 ## [1.8.0] - 2026-06-30
 
 ### Added
