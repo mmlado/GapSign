@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
 
+### Fixed
+
+- Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
+
 ## [1.8.0] - 2026-06-30
 
 ### Added
