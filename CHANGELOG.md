@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dimmed the NFC indicator icon in menu lists
 - New app icon: the orange Keycard "K" mark on a black background (iOS and Android)
 
+### Fixed
+
+- Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
+
 ## [1.8.0] - 2026-06-30
 
 ### Added
