@@ -49,6 +49,7 @@ const defaultHeaderOptions: NativeStackNavigationOptions = {
   headerTitleStyle,
   headerTitleAlign: 'center',
   headerShadowVisible: false,
+  headerBackButtonDisplayMode: 'minimal',
 };
 
 type Route = {
@@ -96,7 +97,7 @@ export const routes: Route[] = [
   {
     name: 'KeyPairMenu',
     component: KeyPairMenuScreen,
-    options: { ...defaultHeaderOptions, title: 'Add keypair' },
+    options: { ...defaultHeaderOptions, title: 'Add key pair' },
   },
   {
     name: 'KeySize',

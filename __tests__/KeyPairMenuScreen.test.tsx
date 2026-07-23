@@ -106,7 +106,7 @@ describe('KeyPairMenuScreen', () => {
 
   describe('dashboardEntry', () => {
     it('has the correct label', () => {
-      expect(dashboardEntry.label).toBe('Keypair');
+      expect(dashboardEntry.label).toBe('Key pair');
     });
 
     it('navigates to KeyPairMenu when invoked', () => {
