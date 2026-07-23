@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
+- iOS back button now shows only the arrow instead of the previous screen's title text
+- Renamed "Keypair" to "Key pair" across the menu and screen titles
+- Dimmed the NFC indicator icon in menu lists
+- New app icon: the orange Keycard "K" mark on a black background (iOS and Android)
 
 ## [1.8.0] - 2026-06-30
 

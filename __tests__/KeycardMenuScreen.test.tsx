@@ -40,7 +40,7 @@ describe('KeycardMenuScreen', () => {
   it('renders the requested submenu items', () => {
     renderScreen();
     expect(screen.getByText('Initialize')).toBeTruthy();
-    expect(screen.getByText('Keypair')).toBeTruthy();
+    expect(screen.getByText('Key pair')).toBeTruthy();
     expect(screen.getByText('Set card name')).toBeTruthy();
     expect(screen.getByText('Secrets')).toBeTruthy();
     expect(screen.getByText('Manage pairing slots')).toBeTruthy();
@@ -68,7 +68,7 @@ describe('KeycardMenuScreen', () => {
     renderScreen();
     for (const [label, destination] of [
       ['Initialize', 'InitCard'],
-      ['Keypair', 'KeyPairMenu'],
+      ['Key pair', 'KeyPairMenu'],
       ['Set card name', 'SetCardName'],
       ['Secrets', 'SecretsMenu'],
       ['Manage pairing slots', 'PairingSlots'],

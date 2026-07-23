@@ -5,7 +5,7 @@ import MaterialDesignIcons, {
 
 import theme from '../../theme';
 
-import KeycardIcon from './keycard.svg';
+import KeycardPalIcon from './keycard-pal.svg';
 import NfcDefault from './nfc/default.svg';
 import NfcActivate from './nfc_activate.svg';
 import QrIcon from './qr.svg';
@@ -25,7 +25,7 @@ function mdi(name: MaterialDesignIconsIconName, defaultColor: string) {
 
 export const Icons = {
   scan: ScanIcon,
-  keycard: KeycardIcon,
+  keycardPal: KeycardPalIcon,
   arrowLeft: mdi('arrow-left', theme.colors.onSurface),
   backspace: mdi('backspace-outline', theme.colors.onSurface),
   chevronRight: mdi('chevron-right', theme.colors.onSurface),
