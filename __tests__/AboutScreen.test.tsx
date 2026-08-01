@@ -116,14 +116,12 @@ describe('AboutScreen', () => {
     fireEvent.press(screen.getByLabelText('Show Bitcoin QR code'));
     expect(navigation.navigate).toHaveBeenCalledWith('AddressDetail', {
       address: bitcoinAddress,
-      index: 0,
       title: 'Bitcoin address',
     });
 
     fireEvent.press(screen.getByLabelText('Show Ethereum QR code'));
     expect(navigation.navigate).toHaveBeenCalledWith('AddressDetail', {
       address: ethereumAddress,
-      index: 0,
       title: 'Ethereum address',
     });
   });

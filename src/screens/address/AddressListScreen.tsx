@@ -28,23 +28,23 @@ import { useAddresses } from '../../hooks/keycard/useAddresses';
 
 import { pubKeyToBtcAddress } from '../../utils/bitcoinAddress';
 import { pubKeyToEthAddress } from '../../utils/ethereumAddress';
-import { deriveAddresses } from '../../utils/hdAddress';
+import { addressDerivationPath, deriveAddresses } from '../../utils/hdAddress';
 
 const BATCH = 20;
 const ADDR_FN = { eth: pubKeyToEthAddress, btc: pubKeyToBtcAddress };
 
 type RowProps = {
   address: string;
-  index: number;
-  onNavigate: (address: string, index: number) => void;
+  path: string;
+  onNavigate: (address: string, path: string) => void;
 };
 
-const AddressRow = memo(({ address, index, onNavigate }: RowProps) => (
-  <Pressable style={styles.row} onPress={() => onNavigate(address, index)}>
-    <Text style={styles.index}>{index}</Text>
+const AddressRow = memo(({ address, path, onNavigate }: RowProps) => (
+  <Pressable style={styles.row} onPress={() => onNavigate(address, path)}>
     <AddressText address={address} style={styles.address} />
-    <View style={styles.qrIcon}>
-      <Icons.qr width={20} height={20} color={theme.colors.onSurfaceVariant} />
+    <View style={styles.metaRow}>
+      <Text style={styles.path}>{path}</Text>
+      <Icons.qr width={16} height={16} color={theme.colors.onSurfaceVariant} />
     </View>
   </Pressable>
 ));
@@ -87,16 +87,20 @@ export default function AddressListScreen({
   const keyExtractor = useCallback((_: string, i: number) => String(i), []);
 
   const handleRowPress = useCallback(
-    (address: string, index: number) =>
-      navigation.navigate('AddressDetail', { address, index }),
+    (address: string, derivationPath: string) =>
+      navigation.navigate('AddressDetail', { address, derivationPath }),
     [navigation],
   );
 
   const renderItem = useCallback(
     ({ item, index }: { item: string; index: number }) => (
-      <AddressRow address={item} index={index} onNavigate={handleRowPress} />
+      <AddressRow
+        address={item}
+        path={addressDerivationPath(coin, index)}
+        onNavigate={handleRowPress}
+      />
     ),
-    [handleRowPress],
+    [coin, handleRowPress],
   );
 
   const handleCancel = useCallback(() => {
@@ -143,13 +147,25 @@ export default function AddressListScreen({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
   row: {
-    flexDirection: 'row',
     padding: 12,
+    gap: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.surfaceVariant,
   },
-  index: { width: 40, color: theme.colors.onSurfaceVariant },
-  address: { flex: 1, color: theme.colors.onSurface, fontFamily: 'monospace' },
+  address: {
+    color: theme.colors.onSurface,
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  path: {
+    color: theme.colors.onSurfaceVariant,
+    fontFamily: 'monospace',
+    fontSize: 12,
+  },
   footer: { paddingVertical: 16 },
-  qrIcon: { width: 40, alignItems: 'center', justifyContent: 'center' },
 });

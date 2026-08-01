@@ -43,6 +43,7 @@ jest.mock('keycard-sdk', () => ({
 }));
 
 jest.mock('../src/utils/hdAddress', () => ({
+  ...jest.requireActual('../src/utils/hdAddress'),
   deriveAddresses: jest.fn(),
 }));
 

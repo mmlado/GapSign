@@ -60,7 +60,7 @@ export type RootStackParamList = {
   PairingSlots: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
-  AddressDetail: { address: string; index: number; title?: string };
+  AddressDetail: { address: string; derivationPath?: string; title?: string };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     title: string;
