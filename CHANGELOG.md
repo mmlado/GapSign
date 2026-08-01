@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
 - Explainer on the Connect-software-wallet screen and above the exported-key QR code
+- View Addresses now shows the full BIP32 derivation path (e.g. `m/44'/60'/0'/0/0`) under each address in the list and on the address detail screen, replacing the bare index column
 
 ### Changed
 

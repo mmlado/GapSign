@@ -2,15 +2,12 @@ import { HDKey } from '@scure/bip32';
 import Keycard from 'keycard-sdk';
 import { useCallback } from 'react';
 
+import { ACCOUNT_PATHS } from '@/utils/hdAddress';
+
 import { useKeycardOp } from './useKeycardOperation';
 
-const COIN_CONFIG = {
-  eth: { path: "m/44'/60'/0'" },
-  btc: { path: "m/84'/0'/0'" },
-};
-
 export function useAddresses(coin: 'eth' | 'btc') {
-  const { path } = COIN_CONFIG[coin];
+  const path = ACCOUNT_PATHS[coin];
 
   return useKeycardOp<HDKey>(
     useCallback(
