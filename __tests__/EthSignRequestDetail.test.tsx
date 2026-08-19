@@ -652,3 +652,28 @@ describe('EthSignRequestDetail — pre-hashed EIP-712', () => {
     expect(screen.getByText(/Message hash/)).toBeTruthy();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Invalid payload banner (classifyEthPayload → kind 'invalid')
+// ---------------------------------------------------------------------------
+
+describe('EthSignRequestDetail — invalid payload banner', () => {
+  it('shows the cannot-sign banner with the classification reason', () => {
+    renderDetail({
+      signData: 'ab'.repeat(31), // 31 bytes — not a valid 32-byte digest
+      dataType: 0,
+      derivationPath: "m/44'/60'/0'/0",
+    });
+    expect(screen.getByText(/This request cannot be signed/)).toBeTruthy();
+    expect(screen.getByText(/31 bytes/)).toBeTruthy();
+  });
+
+  it('does not show the banner for a signable payload', () => {
+    renderDetail({
+      signData: 'ab'.repeat(32),
+      dataType: 0,
+      derivationPath: "m/44'/60'/0'/0",
+    });
+    expect(screen.queryByText(/This request cannot be signed/)).toBeNull();
+  });
+});

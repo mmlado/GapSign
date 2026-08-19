@@ -10,6 +10,7 @@ import InfoRow from '@/components/InfoRow';
 
 import { getChainName, getNativeCurrencySymbol } from '@/utils/chainMetadata';
 import { parseEip712Prehashed, parseEip712Summary } from '@/utils/eip712';
+import { classifyEthPayload } from '@/utils/ethPayload';
 import { checksumEthAddress } from '@/utils/ethereumAddress';
 import { getTxLabel, parseTx } from '@/utils/txParser';
 
@@ -34,6 +35,7 @@ export default function SignRequestDetail({
   const signer = request.address
     ? checksumEthAddress(request.address)
     : request.derivationPath;
+  const payload = classifyEthPayload(request.signData, request.dataType);
 
   return (
     <>
@@ -43,6 +45,14 @@ export default function SignRequestDetail({
           {typeLabel}
         </Text>
       </View>
+
+      {payload.kind === 'invalid' && (
+        <View style={styles.invalidBanner}>
+          <Text variant="bodyMedium" style={styles.invalidText}>
+            This request cannot be signed. {payload.reason}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.row}>
         <AddressInfoRow label="Signer" value={signer} />
@@ -124,6 +134,15 @@ const styles = StyleSheet.create({
   },
   typeChipText: {
     color: theme.colors.primary,
+  },
+  invalidBanner: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: theme.colors.surfaceVariant,
+  },
+  invalidText: {
+    color: theme.colors.error,
   },
   row: {
     paddingVertical: 8,
