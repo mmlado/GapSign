@@ -218,7 +218,8 @@ function renderScreenWithWc(result: any) {
 }
 
 const fullRequest: EthSignRequest = {
-  signData: 'aabbccdd',
+  // First byte >= 0xc0 → classifies as tx-legacy (signable)
+  signData: 'e8aabbccdd',
   dataType: 1,
   derivationPath: "m/44'/60'/0'/0",
   chainId: 1,
@@ -288,7 +289,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    expect(screen.getByText('aabbccdd')).toBeTruthy();
+    expect(screen.getByText('e8aabbccdd')).toBeTruthy();
   });
 
   it('displays the derivation path', async () => {

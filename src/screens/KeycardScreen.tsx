@@ -17,6 +17,7 @@ import {
   parseKeycardBtcMessageSignature,
 } from '../utils/btcMessage';
 import { BtcSigningSession, buildCryptoPsbtUR } from '../utils/btcPsbt';
+import { classifyEthPayload, signingDigest } from '../utils/ethPayload';
 import {
   buildEthSignatureURFromResult,
   buildRawEthHexSignature,
@@ -24,7 +25,6 @@ import {
 import {
   buildExportUr,
   exportKeyForWallet,
-  prepareSignHash,
   type ExportKeyResult,
 } from '../utils/keycardExport';
 
@@ -60,7 +60,12 @@ export default function KeycardScreen({
     }
 
     if (params.signMode === 'eth') {
-      const hash = prepareSignHash(params.signData, params.dataType);
+      const payload = classifyEthPayload(params.signData, params.dataType);
+      if (payload.kind === 'invalid') {
+        // buildSignKeycardParams never routes invalid payloads here.
+        return;
+      }
+      const hash = signingDigest(payload);
       hashRef.current = hash;
 
       execute(async cmdSet => {
@@ -172,15 +177,18 @@ export default function KeycardScreen({
       requestId?: string;
       signData?: string;
     };
+    const payload = classifyEthPayload(p.signData ?? '', p.dataType);
+    if (payload.kind === 'invalid') {
+      return;
+    }
 
     if (wcContext && !respondedRef.current) {
       respondedRef.current = true;
       const rawSig = buildRawEthHexSignature(
         result,
         hashRef.current,
-        p.dataType,
+        payload.kind,
         p.chainId,
-        p.signData,
       );
       respondSuccess(wcContext, rawSig).finally(() => resetToDashboard());
       return;
@@ -190,10 +198,9 @@ export default function KeycardScreen({
       buildEthSignatureURFromResult(
         result,
         hashRef.current,
-        p.dataType,
+        payload.kind,
         p.chainId,
         p.requestId,
-        p.signData,
       ),
     );
   }, [

@@ -7,8 +7,8 @@ import type { EthSignRequest } from '@/types';
 import AddressInfoRow from '@/components/ens/AddressInfoRow.online';
 import InfoRow from '@/components/InfoRow';
 
-import { computeEip712DigestFromJson } from '@/utils/erc8213';
-import { parseEip712RawTypedData, type Eip712Summary } from '@/utils/eip712';
+import { type Eip712Summary } from '@/utils/eip712';
+import { classifyEthPayload } from '@/utils/ethPayload';
 
 import { DigestRow, SectionHeader } from './shared';
 import SpecialEip712Section from './SpecialEip712Section';
@@ -28,21 +28,13 @@ export default function Eip712JsonPanel({
   const specialEip712 = eip712.special;
 
   const eip712Digest = useMemo(() => {
-    const raw = parseEip712RawTypedData(request.signData);
-    if (raw) {
-      return computeEip712DigestFromJson(
-        raw.domain,
-        raw.message,
-        raw.primaryType,
-        raw.types,
-      );
-    }
-    // dataType=0 (WC pre-hashed): signData is already the 32-byte digest
-    if (/^0x[0-9a-fA-F]{64}$/.test(request.signData)) {
-      return request.signData;
-    }
-    return null;
-  }, [request.signData]);
+    // Same classification that produces the bytes sent to the card
+    // (signingDigest) — the digest shown here is the digest signed.
+    const payload = classifyEthPayload(request.signData, request.dataType);
+    return payload.kind === 'eip712-json' || payload.kind === 'raw-digest'
+      ? payload.digest
+      : null;
+  }, [request.signData, request.dataType]);
 
   return (
     <View style={styles.panel}>

@@ -65,7 +65,6 @@ jest.mock('../src/utils/keycardExport', () => {
   return {
     ...actual,
     exportKeyForWallet: jest.fn(),
-    prepareSignHash: jest.fn(() => new Uint8Array(32)),
   };
 });
 
@@ -98,7 +97,8 @@ const signRoute = {
   params: {
     operation: 'sign',
     signMode: 'eth',
-    signData: 'deadbeef',
+    // 32-byte digest → classifies as raw-digest (dataType=2)
+    signData: 'ab'.repeat(32),
     derivationPath: "m/44'/60'/0'/0",
     dataType: 2,
     chainId: 1,
@@ -526,13 +526,7 @@ describe('KeycardScreen', () => {
   });
 
   describe('eth sign execute callback', () => {
-    it('calls signWithPath with the prepared hash and derivation path', async () => {
-      const { prepareSignHash } = require('../src/utils/keycardExport') as {
-        prepareSignHash: jest.Mock;
-      };
-      const hash = new Uint8Array(32).fill(0xcc);
-      (prepareSignHash as jest.Mock).mockReturnValue(hash);
-
+    it('calls signWithPath with the signing digest and derivation path', async () => {
       const checkOK = jest.fn();
       const signWithPath = jest.fn().mockResolvedValue({
         checkOK,
@@ -544,8 +538,10 @@ describe('KeycardScreen', () => {
       const signOp = mockExecute.mock.calls[0][0];
       const result = await signOp({ signWithPath });
 
+      // signRoute carries a raw 32-byte digest, so the signing digest is the
+      // payload bytes themselves (raw-digest passthrough).
       expect(signWithPath).toHaveBeenCalledWith(
-        hash,
+        new Uint8Array(Buffer.from(signRoute.params.signData, 'hex')),
         signRoute.params.derivationPath,
         false,
       );

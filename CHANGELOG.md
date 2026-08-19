@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Full and pre-hashed EIP-712 sign requests (`dataType=2`) are now signable: the card signs the computed EIP-712 digest — the same digest shown in the review — instead of failing on raw bytes after PIN entry. Unclassifiable payloads now show a "cannot be signed" explanation in the review instead of a Sign button
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
 - Explainer on the Connect-software-wallet screen and above the exported-key QR code
 - View Addresses now shows the full BIP32 derivation path (e.g. `m/44'/60'/0'/0/0`) under each address in the list and on the address detail screen, replacing the bare index column
@@ -22,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
 - Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
 
 ## [1.8.0] - 2026-06-30
