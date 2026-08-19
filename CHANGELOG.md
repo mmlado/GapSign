@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
+- Signing a malformed PSBT or failing to encode the result QR now shows an error screen instead of crashing or doing nothing
 - Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
 
 ## [1.8.0] - 2026-06-30

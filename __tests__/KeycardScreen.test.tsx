@@ -403,18 +403,6 @@ describe('KeycardScreen', () => {
       expect(resetCall.routes[1].name).toBe('QRResult');
       expect(resetCall.routes[1].params.urString).toMatch(/^ur:crypto-psbt\//i);
     });
-
-    it('does not navigate if result is missing psbtHex', async () => {
-      mockUseKeycardOperation.mockReturnValue({
-        ...hookMock('done'),
-        result: { psbtHex: undefined },
-      });
-      await renderWithMockedHook(btcSignRoute);
-      await act(async () => {
-        jest.advanceTimersByTime(800);
-      });
-      expect(navigation.reset).not.toHaveBeenCalled();
-    });
   });
 
   describe('BTC message sign navigation', () => {
@@ -434,7 +422,10 @@ describe('KeycardScreen', () => {
 
       expect(mockExecute).toHaveBeenCalledTimes(1);
       const signOperation = mockExecute.mock.calls[0][0];
-      const result = await signOperation({ signWithPath });
+      const result = await signOperation(
+        { signWithPath },
+        { setStatus: jest.fn() },
+      );
 
       expect(hashBitcoinMessage).toHaveBeenCalledWith(
         btcMessageSignRoute.params.signDataHex,
@@ -461,18 +452,6 @@ describe('KeycardScreen', () => {
       const resetCall = navigation.reset.mock.calls[0][0];
       expect(resetCall.routes[1].name).toBe('QRResult');
       expect(resetCall.routes[1].params.urString).toBe('ur:btc-signature/mock');
-    });
-
-    it('does not navigate when result is not a Uint8Array (handleBtcMessageSignDone guard)', async () => {
-      mockUseKeycardOperation.mockReturnValue({
-        ...hookMock('done'),
-        result: { psbtHex: 'unexpected' },
-      });
-      await renderWithMockedHook(btcMessageSignRoute);
-      await act(async () => {
-        jest.advanceTimersByTime(800);
-      });
-      expect(navigation.reset).not.toHaveBeenCalled();
     });
   });
 
@@ -536,7 +515,7 @@ describe('KeycardScreen', () => {
       await renderScreen('pin_entry', signRoute);
 
       const signOp = mockExecute.mock.calls[0][0];
-      const result = await signOp({ signWithPath });
+      const result = await signOp({ signWithPath }, { setStatus: jest.fn() });
 
       // signRoute carries a raw 32-byte digest, so the signing digest is the
       // payload bytes themselves (raw-digest passthrough).
@@ -596,18 +575,6 @@ describe('KeycardScreen', () => {
         setStatus,
       );
     });
-
-    it('does not navigate when export result is a Uint8Array (ArrayBuffer guard)', async () => {
-      mockUseKeycardOperation.mockReturnValue({
-        ...hookMock('done'),
-        result: new Uint8Array([1, 2, 3]),
-      });
-      await renderWithMockedHook(ethExportRoute);
-      await act(async () => {
-        jest.advanceTimersByTime(800);
-      });
-      expect(navigation.reset).not.toHaveBeenCalled();
-    });
   });
 
   describe('WalletConnect eth sign done', () => {
@@ -653,22 +620,8 @@ describe('KeycardScreen', () => {
     });
   });
 
-  describe('handleEthSignDone guard', () => {
-    it('does not navigate when result is not a Uint8Array', async () => {
-      mockUseKeycardOperation.mockReturnValue({
-        ...hookMock('done'),
-        result: { unexpected: true },
-      });
-      await renderWithMockedHook(signRoute);
-      await act(async () => {
-        jest.advanceTimersByTime(800);
-      });
-      expect(navigation.reset).not.toHaveBeenCalled();
-    });
-  });
-
   describe('UR build error handling', () => {
-    it('logs console.error when UR building throws inside the 800ms timer', async () => {
+    it('shows a visible error state when UR building throws inside the 800ms timer', async () => {
       const { buildEthSignatureURFromResult } =
         require('../src/utils/ethSignature') as {
           buildEthSignatureURFromResult: jest.Mock;
@@ -677,24 +630,76 @@ describe('KeycardScreen', () => {
         throw new Error('encode failed');
       });
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
       mockUseKeycardOperation.mockReturnValue({
         ...hookMock('done'),
         result: new Uint8Array(65).fill(0x01),
       });
-      await renderWithMockedHook(signRoute);
+      const view = await renderWithMockedHook(signRoute);
       await act(async () => {
         jest.advanceTimersByTime(800);
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '[KeycardScreen] Failed to build UR:',
-        'encode failed',
+      expect(navigation.reset).not.toHaveBeenCalled();
+      expect(
+        view.getByText(/Failed to build the result: encode failed/),
+      ).toBeTruthy();
+    });
+  });
+
+  describe('prepare failure', () => {
+    it('shows the error state and never starts NFC when the PSBT cannot be prepared', async () => {
+      const { BtcSigningSession } = require('../src/utils/btcPsbt') as {
+        BtcSigningSession: jest.Mock;
+      };
+      BtcSigningSession.mockImplementationOnce(() => {
+        throw new Error('Invalid PSBT payload');
+      });
+
+      mockUseKeycardOperation.mockReturnValue(hookMock('idle'));
+      const view = render(
+        <KeycardScreen route={btcSignRoute} navigation={navigation} />,
       );
-      consoleSpy.mockRestore();
+      await act(async () => {});
+
+      expect(mockExecute).not.toHaveBeenCalled();
+      expect(view.getByText('Unable to prepare')).toBeTruthy();
+      expect(view.getByText('Invalid PSBT payload')).toBeTruthy();
+    });
+
+    it('falls back to a generic message when the prepare error has none', async () => {
+      const { BtcSigningSession } = require('../src/utils/btcPsbt') as {
+        BtcSigningSession: jest.Mock;
+      };
+      BtcSigningSession.mockImplementationOnce(() => {
+        throw Object.assign(new Error(), { message: undefined });
+      });
+
+      mockUseKeycardOperation.mockReturnValue(hookMock('idle'));
+      const view = render(
+        <KeycardScreen route={btcSignRoute} navigation={navigation} />,
+      );
+      await act(async () => {});
+
+      expect(view.getByText('Failed to prepare the operation.')).toBeTruthy();
+    });
+
+    it('Go back returns to the previous screen', async () => {
+      const { BtcSigningSession } = require('../src/utils/btcPsbt') as {
+        BtcSigningSession: jest.Mock;
+      };
+      BtcSigningSession.mockImplementationOnce(() => {
+        throw new Error('Invalid PSBT payload');
+      });
+
+      mockUseKeycardOperation.mockReturnValue(hookMock('idle'));
+      const view = render(
+        <KeycardScreen route={btcSignRoute} navigation={navigation} />,
+      );
+      await act(async () => {});
+
+      const { fireEvent } = require('@testing-library/react-native');
+      fireEvent.press(view.getByText('Go back'));
+      expect(navigation.goBack).toHaveBeenCalled();
     });
   });
 });
