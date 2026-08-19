@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Renamed "Keypair" to "Key pair" across the menu and screen titles
 - Dimmed the NFC indicator icon in menu lists
 - New app icon: the orange Keycard "K" mark on a black background (iOS and Android)
+- Updated vulnerable dependencies flagged by Dependabot (nanoid, js-yaml, brace-expansion, shell-quote, svgo, joi, ws, uuid, concurrent-ruby); `image-size` and `elliptic` alerts remain open because no patched releases exist
 
 ### Fixed
 
