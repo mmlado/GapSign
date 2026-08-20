@@ -14,7 +14,8 @@ import {
   buildEthSignatureURFromResult,
   buildRawEthHexSignature,
 } from './ethSignature';
-import { buildExportUr, exportKeyForWallet } from './keycardExport';
+import { getExportTarget } from './exportTargets';
+import { exportKeysForTarget, type ExportKeysResult } from './keycardExport';
 
 /**
  * What happens after the card operation succeeds. 'ur' outcomes navigate to
@@ -164,12 +165,13 @@ function prepareBtcMessageSign(params: BtcMessageParams): KeycardFlowRun {
 }
 
 function prepareExportKey(params: ExportKeyParams): KeycardFlowRun {
-  return flow<Awaited<ReturnType<typeof exportKeyForWallet>>>({
+  const target = getExportTarget(params.target);
+  return flow<ExportKeysResult>({
     cardOp: (cmdSet, setStatus) =>
-      exportKeyForWallet(cmdSet, params.derivationPath, setStatus),
+      exportKeysForTarget(cmdSet, target.keys, setStatus),
     buildOutput: result => ({
       kind: 'ur',
-      urString: buildExportUr(result, params.derivationPath, params.source),
+      urString: target.buildUr(result),
       title: 'Show key to the wallet',
       description: XPUB_EXPLAINER,
       doneNavigation: 'export',

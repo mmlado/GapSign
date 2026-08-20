@@ -35,7 +35,6 @@ jest.mock('../src/utils/cryptoHdKey', () => ({
 
 jest.mock('../src/utils/cryptoMultiAccounts', () => ({
   buildCryptoMultiAccountsUR: jest.fn(() => 'ur:crypto-multi-accounts/mock'),
-  exportKeysForBitget: jest.fn(),
 }));
 
 jest.mock('../src/utils/btcPsbt', () => ({
@@ -64,7 +63,7 @@ jest.mock('../src/utils/keycardExport', () => {
   const actual = jest.requireActual('../src/utils/keycardExport');
   return {
     ...actual,
-    exportKeyForWallet: jest.fn(),
+    exportKeysForTarget: jest.fn(),
   };
 });
 
@@ -135,7 +134,7 @@ const btcMessageSignRoute = {
 const btcExportRoute = {
   params: {
     operation: 'export_key',
-    derivationPath: "m/84'/0'/0'",
+    target: 'bitcoin',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -144,8 +143,7 @@ const btcExportRoute = {
 const ethExportRoute = {
   params: {
     operation: 'export_key',
-    derivationPath: "m/44'/60'/0'",
-    source: 'account.standard',
+    target: 'ethereum',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -154,7 +152,7 @@ const ethExportRoute = {
 const bitgetExportRoute = {
   params: {
     operation: 'export_key',
-    derivationPath: 'bitget',
+    target: 'bitget',
   },
   key: 'Keycard',
   name: 'Keycard',
@@ -293,7 +291,7 @@ describe('KeycardScreen', () => {
 
       mockUseKeycardOperation.mockReturnValue({
         ...hookMock('done'),
-        result: { masterFingerprint: 1, descriptors: [] },
+        result: { masterFingerprint: 1, keys: [] },
       });
       await renderWithMockedHook(btcExportRoute);
       await act(async () => {
@@ -316,9 +314,17 @@ describe('KeycardScreen', () => {
       mockUseKeycardOperation.mockReturnValue({
         ...hookMock('done'),
         result: {
-          exportRespData: new Uint8Array([1, 2, 3]),
-          sourceFingerprint: 0xdeadbeef,
-          parentFingerprint: 0xaabbccdd,
+          masterFingerprint: 0xdeadbeef,
+          keys: [
+            {
+              entry: {
+                derivationPath: "m/44'/60'/0'",
+                parentPath: "m/44'/60'",
+              },
+              exportRespData: new Uint8Array([1, 2, 3]),
+              parentFingerprint: 0xaabbccdd,
+            },
+          ],
         },
       });
       await renderWithMockedHook(ethExportRoute);
@@ -554,13 +560,14 @@ describe('KeycardScreen', () => {
   });
 
   describe('export execute callback', () => {
-    it('calls exportKeyForWallet with derivationPath and setStatus', async () => {
-      const { exportKeyForWallet } = require('../src/utils/keycardExport') as {
-        exportKeyForWallet: jest.Mock;
+    it("calls exportKeysForTarget with the target's plan and setStatus", async () => {
+      const { exportKeysForTarget } = require('../src/utils/keycardExport') as {
+        exportKeysForTarget: jest.Mock;
       };
-      exportKeyForWallet.mockResolvedValue({
-        exportRespData: new Uint8Array([1]),
-      });
+      exportKeysForTarget.mockResolvedValue({ masterFingerprint: 1, keys: [] });
+      const { getExportTarget } = jest.requireActual(
+        '../src/utils/exportTargets',
+      );
 
       await renderScreen('pin_entry', ethExportRoute);
 
@@ -569,9 +576,9 @@ describe('KeycardScreen', () => {
       const setStatus = jest.fn();
       await exportOp(cmdSet, { setStatus });
 
-      expect(exportKeyForWallet).toHaveBeenCalledWith(
+      expect(exportKeysForTarget).toHaveBeenCalledWith(
         cmdSet,
-        ethExportRoute.params.derivationPath,
+        getExportTarget('ethereum').keys,
         setStatus,
       );
     });
