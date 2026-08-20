@@ -142,64 +142,61 @@ describe('ExportKeyScreen', () => {
       fireEvent.press(screen.getByText('Ethereum'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/44'/60'/0'",
-        source: 'account.standard',
+        target: 'ethereum',
       });
     });
 
-    it('navigates to Keycard with Bitcoin export path when Bitcoin is pressed', async () => {
+    it('navigates to Keycard with the bitcoin target when Bitcoin is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Bitcoin'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/84'/0'/0'",
+        target: 'bitcoin',
       });
     });
 
-    it('navigates to Keycard with multisig export path when Bitcoin Multisig is pressed', async () => {
+    it('navigates to Keycard with the bitcoin-multisig target when Bitcoin Multisig is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Bitcoin Multisig'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/48'/0'/0'/2'",
+        target: 'bitcoin-multisig',
       });
     });
 
-    it('navigates to Keycard with testnet export path when Bitcoin Testnet is pressed', async () => {
+    it('navigates to Keycard with the bitcoin-testnet target when Bitcoin Testnet is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Bitcoin Testnet'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/84'/1'/0'",
+        target: 'bitcoin-testnet',
       });
     });
 
-    it('navigates to Keycard with source "account.ledger_live" when Ledger Live is pressed', async () => {
+    it('navigates to Keycard with the ledger-live target when Ledger Live is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Ledger Live'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/44'/60'/0'",
-        source: 'account.ledger_live',
+        target: 'ledger-live',
       });
     });
 
-    it('navigates to Keycard with source "account.ledger_legacy" when Ledger Legacy is pressed', async () => {
+    it('navigates to Keycard with the ledger-legacy target when Ledger Legacy is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Ledger Legacy'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: "m/44'/60'/0'",
-        source: 'account.ledger_legacy',
+        target: 'ledger-legacy',
       });
     });
 
-    it('navigates to Keycard with derivationPath "bitget" when Bitget is pressed', async () => {
+    it('navigates to Keycard with the bitget target when Bitget is pressed', async () => {
       await renderScreen();
       fireEvent.press(screen.getByText('Bitget'));
       expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
         operation: 'export_key',
-        derivationPath: 'bitget',
+        target: 'bitget',
       });
     });
   });

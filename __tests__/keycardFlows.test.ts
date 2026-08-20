@@ -22,8 +22,11 @@ jest.mock('../src/utils/btcMessage', () => ({
 }));
 
 jest.mock('../src/utils/keycardExport', () => ({
-  buildExportUr: jest.fn(() => 'ur:crypto-hdkey/mock'),
-  exportKeyForWallet: jest.fn(),
+  exportKeysForTarget: jest.fn(),
+}));
+
+jest.mock('../src/utils/cryptoHdKey', () => ({
+  buildCryptoHdKeyUR: jest.fn(() => 'ur:crypto-hdkey/mock'),
 }));
 
 const {
@@ -39,10 +42,7 @@ const {
   parseKeycardBtcMessageSignature,
   buildBtcSignatureUR,
 } = require('../src/utils/btcMessage');
-const {
-  buildExportUr,
-  exportKeyForWallet,
-} = require('../src/utils/keycardExport');
+const { exportKeysForTarget } = require('../src/utils/keycardExport');
 
 const DIGEST_HEX = 'ab'.repeat(32);
 
@@ -63,7 +63,6 @@ beforeEach(() => {
   buildCryptoPsbtUR.mockReturnValue('ur:crypto-psbt/mock');
   hashBitcoinMessage.mockReturnValue(new Uint8Array(32).fill(0x77));
   buildBtcSignatureUR.mockReturnValue('ur:btc-signature/mock');
-  buildExportUr.mockReturnValue('ur:crypto-hdkey/mock');
 });
 
 describe('eth sign flow', () => {
@@ -236,38 +235,48 @@ describe('btc message flow', () => {
 });
 
 describe('export key flow', () => {
-  const params = {
-    operation: 'export_key',
-    derivationPath: "m/44'/60'/0'",
-    source: 'MetaMask',
-  } as any;
+  const params = { operation: 'export_key', target: 'ethereum' } as any;
+  const { getExportTarget } = jest.requireActual('../src/utils/exportTargets');
 
-  it('cardOp delegates to exportKeyForWallet with the derivation path', async () => {
-    const exportResult = { exportRespData: new Uint8Array([1]) };
-    exportKeyForWallet.mockResolvedValue(exportResult);
+  it("cardOp delegates to exportKeysForTarget with the target's plan", async () => {
+    const exportResult = { masterFingerprint: 1, keys: [] };
+    exportKeysForTarget.mockResolvedValue(exportResult);
 
     const flowRun = prepareKeycardFlow(params);
     const setStatus = jest.fn();
     const cmdSet = {} as any;
 
     await expect(flowRun.cardOp(cmdSet, setStatus)).resolves.toBe(exportResult);
-    expect(exportKeyForWallet).toHaveBeenCalledWith(
+    expect(exportKeysForTarget).toHaveBeenCalledWith(
       cmdSet,
-      params.derivationPath,
+      getExportTarget('ethereum').keys,
       setStatus,
     );
   });
 
-  it('buildOutput builds the export UR with the xpub explainer and export navigation', () => {
+  it("buildOutput builds the target's UR with the xpub explainer and export navigation", () => {
     const flowRun = prepareKeycardFlow(params);
-    const exportResult = { exportRespData: new Uint8Array([1]) };
+    const exportResult = {
+      masterFingerprint: 0xaa,
+      keys: [
+        {
+          entry: { derivationPath: "m/44'/60'/0'", parentPath: "m/44'/60'" },
+          exportRespData: new Uint8Array([1]),
+          parentFingerprint: 0xbb,
+        },
+      ],
+    };
 
     const outcome = flowRun.buildOutput(exportResult);
 
-    expect(buildExportUr).toHaveBeenCalledWith(
-      exportResult,
-      params.derivationPath,
-      params.source,
+    // The ethereum target's buildUr feeds the mocked crypto-hdkey builder.
+    const { buildCryptoHdKeyUR } = require('../src/utils/cryptoHdKey');
+    expect(buildCryptoHdKeyUR).toHaveBeenCalledWith(
+      new Uint8Array([1]),
+      "m/44'/60'/0'",
+      0xaa,
+      0xbb,
+      'account.standard',
     );
     expect(outcome).toEqual({
       kind: 'ur',

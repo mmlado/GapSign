@@ -13,6 +13,7 @@ import {
   loadXpubNoticeDismissed,
   saveXpubNoticeDismissed,
 } from '../storage/preferencesStorage';
+import { EXPORT_TARGETS } from '../utils/exportTargets';
 
 export const dashboardEntry: DashboardAction = {
   label: 'Connect software wallet',
@@ -44,74 +45,15 @@ export default function ExportKeyScreen({ navigation }: ExportKeyScreenProps) {
     saveXpubNoticeDismissed(true).catch(() => {});
   }, []);
 
-  const entries = [
-    {
-      label: 'Ethereum',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/44'/60'/0'",
-          source: 'account.standard',
-        }),
-    },
-    {
-      label: 'Bitcoin',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/84'/0'/0'",
-        }),
-    },
-    {
-      label: 'Bitcoin Multisig',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/48'/0'/0'/2'",
-        }),
-    },
-    {
-      label: 'Bitcoin Testnet',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/84'/1'/0'",
-        }),
-    },
-    {
-      label: 'Bitget',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: 'bitget',
-        }),
-    },
-    {
-      label: 'Ledger Live',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/44'/60'/0'",
-          source: 'account.ledger_live',
-        }),
-    },
-    {
-      label: 'Ledger Legacy',
-      requiresNfc: true,
-      onPress: () =>
-        navigation.navigate('Keycard', {
-          operation: 'export_key',
-          derivationPath: "m/44'/60'/0'",
-          source: 'account.ledger_legacy',
-        }),
-    },
-  ];
+  const entries = EXPORT_TARGETS.map(target => ({
+    label: target.label,
+    requiresNfc: true,
+    onPress: () =>
+      navigation.navigate('Keycard', {
+        operation: 'export_key',
+        target: target.id,
+      }),
+  }));
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
