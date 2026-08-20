@@ -21,6 +21,8 @@ import { Icons } from '@/assets/icons';
 
 import PinPad from '@/components/PinPad';
 
+import type { KeycardPhase } from '@/hooks/keycard/useKeycardOperation';
+
 import GenuineWarning from './GenuineWarning';
 import NFCError from './NFCError';
 import NFCSheet from './NFCSheet';
@@ -32,7 +34,7 @@ const PIN_MODAL_EDGES: readonly Edge[] = ['top', 'bottom', 'left', 'right'];
 export type NFCVariant = 'scanning' | 'success' | 'error' | 'genuine_warning';
 
 export type NFCOperation = {
-  phase: string;
+  phase: KeycardPhase;
   status: string;
   cardName?: string | null;
   cardFingerprint?: number | null;

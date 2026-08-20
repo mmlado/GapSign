@@ -9,17 +9,19 @@ import { pubKeyFingerprint } from '@/utils/cryptoAccount';
 import { toHex } from '@/utils/hex';
 import { displayKeycardName, parseKeycardName } from '@/utils/keycardName';
 import { useGenuineCheck } from './useGenuineCheck';
-import { useNFCOperation } from './useNFCOperation';
+import { useNFCOperation, type NFCSessionPhase } from './useNFCOperation';
 import { usePairing } from './usePairing';
 
-export type Phase =
-  | 'idle'
+/**
+ * The full phase vocabulary of a coordinated Keycard operation: the 4-state
+ * session machine plus the coordinator's interactive interrupts. There is one
+ * vocabulary — never re-declare or rename these states downstream.
+ */
+export type KeycardPhase =
+  | NFCSessionPhase
   | 'pin_entry'
   | 'pairing_password'
-  | 'nfc'
-  | 'genuine_warning'
-  | 'done'
-  | 'error';
+  | 'genuine_warning';
 
 export type KeycardOperationFn<T> = (
   cmdSet: InstanceType<typeof Keycard.Commandset>,
@@ -32,7 +34,7 @@ export interface ExecuteOptions {
 }
 
 export interface UseKeycardOperation<T> {
-  phase: Phase;
+  phase: KeycardPhase;
   status: string;
   cardName: string | null;
   cardFingerprint: number | null;
@@ -247,7 +249,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   };
 
   // 'genuine_warning' takes priority over all other phase overrides.
-  const phase: Phase = showGenuineWarning
+  const phase: KeycardPhase = showGenuineWarning
     ? 'genuine_warning'
     : waitingForPairingPassword ||
       (pairingPasswordError !== null && nfcPhase === 'error')

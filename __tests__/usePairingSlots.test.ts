@@ -89,12 +89,12 @@ describe('usePairingSlots', () => {
   });
 
   describe('checkSlots', () => {
-    it('transitions to checking and calls startNFC', async () => {
+    it('transitions to nfc and calls startNFC', async () => {
       const { result } = renderHook(() => usePairingSlots());
       await act(async () => {
         result.current.checkSlots();
       });
-      expect(result.current.phase).toBe('checking');
+      expect(result.current.phase).toBe('nfc');
       expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
     });
 
@@ -109,7 +109,7 @@ describe('usePairingSlots', () => {
         await capturedOnConnected?.();
       });
 
-      expect(result.current.phase).toBe('ready');
+      expect(result.current.phase).toBe('done');
       expect(result.current.slotInfo).toEqual({
         totalSlots: 10,
         freeSlots: 7,
