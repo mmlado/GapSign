@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Importing a key pair (recovery phrase or backup check) now returns to a fresh Dashboard like every other completed Keycard operation, clearing the seed-entry screens from the navigation stack
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
 - iOS back button now shows only the arrow instead of the previous screen's title text
 - Renamed "Keypair" to "Key pair" across the menu and screen titles
@@ -26,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
 - Signing a malformed PSBT or failing to encode the result QR now shows an error screen instead of crashing or doing nothing
+- Navigating back during an active Keycard tap now cancels the NFC session on every Keycard screen; previously only Initialize Card and Change PIN/PUK did this, leaving the session running elsewhere
 - Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
 
 ## [1.8.0] - 2026-06-30

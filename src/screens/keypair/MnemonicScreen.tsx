@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Keyboard,
   Platform,
@@ -29,6 +29,7 @@ import {
 } from '../../hooks/keycard/useLoadKey';
 import { useVerifyFingerprint } from '../../hooks/keycard/useVerifyFingerprint';
 import { deriveMnemonicFingerprint } from '../../hooks/keycard/useVerifyMnemonic';
+import { useKeycardScreen } from '../../hooks/useKeycardScreen';
 import { decodeSeedQr, isSeedQrPayload } from '../../utils/seedQr';
 
 export default function MnemonicScreen({
@@ -64,7 +65,6 @@ export default function MnemonicScreen({
   const loadKey = useLoadKey();
   const verifyFingerprint = useVerifyFingerprint();
   const keycard = mode === 'verify' ? verifyFingerprint : loadKey;
-  const { phase, result, cancel } = keycard;
 
   const handleTextChange = useCallback((text: string) => {
     setInput(text);
@@ -85,52 +85,29 @@ export default function MnemonicScreen({
     loadKey.start(deriveMnemonicKeyPair(words, passphrase || undefined));
   }, [loadKey, mode, passphrase, verifyFingerprint, words]);
 
-  const handleCancel = useCallback(() => {
-    cancel();
-  }, [cancel]);
-
   const handleScanPress = useCallback(() => {
     setScanError(null);
     setScanning(true);
   }, []);
 
-  useEffect(() => {
-    if (phase !== 'done') {
-      return;
-    }
-    if (mode === 'verify') {
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: 'Dashboard',
-            params: {
-              toast:
-                result === 'match'
-                  ? 'Recovery phrase matches'
-                  : 'Recovery phrase does not match',
-            },
-          },
-        ],
-      });
-    } else {
-      navigation.navigate('Dashboard', {
-        toast: 'Key pair has been added to Keycard',
-      });
-    }
-  }, [phase, result, mode, navigation]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: scanning
-        ? 'Scan SeedQR'
-        : phase === 'pin_entry'
-        ? 'Enter Keycard PIN'
-        : mode === 'verify'
-        ? 'Verify recovery phrase'
-        : 'Import recovery phrase',
-    });
-  }, [navigation, phase, mode, scanning]);
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title: scanning
+      ? 'Scan SeedQR'
+      : mode === 'verify'
+      ? 'Verify recovery phrase'
+      : 'Import recovery phrase',
+    done: {
+      toast: doneResult =>
+        mode === 'verify'
+          ? doneResult === 'match'
+            ? 'Recovery phrase matches'
+            : 'Recovery phrase does not match'
+          : 'Key pair has been added to Keycard',
+    },
+    stayOnCancel: true,
+  });
 
   useEffect(() => {
     if (!scanning) return;
@@ -212,7 +189,7 @@ export default function MnemonicScreen({
         />
       </View>
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} />
 
       {scanning && (
         <CameraView

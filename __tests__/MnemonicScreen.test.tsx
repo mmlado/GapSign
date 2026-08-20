@@ -9,6 +9,10 @@ import MnemonicScreen from '../src/screens/keypair/MnemonicScreen';
 // Mocks
 // ---------------------------------------------------------------------------
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -401,8 +405,14 @@ describe('MnemonicScreen', () => {
   describe('navigation', () => {
     it('navigates to Dashboard with toast when phase is done (import mode)', async () => {
       renderScreen('done');
-      expect(navigation.navigate).toHaveBeenCalledWith('Dashboard', {
-        toast: 'Key pair has been added to Keycard',
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [
+          {
+            name: 'Dashboard',
+            params: { toast: 'Key pair has been added to Keycard' },
+          },
+        ],
       });
     });
 

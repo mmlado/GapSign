@@ -9,6 +9,10 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // Mocks
 // ---------------------------------------------------------------------------
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -51,6 +55,7 @@ jest.mock('../src/hooks/keycard/useAddresses', () => ({
 // ---------------------------------------------------------------------------
 
 const navigation = {
+  addListener: jest.fn(() => jest.fn()),
   goBack: jest.fn(),
   navigate: jest.fn(),
   setOptions: jest.fn(),
