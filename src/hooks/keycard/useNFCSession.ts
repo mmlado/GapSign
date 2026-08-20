@@ -4,10 +4,10 @@ import RNKeycard from 'react-native-keycard';
 import Keycard from 'keycard-sdk';
 import { Commandset } from 'keycard-sdk/dist/commandset';
 
-export type Phase = 'idle' | 'nfc' | 'done' | 'error';
+export type NFCSessionPhase = 'idle' | 'nfc' | 'done' | 'error';
 
 export interface UseNFCSessionOperation {
-  phase: Phase;
+  phase: NFCSessionPhase;
   status: string;
   startNFC: () => void;
   reset: () => void;
@@ -24,7 +24,7 @@ export default function useNFCSession(
   ) => Promise<void>,
   onCardDisconnected: () => Promise<void>,
 ): UseNFCSessionOperation {
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<NFCSessionPhase>('idle');
   const [status, setStatus] = useState('');
   const [nfcDisabled, setNfcDisabled] = useState(false);
   const onNFCAvailableRef = useRef<(() => void) | null>(null);

@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import useNFCSession, { Phase } from './useNFCSession';
+import useNFCSession, { NFCSessionPhase } from './useNFCSession';
 
-export type { Phase };
+export type { NFCSessionPhase };
 
 export interface UseNFCOperation<T> {
-  phase: Phase;
+  phase: NFCSessionPhase;
   status: string;
   result: T | null;
   start: () => void;
