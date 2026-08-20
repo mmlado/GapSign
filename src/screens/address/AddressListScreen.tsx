@@ -1,12 +1,5 @@
 import { HDKey } from '@scure/bip32';
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +18,7 @@ import AddressText from '../../components/AddressText';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
 
 import { useAddresses } from '../../hooks/keycard/useAddresses';
+import { useKeycardScreen } from '../../hooks/useKeycardScreen';
 
 import { pubKeyToBtcAddress } from '../../utils/bitcoinAddress';
 import { pubKeyToEthAddress } from '../../utils/ethereumAddress';
@@ -63,14 +57,11 @@ export default function AddressListScreen({
   const externalRef = useRef<HDKey | null>(null);
   const nextIndexRef = useRef(0);
 
-  useLayoutEffect(() => {
-    if (phase === 'pin_entry') {
-      navigation.setOptions({ title: 'Enter Keycard PIN' });
-    } else {
-      const label = coin === 'eth' ? 'Ethereum' : 'Bitcoin';
-      navigation.setOptions({ title: `${label} Addresses` });
-    }
-  }, [navigation, coin, phase]);
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title: `${coin === 'eth' ? 'Ethereum' : 'Bitcoin'} Addresses`,
+  });
 
   useEffect(() => {
     start();
@@ -103,11 +94,6 @@ export default function AddressListScreen({
     [coin, handleRowPress],
   );
 
-  const handleCancel = useCallback(() => {
-    keycard.cancel();
-    navigation.goBack();
-  }, [keycard, navigation]);
-
   const loadMore = useCallback(() => {
     if (!externalRef.current) return;
     const from = nextIndexRef.current;
@@ -139,7 +125,7 @@ export default function AddressListScreen({
         renderItem={renderItem}
       />
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} />
     </View>
   );
 }

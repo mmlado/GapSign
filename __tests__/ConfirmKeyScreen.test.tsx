@@ -85,8 +85,9 @@ const CORRECT_WORDS = CHALLENGE_POSITIONS.map(i => WORDS[i]);
 const WRONG_WORD_FOR_SLOT_0 = 'charlie';
 
 const navigation = {
+  addListener: jest.fn(() => jest.fn()),
   goBack: jest.fn(),
-  navigate: jest.fn(),
+  reset: jest.fn(),
   setOptions: jest.fn(),
 } as any;
 
@@ -138,7 +139,7 @@ describe('ConfirmKeyScreen', () => {
     MockNFCBottomSheet.mockClear();
     MockPinPad.mockClear();
     navigation.goBack.mockClear();
-    navigation.navigate.mockClear();
+    navigation.reset.mockClear();
     navigation.setOptions.mockClear();
   });
 
@@ -292,16 +293,22 @@ describe('ConfirmKeyScreen', () => {
   // -------------------------------------------------------------------------
 
   describe('navigation', () => {
-    it('navigates to Dashboard with toast when phase is done', async () => {
+    it('resets to Dashboard with toast when phase is done', async () => {
       await renderScreen('done');
-      expect(navigation.navigate).toHaveBeenCalledWith('Dashboard', {
-        toast: 'Key pair has been added to Keycard',
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [
+          {
+            name: 'Dashboard',
+            params: { toast: 'Key pair has been added to Keycard' },
+          },
+        ],
       });
     });
 
     it('does not navigate when phase is not done', async () => {
       await renderScreen('idle');
-      expect(navigation.navigate).not.toHaveBeenCalled();
+      expect(navigation.reset).not.toHaveBeenCalled();
     });
 
     it('calls cancel() and navigation.goBack() when NFCBottomSheet cancel is pressed', async () => {
