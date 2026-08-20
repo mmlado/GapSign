@@ -4,16 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { WalletConnectPairingScreenProps } from '@/navigation/types';
-import {
-  SUPPORTED_WC_EIP155_CHAIN_IDS,
-  SUPPORTED_WC_METHODS,
-} from '@/constants/walletConnect';
 import { useKeycardOp } from '@/hooks/keycard/useKeycardOperation';
 import { useWalletConnectSession } from '@/hooks/useWalletConnectSession.online';
 import type { SessionProposalEvent } from '@/providers/walletConnect/context';
 import { getChainName } from '@/utils/chainMetadata';
 import { pubKeyToEthAddress } from '@/utils/ethereumAddress';
 import { deriveAddresses } from '@/utils/hdAddress';
+import { validateProposal } from '@/utils/walletConnect/proposalPolicy';
 
 import AddressSelectionPhase from './AddressSelectionPhase';
 import ApprovingPhase from './ApprovingPhase';
@@ -206,34 +203,10 @@ export default function WalletConnectPairingScreen({
 
   const proposalError = useMemo(() => {
     if (!proposal) return null;
-    const requiredNamespaces = proposal.params.requiredNamespaces ?? {};
-    const unsupportedNamespaces = Object.keys(requiredNamespaces).filter(
-      ns => ns !== 'eip155',
-    );
-    if (unsupportedNamespaces.length > 0) {
-      return `Required namespaces not supported: ${unsupportedNamespaces.join(
-        ', ',
-      )}`;
-    }
-
-    const supported = SUPPORTED_WC_EIP155_CHAIN_IDS.map(id => `eip155:${id}`);
-    const requiredChains = requiredNamespaces.eip155?.chains ?? [];
-    const unsupportedChains = requiredChains.filter(
-      c => !supported.includes(c),
-    );
-    if (unsupportedChains.length > 0) {
-      return `Required chains not supported: ${unsupportedChains
-        .map(c => c.replace('eip155:', ''))
-        .join(', ')}`;
-    }
-    const requiredMethods = requiredNamespaces.eip155?.methods ?? [];
-    const unsupported = requiredMethods.filter(
-      m => !(SUPPORTED_WC_METHODS as readonly string[]).includes(m),
-    );
-    if (unsupported.length > 0) {
-      return `Required methods not supported: ${unsupported.join(', ')}`;
-    }
-    return null;
+    // Same policy the provider rejects with — banner and rejection reason
+    // are composed from one verdict and cannot drift.
+    const verdict = validateProposal(proposal);
+    return verdict.ok ? null : verdict.reason;
   }, [proposal]);
 
   if (localPhase === 'pairing') {
