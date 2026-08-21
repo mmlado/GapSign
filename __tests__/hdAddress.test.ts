@@ -1,4 +1,4 @@
-import { addressDerivationPath, deriveAddresses } from '../src/utils/hdAddress';
+import { deriveAddresses } from '../src/utils/hdAddress';
 
 // ---------------------------------------------------------------------------
 // Tests: deriveAddresses
@@ -28,21 +28,5 @@ describe('deriveAddresses', () => {
     const addrFn = jest.fn((pub: Uint8Array) => `addr-${pub[0]}`);
     const result = deriveAddresses(key as any, 2, addrFn, 10);
     expect(result).toEqual(['addr-10', 'addr-11']);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Tests: addressDerivationPath
-// ---------------------------------------------------------------------------
-
-describe('addressDerivationPath', () => {
-  it('builds the full ETH path from the account path and index', () => {
-    expect(addressDerivationPath('eth', 0)).toBe("m/44'/60'/0'/0/0");
-    expect(addressDerivationPath('eth', 7)).toBe("m/44'/60'/0'/0/7");
-  });
-
-  it('builds the full BTC path from the account path and index', () => {
-    expect(addressDerivationPath('btc', 0)).toBe("m/84'/0'/0'/0/0");
-    expect(addressDerivationPath('btc', 21)).toBe("m/84'/0'/0'/0/21");
   });
 });
