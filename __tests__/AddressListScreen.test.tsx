@@ -40,14 +40,15 @@ jest.mock('../src/utils/hdAddress', () => ({
   deriveAddresses: (...args: any[]) => mockDeriveAddresses(...args),
 }));
 
-// Mock useAddresses
+// Mock the NFC layer beneath useAddressEnumeration — the enumeration hook
+// itself runs for real, so batching and path pairing are covered here.
 const mockStart = jest.fn();
 const mockCancel = jest.fn();
 const mockSubmitPin = jest.fn();
 const mockUseAddresses = jest.fn();
 
-jest.mock('../src/hooks/keycard/useAddresses', () => ({
-  useAddresses: () => mockUseAddresses(),
+jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
+  useKeycardOp: () => mockUseAddresses(),
 }));
 
 // ---------------------------------------------------------------------------
