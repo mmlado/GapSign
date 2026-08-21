@@ -7,7 +7,7 @@ import {
 
 import SettingsToggleRow from './SettingsToggleRow';
 
-export default function TokenImagesSettingsSection() {
+export default function TokenImagesSettingsSection(): React.JSX.Element | null {
   const [enabled, setEnabled] = useState(false);
   const didInteractRef = useRef(false);
 
