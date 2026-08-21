@@ -6,15 +6,19 @@ import { Commandset } from 'keycard-sdk/dist/commandset';
 
 export type NFCSessionPhase = 'idle' | 'nfc' | 'done' | 'error';
 
+export interface UseNFCSessionOptions {
+  /** Called instead of restarting the NFC reader when NFC becomes available
+   *  after being disabled (e.g. the coordinator shows the PIN pad first).
+   *  Without it, the default restarts the reader directly. */
+  onNFCAvailable?: () => void;
+}
+
 export interface UseNFCSessionOperation {
   phase: NFCSessionPhase;
   status: string;
   startNFC: () => void;
   reset: () => void;
   openNFCSettings: (() => void) | undefined;
-  /** Override the action taken when NFC becomes available after being disabled.
-   *  If null, the default is to restart the NFC reader directly. */
-  onNFCAvailableRef: { current: (() => void) | null };
 }
 
 export default function useNFCSession(
@@ -23,11 +27,13 @@ export default function useNFCSession(
     setStatus: (status: string) => void,
   ) => Promise<void>,
   onCardDisconnected: () => Promise<void>,
+  options: UseNFCSessionOptions = {},
 ): UseNFCSessionOperation {
   const [phase, setPhase] = useState<NFCSessionPhase>('idle');
   const [status, setStatus] = useState('');
   const [nfcDisabled, setNfcDisabled] = useState(false);
-  const onNFCAvailableRef = useRef<(() => void) | null>(null);
+  const onNFCAvailableRef = useRef(options.onNFCAvailable);
+  onNFCAvailableRef.current = options.onNFCAvailable;
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const disconnectedRef = useRef(false);
@@ -155,7 +161,7 @@ export default function useNFCSession(
   }, []);
 
   // When the user returns from the NFC settings screen with NFC now enabled,
-  // invoke the registered handler (e.g. show PIN pad) or restart NFC directly.
+  // invoke the onNFCAvailable option (e.g. show PIN pad) or restart NFC directly.
   useEffect(() => {
     if (!nfcDisabled) return;
     const sub = AppState.addEventListener('change', nextState => {
@@ -225,5 +231,5 @@ export default function useNFCSession(
         }
       : undefined;
 
-  return { phase, status, startNFC, reset, openNFCSettings, onNFCAvailableRef };
+  return { phase, status, startNFC, reset, openNFCSettings };
 }
