@@ -6,7 +6,7 @@ import { useNFCOperation, UseNFCOperation } from './useNFCOperation';
 export type UseFactoryResetOperation = UseNFCOperation<string>;
 
 export function useFactoryReset(): UseFactoryResetOperation {
-  const { phase, status, result, start, cancel, reset } = useNFCOperation(
+  return useNFCOperation(
     useCallback(async (cmdSet: Commandset) => {
       if (!cmdSet.applicationInfo?.initializedCard) {
         throw new Error('This card is already empty.');
@@ -15,6 +15,4 @@ export function useFactoryReset(): UseFactoryResetOperation {
       return '';
     }, []),
   );
-
-  return { phase, status, result, start, cancel, reset };
 }

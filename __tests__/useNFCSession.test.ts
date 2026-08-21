@@ -98,11 +98,12 @@ describe('useNFCSession', () => {
     );
   });
 
-  function makeHook() {
+  function makeHook(options?: { onNFCAvailable?: () => void }) {
     return renderHook(() =>
       useNFCSession(
         useCallback(mockOnCardConnected, []),
         useCallback(mockOnCardDisconnected, []),
+        options,
       ),
     );
   }
@@ -246,15 +247,14 @@ describe('useNFCSession', () => {
       }
     });
 
-    it('calls onNFCAvailableRef handler instead of restarting NFC when one is set', async () => {
+    it('calls the onNFCAvailable option instead of restarting NFC when one is set', async () => {
       mockIsNFCEnabled.mockResolvedValue(false);
       const Platform = require('react-native').Platform;
       const origOS = Platform.OS;
       Platform.OS = 'android';
       try {
-        const { result } = makeHook();
         const customHandler = jest.fn();
-        result.current.onNFCAvailableRef.current = customHandler;
+        const { result } = makeHook({ onNFCAvailable: customHandler });
 
         await act(async () => {
           result.current.startNFC();
