@@ -6,14 +6,6 @@ export const ACCOUNT_PATHS = {
   btc: "m/84'/0'/0'",
 } as const;
 
-// Full derivation path for the address at `index` on the external chain.
-export function addressDerivationPath(
-  coin: 'eth' | 'btc',
-  index: number,
-): string {
-  return `${ACCOUNT_PATHS[coin]}/0/${index}`;
-}
-
 // Derive `count` child public keys at path .../0/0, .../0/1, ...
 // addrFn converts a compressed pubkey to a coin-specific address string.
 export function deriveAddresses(

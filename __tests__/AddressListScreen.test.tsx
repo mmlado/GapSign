@@ -9,6 +9,10 @@ import NFCBottomSheet from '../src/components/NFCBottomSheet';
 // Mocks
 // ---------------------------------------------------------------------------
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -36,14 +40,15 @@ jest.mock('../src/utils/hdAddress', () => ({
   deriveAddresses: (...args: any[]) => mockDeriveAddresses(...args),
 }));
 
-// Mock useAddresses
+// Mock the NFC layer beneath useAddressEnumeration — the enumeration hook
+// itself runs for real, so batching and path pairing are covered here.
 const mockStart = jest.fn();
 const mockCancel = jest.fn();
 const mockSubmitPin = jest.fn();
 const mockUseAddresses = jest.fn();
 
-jest.mock('../src/hooks/keycard/useAddresses', () => ({
-  useAddresses: () => mockUseAddresses(),
+jest.mock('../src/hooks/keycard/useKeycardOperation', () => ({
+  useKeycardOp: () => mockUseAddresses(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -51,6 +56,7 @@ jest.mock('../src/hooks/keycard/useAddresses', () => ({
 // ---------------------------------------------------------------------------
 
 const navigation = {
+  addListener: jest.fn(() => jest.fn()),
   goBack: jest.fn(),
   navigate: jest.fn(),
   setOptions: jest.fn(),

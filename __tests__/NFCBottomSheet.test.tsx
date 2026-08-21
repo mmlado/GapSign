@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import type { NFCOperation } from '../src/components/NFCBottomSheet';
+import type { KeycardPhase } from '../src/hooks/keycard/useKeycardOperation';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -33,7 +34,7 @@ jest.mock('../src/components/PinPad', () => {
 const onCancel = jest.fn();
 
 function makeNfc(
-  phase: string,
+  phase: KeycardPhase,
   extra: Partial<NFCOperation> = {},
 ): NFCOperation {
   return { phase, status: 'Ready', ...extra };

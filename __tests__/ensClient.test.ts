@@ -1,6 +1,9 @@
 import { createPublicClient, getAddress, http } from 'viem';
 
-import { resolveEnsName as resolveOffline } from '../src/utils/ens/client.offline';
+import {
+  resolveEnsName as resolveOffline,
+  validateRpcUrl as validateOffline,
+} from '../src/utils/ens/client.offline';
 import { resolveEnsName, validateRpcUrl } from '../src/utils/ens/client.online';
 
 const mockGetEnsName = jest.fn();
@@ -133,5 +136,9 @@ describe('client.offline', () => {
     const result = await resolveOffline('0x123', 'https://rpc');
 
     expect(result).toEqual({ name: null, reason: 'not-found' });
+  });
+
+  it('validateRpcUrl returns unreachable', async () => {
+    expect(await validateOffline('https://rpc')).toBe('unreachable');
   });
 });

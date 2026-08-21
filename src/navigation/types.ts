@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { WCContext } from '../constants/walletConnect';
 import type { ScanResult } from '../types';
+import type { ExportTargetId } from '../utils/exportTargets';
 
 export type KeycardParams =
   | {
@@ -31,8 +32,7 @@ export type KeycardParams =
     }
   | {
       operation: 'export_key';
-      derivationPath: string;
-      source?: string;
+      target: ExportTargetId;
     };
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 

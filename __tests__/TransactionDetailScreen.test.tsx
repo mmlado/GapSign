@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import TransactionDetailScreen from '../src/screens/TransactionDetailScreen';
 import type { EthSignRequest } from '../src/types';
+import { inspectBtcPsbt } from '../src/utils/btcPsbt';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -218,7 +219,8 @@ function renderScreenWithWc(result: any) {
 }
 
 const fullRequest: EthSignRequest = {
-  signData: 'aabbccdd',
+  // First byte >= 0xc0 → classifies as tx-legacy (signable)
+  signData: 'e8aabbccdd',
   dataType: 1,
   derivationPath: "m/44'/60'/0'/0",
   chainId: 1,
@@ -288,7 +290,7 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
       kind: 'eth-sign-request',
       request: fullRequest,
     });
-    expect(screen.getByText('aabbccdd')).toBeTruthy();
+    expect(screen.getByText('e8aabbccdd')).toBeTruthy();
   });
 
   it('displays the derivation path', async () => {
@@ -402,29 +404,26 @@ describe('TransactionDetailScreen – eth-sign-request result', () => {
   });
 });
 
+function psbtResult(hex: string) {
+  return {
+    kind: 'crypto-psbt' as const,
+    request: { psbtHex: hex },
+    summary: inspectBtcPsbt(hex),
+  };
+}
+
 describe('TransactionDetailScreen – crypto-psbt result', () => {
   it('renders without crashing', async () => {
-    expect(
-      renderScreen({
-        kind: 'crypto-psbt',
-        request: { psbtHex: VALID_PSBT_HEX },
-      }),
-    ).toBeDefined();
+    expect(renderScreen(psbtResult(VALID_PSBT_HEX))).toBeDefined();
   });
 
   it('shows the Sign transaction button', async () => {
-    renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: VALID_PSBT_HEX },
-    });
+    renderScreen(psbtResult(VALID_PSBT_HEX));
     expect(screen.getByText('Sign transaction')).toBeTruthy();
   });
 
   it('navigates to Keycard with PSBT signing params', async () => {
-    const { navigation } = renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: VALID_PSBT_HEX },
-    });
+    const { navigation } = renderScreen(psbtResult(VALID_PSBT_HEX));
     fireEvent.press(screen.getByText('Sign transaction'));
     expect(navigation.navigate).toHaveBeenCalledWith('Keycard', {
       operation: 'sign',
@@ -434,34 +433,12 @@ describe('TransactionDetailScreen – crypto-psbt result', () => {
   });
 
   it('shows Bitcoin PSBT label', async () => {
-    renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: VALID_PSBT_HEX },
-    });
+    renderScreen(psbtResult(VALID_PSBT_HEX));
     expect(screen.getByText('Bitcoin PSBT')).toBeTruthy();
   });
 
-  it('shows Invalid PSBT error for malformed hex', async () => {
-    renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: 'deadbeef' },
-    });
-    expect(screen.getByText(/Invalid PSBT/)).toBeTruthy();
-  });
-
-  it('shows Sign transaction button even on invalid PSBT (screen-level decision)', async () => {
-    renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: 'deadbeef' },
-    });
-    expect(screen.getByText('Sign transaction')).toBeTruthy();
-  });
-
   it('shows BIP-322 requests as message signing', async () => {
-    renderScreen({
-      kind: 'crypto-psbt',
-      request: { psbtHex: BIP322_PSBT_HEX },
-    });
+    renderScreen(psbtResult(BIP322_PSBT_HEX));
     expect(screen.getByText('Bitcoin Message')).toBeTruthy();
     expect(screen.getByText('BIP-322 Message')).toBeTruthy();
     expect(screen.getByText('Sign message')).toBeTruthy();

@@ -1,18 +1,21 @@
 import { useCallback, useRef, useState } from 'react';
 import { Commandset } from 'keycard-sdk/dist/commandset';
-import useNFCSession, { Phase } from './useNFCSession';
+import useNFCSession, {
+  NFCSessionPhase,
+  UseNFCSessionOptions,
+} from './useNFCSession';
 
-export type { Phase };
+export type { NFCSessionPhase };
+export type { UseNFCSessionOptions };
 
 export interface UseNFCOperation<T> {
-  phase: Phase;
+  phase: NFCSessionPhase;
   status: string;
   result: T | null;
   start: () => void;
   cancel: () => void;
   reset: () => void;
   openNFCSettings: (() => void) | undefined;
-  onNFCAvailableRef: { current: (() => void) | null };
 }
 
 export function useNFCOperation<T>(
@@ -20,6 +23,7 @@ export function useNFCOperation<T>(
     cmdSet: Commandset,
     setStatus: (status: string) => void,
   ) => Promise<T>,
+  options: UseNFCSessionOptions = {},
 ): UseNFCOperation<T> {
   const [result, setResult] = useState<T | null>(null);
   const runIdRef = useRef(0);
@@ -43,8 +47,7 @@ export function useNFCOperation<T>(
     startNFC,
     reset: nfcReset,
     openNFCSettings,
-    onNFCAvailableRef,
-  } = useNFCSession(handleCardConnected, handleCardDisconnected);
+  } = useNFCSession(handleCardConnected, handleCardDisconnected, options);
 
   const cancel = useCallback(() => {
     runIdRef.current++;
@@ -65,6 +68,5 @@ export function useNFCOperation<T>(
     cancel,
     reset,
     openNFCSettings,
-    onNFCAvailableRef,
   };
 }

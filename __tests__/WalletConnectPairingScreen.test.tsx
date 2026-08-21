@@ -162,7 +162,10 @@ async function renderScreen() {
       route={route as any}
     />,
   );
-  await act(async () => {});
+  // Flush timers so useAddressEnumeration's deferred batch derivation runs.
+  await act(async () => {
+    jest.runAllTimers();
+  });
   return view;
 }
 
@@ -498,6 +501,7 @@ describe('WalletConnectPairingScreen', () => {
 
     await act(async () => {
       UNSAFE_getByType(FlatList).props.onEndReached();
+      jest.runAllTimers();
     });
 
     expect(mockDeriveAddresses).toHaveBeenLastCalledWith(

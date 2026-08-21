@@ -1,25 +1,30 @@
 import { useCallback, useRef, useState } from 'react';
 import Keycard from 'keycard-sdk';
-import { WrongPINException } from 'keycard-sdk/dist/apdu-exception';
+import {
+  APDUException,
+  WrongPINException,
+} from 'keycard-sdk/dist/apdu-exception';
 import { Commandset } from 'keycard-sdk/dist/commandset';
 import RNKeycard from 'react-native-keycard';
 
-import { loadPairing } from '@/storage/pairingStorage';
+import { PAIRING_PASSWORD } from '@/constants/keycard';
+import { loadPairing, savePairing } from '@/storage/pairingStorage';
 import { pubKeyFingerprint } from '@/utils/cryptoAccount';
+import { checkGenuine } from '@/utils/genuineCheck';
 import { toHex } from '@/utils/hex';
 import { displayKeycardName, parseKeycardName } from '@/utils/keycardName';
-import { useGenuineCheck } from './useGenuineCheck';
-import { useNFCOperation } from './useNFCOperation';
-import { usePairing } from './usePairing';
+import { useNFCOperation, type NFCSessionPhase } from './useNFCOperation';
 
-export type Phase =
-  | 'idle'
+/**
+ * The full phase vocabulary of a coordinated Keycard operation: the 4-state
+ * session machine plus the coordinator's interactive interrupts. There is one
+ * vocabulary — never re-declare or rename these states downstream.
+ */
+export type KeycardPhase =
+  | NFCSessionPhase
   | 'pin_entry'
   | 'pairing_password'
-  | 'nfc'
-  | 'genuine_warning'
-  | 'done'
-  | 'error';
+  | 'genuine_warning';
 
 export type KeycardOperationFn<T> = (
   cmdSet: InstanceType<typeof Keycard.Commandset>,
@@ -32,7 +37,7 @@ export interface ExecuteOptions {
 }
 
 export interface UseKeycardOperation<T> {
-  phase: Phase;
+  phase: KeycardPhase;
   status: string;
   cardName: string | null;
   cardFingerprint: number | null;
@@ -42,7 +47,6 @@ export interface UseKeycardOperation<T> {
   execute: (op: KeycardOperationFn<T>, options?: ExecuteOptions) => void;
   submitPin: (pin: string) => void;
   submitPairingPassword: (password: string) => void;
-  clearPinError: () => void;
   cancel: () => void;
   reset: () => void;
   retry: () => void;
@@ -56,26 +60,25 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const [cardName, setCardName] = useState<string | null>(null);
   const [cardFingerprint, setCardFingerprint] = useState<number | null>(null);
 
+  // Custom pairing password flow (ADR-0005): first tap detects the cryptogram
+  // mismatch and interrupts, second tap pairs with the entered password.
+  const [waitingForPairingPassword, setWaitingForPairingPassword] =
+    useState(false);
+  const [pairingPasswordError, setPairingPasswordError] = useState<
+    string | null
+  >(null);
+  const customPairingPasswordRef = useRef<string | null>(null);
+
+  // Genuine check: non-genuine cards need explicit per-UID approval.
+  const [showGenuineWarning, setShowGenuineWarning] = useState(false);
+  const approvedNonGenuineUidsRef = useRef<Set<string>>(new Set());
+  const pendingGenuineUidRef = useRef<string | null>(null);
+
   const pinRef = useRef('');
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
   const requiresPinRef = useRef(true);
   const requiresMasterKeyRef = useRef(true);
   const operationRunningRef = useRef(false);
-
-  const {
-    showGenuineWarning,
-    checkOrSkipGenuine,
-    proceedWithNonGenuine: _proceedWithNonGenuine,
-    resetGenuineState,
-  } = useGenuineCheck();
-
-  const {
-    waitingForPairingPassword,
-    pairingPasswordError,
-    runAutoPair,
-    submitPairingPassword: _submitPairingPassword,
-    resetPairingState,
-  } = usePairing();
 
   const verifyPin = useCallback(
     async (
@@ -100,6 +103,71 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
         pinRef.current = '';
         throw e;
       }
+    },
+    [],
+  );
+
+  // Runs autoPair. Returns true on success (pairing saved), false if
+  // interrupted for pairing password entry.
+  const runAutoPair = useCallback(
+    async (cmdSet: Commandset, uid: string): Promise<boolean> => {
+      const password = customPairingPasswordRef.current;
+      try {
+        await cmdSet.autoPair(password ?? PAIRING_PASSWORD);
+      } catch (e) {
+        if (
+          e instanceof APDUException &&
+          e.message.includes('Invalid card cryptogram')
+        ) {
+          if (customPairingPasswordRef.current !== null) {
+            setPairingPasswordError('Wrong pairing password. Try again.');
+          }
+          setWaitingForPairingPassword(true);
+          return false;
+        }
+        if (
+          e instanceof APDUException &&
+          (e.message.includes('Pairing failed on step 1') ||
+            e.message.includes('Pairing failed on step 2'))
+        ) {
+          throw new Error(
+            'This Keycard has no free pairing slots. Use another device to unpair a slot first.',
+          );
+        }
+        throw e;
+      }
+      const pairing = cmdSet.getPairing();
+      console.log(
+        `[Keycard] autoPair OK (index: ${pairing.pairingIndex}), saving to storage`,
+      );
+      await savePairing(uid, pairing);
+      return true;
+    },
+    [],
+  );
+
+  // Returns true if the operation should proceed, false if interrupted for
+  // the non-genuine warning.
+  const checkOrSkipGenuine = useCallback(
+    async (
+      cmdSet: Commandset,
+      uid: string,
+      hasExistingPairing: boolean,
+      setStatus: (s: string) => void,
+    ): Promise<boolean> => {
+      if (hasExistingPairing || approvedNonGenuineUidsRef.current.has(uid)) {
+        return true;
+      }
+      setStatus('Verifying card...');
+      const isGenuine = await checkGenuine(cmdSet);
+      if (!isGenuine) {
+        console.log('[Keycard] Genuine check failed, showing warning');
+        pendingGenuineUidRef.current = uid;
+        setShowGenuineWarning(true);
+        return false;
+      }
+      console.log('[Keycard] Genuine check passed');
+      return true;
     },
     [],
   );
@@ -225,6 +293,11 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     [checkOrSkipGenuine, doPairAndExecute],
   );
 
+  // When NFC becomes available again (user returned from NFC Settings), react
+  // with the same decision retry() makes: PIN pad first if a PIN is still
+  // missing, otherwise restart the reader. Wired through a ref because retry
+  // is defined below (it needs startNFC from this call).
+  const retryRef = useRef<() => void>(() => {});
   const {
     phase: nfcPhase,
     status,
@@ -233,21 +306,12 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     cancel: nfcCancel,
     reset: nfcReset,
     openNFCSettings,
-    onNFCAvailableRef,
-  } = useNFCOperation<T | null>(handleCardConnected);
-
-  // When the user returns from NFC Settings with NFC now enabled, go straight
-  // to PIN entry (if PIN hasn't been entered yet) or restart NFC directly.
-  onNFCAvailableRef.current = () => {
-    if (requiresPinRef.current && !pinRef.current) {
-      setWaitingForPin(true);
-    } else {
-      startNFC();
-    }
-  };
+  } = useNFCOperation<T | null>(handleCardConnected, {
+    onNFCAvailable: () => retryRef.current(),
+  });
 
   // 'genuine_warning' takes priority over all other phase overrides.
-  const phase: Phase = showGenuineWarning
+  const phase: KeycardPhase = showGenuineWarning
     ? 'genuine_warning'
     : waitingForPairingPassword ||
       (pairingPasswordError !== null && nfcPhase === 'error')
@@ -263,7 +327,9 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       requiresPinRef.current = options.requiresPin ?? true;
       requiresMasterKeyRef.current = options.requiresMasterKey ?? true;
       operationRunningRef.current = false;
-      resetPairingState();
+      setWaitingForPairingPassword(false);
+      setPairingPasswordError(null);
+      customPairingPasswordRef.current = null;
 
       if (!requiresPinRef.current) {
         startNFC();
@@ -284,7 +350,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
           setWaitingForPin(true); // can't check — fall back to PIN entry
         });
     },
-    [startNFC, resetPairingState],
+    [startNFC],
   );
 
   const submitPin = useCallback(
@@ -297,20 +363,27 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     [startNFC],
   );
 
+  // Stores the custom pairing password and starts the second tap (ADR-0005).
   const submitPairingPassword = useCallback(
     (password: string) => {
-      _submitPairingPassword(password, startNFC);
+      customPairingPasswordRef.current = password;
+      setPairingPasswordError(null);
+      setWaitingForPairingPassword(false);
+      startNFC();
     },
-    [_submitPairingPassword, startNFC],
+    [startNFC],
   );
 
-  const clearPinError = useCallback(() => {
-    setPinError(null);
-  }, []);
-
+  // Approves the pending non-genuine card and starts the second tap.
   const proceedWithNonGenuine = useCallback(() => {
-    _proceedWithNonGenuine(startNFC);
-  }, [_proceedWithNonGenuine, startNFC]);
+    const uid = pendingGenuineUidRef.current;
+    if (uid) {
+      approvedNonGenuineUidsRef.current.add(uid);
+      pendingGenuineUidRef.current = null;
+    }
+    setShowGenuineWarning(false);
+    startNFC();
+  }, [startNFC]);
 
   // Re-starts NFC. If PIN hasn't been entered yet (e.g. NFC was off before PIN entry),
   // show the PIN pad instead of starting NFC directly.
@@ -322,6 +395,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     }
     startNFC();
   }, [startNFC]);
+  retryRef.current = retry;
 
   const clearKeycardState = useCallback(() => {
     setWaitingForPin(false);
@@ -331,9 +405,12 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     pinRef.current = '';
     operationRef.current = null;
     operationRunningRef.current = false;
-    resetGenuineState();
-    resetPairingState();
-  }, [resetGenuineState, resetPairingState]);
+    setShowGenuineWarning(false);
+    pendingGenuineUidRef.current = null;
+    setWaitingForPairingPassword(false);
+    setPairingPasswordError(null);
+    customPairingPasswordRef.current = null;
+  }, []);
 
   const cancel = useCallback(() => {
     nfcCancel();
@@ -356,7 +433,6 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     execute,
     submitPin,
     submitPairingPassword,
-    clearPinError,
     cancel,
     reset,
     retry,
