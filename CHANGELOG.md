@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
-- Signing a malformed PSBT or failing to encode the result QR now shows an error screen instead of crashing or doing nothing
+- Malformed PSBTs are now rejected at scan time with a clear error instead of opening a review whose Sign button crashed; a failure while encoding the result QR after signing shows an error screen instead of doing nothing
 - Navigating back during an active Keycard tap now cancels the NFC session on every Keycard screen; previously only Initialize Card and Change PIN/PUK did this, leaving the session running elsewhere
 - The WalletConnect pairing screen's unsupported-proposal banner and the rejection reason sent to the dApp now come from one shared check with identical wording; previously the two could disagree about the same proposal
 - Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width

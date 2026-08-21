@@ -66,6 +66,14 @@ describe('buildSignKeycardParams', () => {
     const result: ScanResult = {
       kind: 'crypto-psbt',
       request: { psbtHex: 'deadbeef' },
+      summary: {
+        requestType: 'transaction',
+        network: 'mainnet',
+        inputCount: 1,
+        outputCount: 1,
+        outputs: [],
+        totalOutputSats: 0,
+      },
     };
     expect(buildSignKeycardParams(result)).toEqual({
       operation: 'sign',

@@ -5,30 +5,13 @@ import theme from '@/theme';
 
 import InfoRow from '@/components/InfoRow';
 
-import { inspectBtcPsbt } from '@/utils/btcPsbt';
+import type { BtcPsbtSummary } from '@/utils/btcPsbt';
 
 function formatSats(value: number): string {
   return `${value.toLocaleString()} sats`;
 }
 
-export default function PsbtDetail({ psbtHex }: { psbtHex: string }) {
-  let summary;
-  try {
-    summary = inspectBtcPsbt(psbtHex);
-  } catch (e: any) {
-    return (
-      <View style={styles.errorContainer}>
-        <Icon source="alert-circle" size={48} color={theme.colors.negative} />
-        <Text variant="titleMedium" style={styles.errorTitleRed}>
-          Invalid PSBT
-        </Text>
-        <Text variant="bodyMedium" style={styles.errorMessage} selectable>
-          {e.message}
-        </Text>
-      </View>
-    );
-  }
-
+export default function PsbtDetail({ summary }: { summary: BtcPsbtSummary }) {
   return (
     <>
       <View style={styles.typeChip}>
@@ -110,18 +93,5 @@ const styles = StyleSheet.create({
   },
   row: {
     paddingVertical: 8,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 32,
-  },
-  errorTitleRed: {
-    color: theme.colors.negative,
-  },
-  errorMessage: {
-    color: theme.colors.onSurface,
-    textAlign: 'center',
-    fontFamily: 'monospace',
   },
 });
