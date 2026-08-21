@@ -6,7 +6,7 @@ import type {
   ScanResult,
 } from '../types';
 import { parseBtcSignRequest } from './btcMessage';
-import { parseCryptoPsbtRequest } from './btcPsbt';
+import { inspectBtcPsbt, parseCryptoPsbtRequest } from './btcPsbt';
 import { validateEthTransactionSignData } from './txParser';
 
 function parseEthSignRequest(cbor: Buffer): EthSignRequestType {
@@ -64,7 +64,15 @@ export function handleUR(type: string, cbor: Buffer): ScanResult {
 
   if (type === 'crypto-psbt') {
     try {
-      return { kind: 'crypto-psbt', request: parseCryptoPsbtRequest(cbor) };
+      const request = parseCryptoPsbtRequest(cbor);
+      // Parse once at entry: an unparseable PSBT becomes kind:'error' here —
+      // the review and the signing flow consume the attached summary and
+      // never re-decide whether the bytes are valid.
+      return {
+        kind: 'crypto-psbt',
+        request,
+        summary: inspectBtcPsbt(request.psbtHex),
+      };
     } catch (e: any) {
       return {
         kind: 'error',

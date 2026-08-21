@@ -244,13 +244,25 @@ describe('handleUR – crypto-psbt', () => {
     return new CryptoPSBT(psbtBytes).toCBOR();
   }
 
-  it('parses a valid crypto-psbt', () => {
+  it('parses a valid crypto-psbt and attaches the summary', () => {
     const cbor = buildPsbtCbor();
     const result = handleUR('crypto-psbt', cbor);
     expect(result.kind).toBe('crypto-psbt');
     if (result.kind === 'crypto-psbt') {
       expect(typeof result.request.psbtHex).toBe('string');
       expect(result.request.psbtHex.length).toBeGreaterThan(0);
+      expect(result.summary.requestType).toBe('transaction');
+      expect(result.summary.inputCount).toBe(0);
+    }
+  });
+
+  it('rejects a malformed PSBT at scan with kind error', () => {
+    // Valid CBOR envelope wrapping bytes that are not a PSBT.
+    const cbor = new CryptoPSBT(Buffer.from('deadbeef', 'hex')).toCBOR();
+    const result = handleUR('crypto-psbt', cbor);
+    expect(result.kind).toBe('error');
+    if (result.kind === 'error') {
+      expect(result.message).toContain('Failed to parse PSBT');
     }
   });
 
