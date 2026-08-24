@@ -69,6 +69,9 @@ export default function NFCSheet({
   onCancel,
   openNFCSettings,
 }: Props) {
+  // 'disconnected' deliberately keeps the default icon, not the failure one:
+  // a card that moved is a recoverable event, and presenting it as a failure
+  // is exactly what this variant exists to stop.
   const NfcIcon =
     variant === 'success'
       ? Icons.nfc.success
@@ -101,6 +104,12 @@ export default function NFCSheet({
       {variant === 'error' && !openNFCSettings && (
         <Text variant="bodyMedium" style={styles.retryHint}>
           Tap your card to try again
+        </Text>
+      )}
+
+      {variant === 'disconnected' && (
+        <Text variant="bodyMedium" style={styles.retryHint}>
+          Hold your Keycard against the phone again
         </Text>
       )}
 

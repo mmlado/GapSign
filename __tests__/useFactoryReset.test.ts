@@ -182,7 +182,7 @@ describe('useFactoryReset', () => {
       });
       expect(result.current.phase).toBe('nfc');
       expect(result.current.status).toBe(
-        'Connection lost - adjust Keycard position',
+        'Connection lost — hold your Keycard against the phone again',
       );
     });
 

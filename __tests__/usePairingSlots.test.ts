@@ -254,4 +254,50 @@ describe('usePairingSlots', () => {
       expect(mockStopNFC).toHaveBeenCalled();
     });
   });
+
+  // T11: the slot read is a read-only SELECT-response read, so it opts into
+  // tag-loss retry — a loss keeps the session up and reports presence.
+  describe('cardPresence', () => {
+    it('starts as waiting', () => {
+      const { result } = renderHook(() => usePairingSlots());
+      expect(result.current.cardPresence).toBe('waiting');
+    });
+
+    it('tag loss during the read keeps phase nfc and reports lost', async () => {
+      mockSelect.mockRejectedValueOnce(
+        new Error('CardIO Error: Error: Tag was lost.'),
+      );
+      const { result } = renderHook(() => usePairingSlots());
+      await act(async () => {
+        result.current.checkSlots();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
+    });
+
+    it('tag loss during a post-unpair re-read follows the same classification', async () => {
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 2 });
+      const { result } = renderHook(() => usePairingSlots());
+      await act(async () => {
+        result.current.checkSlots();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('done');
+
+      // readSlotInfoFromCmdSet runs outside the session (live cmdSet after an
+      // unpair): a tag loss there rejects to the caller, not the session.
+      mockSelect.mockRejectedValueOnce(
+        new Error('CardIO Error: Error: Tag was lost.'),
+      );
+      await expect(
+        result.current.readSlotInfoFromCmdSet(mockCmdSet as any),
+      ).rejects.toThrow('Tag was lost');
+    });
+  });
 });

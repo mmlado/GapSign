@@ -1,7 +1,12 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useCallback } from 'react';
 import { AppState } from 'react-native';
-import useNFCSession from '../src/hooks/keycard/useNFCSession';
+import useNFCSession, {
+  CARD_MOVED_STATUS,
+} from '../src/hooks/keycard/useNFCSession';
+
+const ANDROID_TAG_LOST = 'CardIO Error: Error: Tag was lost.';
+const IOS_TAG_LOST = 'CardIO Error: Error: NFCError:100';
 
 // ---------------------------------------------------------------------------
 // RNKeycard mock — captures event callbacks so tests can trigger them
@@ -98,7 +103,10 @@ describe('useNFCSession', () => {
     );
   });
 
-  function makeHook(options?: { onNFCAvailable?: () => void }) {
+  function makeHook(options?: {
+    onNFCAvailable?: () => void;
+    retryOnTagLoss?: boolean;
+  }) {
     return renderHook(() =>
       useNFCSession(
         useCallback(mockOnCardConnected, []),
@@ -632,7 +640,7 @@ describe('useNFCSession', () => {
       expect(result.current.status).toBe('');
     });
 
-    it('card disconnected during nfc updates status and stays in nfc', async () => {
+    it('card disconnected during nfc updates status, presence, and stays in nfc', async () => {
       const { result } = makeHook();
       await act(async () => {
         result.current.startNFC();
@@ -641,57 +649,8 @@ describe('useNFCSession', () => {
         capturedOnDisconnected?.();
       });
       expect(result.current.phase).toBe('nfc');
-      expect(result.current.status).toBe(
-        'Connection lost - adjust Keycard position',
-      );
-    });
-
-    it('mid-operation disconnect on android stays in nfc and does not show error', async () => {
-      const { result } = makeHook();
-      const Platform = require('react-native').Platform;
-      const origOS = Platform.OS;
-      Platform.OS = 'android';
-      try {
-        mockOnCardConnected.mockImplementation(async () => {
-          capturedOnDisconnected?.();
-          throw new Error('CardIO Error: Error sending command');
-        });
-        await act(async () => {
-          result.current.startNFC();
-        });
-        await act(async () => {
-          await capturedOnConnected?.();
-        });
-        expect(result.current.phase).toBe('nfc');
-        expect(result.current.status).toBe(
-          'Connection lost - adjust Keycard position',
-        );
-      } finally {
-        Platform.OS = origOS;
-      }
-    });
-
-    it('mid-operation disconnect on ios shows error and tap-again hint', async () => {
-      const { result } = makeHook();
-      const Platform = require('react-native').Platform;
-      const origOS = Platform.OS;
-      Platform.OS = 'ios';
-      try {
-        mockOnCardConnected.mockImplementation(async () => {
-          capturedOnDisconnected?.();
-          throw new Error('CardIO Error: Error sending command');
-        });
-        await act(async () => {
-          result.current.startNFC();
-        });
-        await act(async () => {
-          await capturedOnConnected?.();
-        });
-        expect(result.current.phase).toBe('error');
-        expect(result.current.status).toBe('Connection lost — tap again');
-      } finally {
-        Platform.OS = origOS;
-      }
+      expect(result.current.cardPresence).toBe('lost');
+      expect(result.current.status).toBe(CARD_MOVED_STATUS);
     });
 
     it('real card error followed by disconnect stays in error', async () => {
@@ -721,6 +680,335 @@ describe('useNFCSession', () => {
       });
       expect(result.current.phase).toBe('idle');
       expect(result.current.status).toBe('');
+    });
+  });
+
+  // T2/T3: tag loss is classified from the error itself, never from the
+  // ordering of the disconnect event (which loses the race on Android).
+  describe('tag-loss classification', () => {
+    async function startAndFail(
+      result: { current: ReturnType<typeof useNFCSession> },
+      message: string,
+    ) {
+      mockOnCardConnected.mockRejectedValue(new Error(message));
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+    }
+
+    it('android wire shape, no disconnect event: stays in nfc, presence lost', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await startAndFail(result, ANDROID_TAG_LOST);
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(result.current.status).toBe(CARD_MOVED_STATUS);
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
+    });
+
+    it('ios wire shape: identical result — the hook does not care which platform', async () => {
+      const Platform = require('react-native').Platform;
+      const origOS = Platform.OS;
+      Platform.OS = 'ios';
+      try {
+        const { result } = makeHook({ retryOnTagLoss: true });
+        await startAndFail(result, IOS_TAG_LOST);
+        expect(result.current.phase).toBe('nfc');
+        expect(result.current.cardPresence).toBe('lost');
+        expect(mockStopNFCWithError).not.toHaveBeenCalled();
+      } finally {
+        Platform.OS = origOS;
+      }
+    });
+
+    it('real error still fails: SELECT bad SW goes to error with stopNFCWithError', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await startAndFail(result, 'SELECT failed: 0x6A82');
+      expect(result.current.phase).toBe('error');
+      expect(mockStopNFCWithError).toHaveBeenCalledWith(
+        'SELECT failed: 0x6A82',
+      );
+    });
+
+    it('R7: a swallowed loss does not swallow the next real error', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await startAndFail(result, ANDROID_TAG_LOST);
+      // The runloop's disconnect event lands after the classified error.
+      await act(async () => {
+        capturedOnDisconnected?.();
+      });
+      // Re-tap, now a real error.
+      mockOnCardConnected.mockRejectedValue(new Error('Invalid MAC'));
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('Invalid MAC');
+    });
+
+    it('re-tap after loss re-runs the operation and restores presence', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await startAndFail(result, ANDROID_TAG_LOST);
+      mockOnCardConnected.mockResolvedValue(undefined);
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(2);
+      expect(result.current.cardPresence).toBe('connected');
+      expect(result.current.phase).toBe('done');
+    });
+
+    it('startNFC resets presence to waiting', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await startAndFail(result, ANDROID_TAG_LOST);
+      expect(result.current.cardPresence).toBe('lost');
+      await act(async () => {
+        result.current.startNFC();
+      });
+      expect(result.current.cardPresence).toBe('waiting');
+    });
+
+    it('without retryOnTagLoss (default): tag loss is an error with ambiguity copy', async () => {
+      const { result } = makeHook();
+      await startAndFail(result, ANDROID_TAG_LOST);
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+      expect(mockStopNFCWithError).toHaveBeenCalled();
+    });
+
+    it('retryOnTagLoss but inside an unsafe window: error, no silent replay', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      mockOnCardConnected.mockImplementation(async () => {
+        result.current.retryUnsafeRef.current = true;
+        throw new Error(ANDROID_TAG_LOST);
+      });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+    });
+  });
+
+  // T4: the reconnect wait is bounded by a loss counter and a watchdog.
+  describe('reconnect bounds', () => {
+    const STABILITY_ERROR = 'Could not keep a stable connection. Try again.';
+
+    async function failOnce(message = ANDROID_TAG_LOST) {
+      mockOnCardConnected.mockRejectedValueOnce(new Error(message));
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+    }
+
+    it('watchdog fires after 6s of no re-tap', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await failOnce();
+      expect(result.current.phase).toBe('nfc');
+      await act(async () => {
+        jest.advanceTimersByTime(6000);
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(STABILITY_ERROR);
+    });
+
+    it('re-tap before the watchdog clears it', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await failOnce();
+      mockOnCardConnected.mockResolvedValue(undefined);
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(10000);
+      });
+      expect(result.current.phase).toBe('done');
+    });
+
+    // The counter only accumulates when there is no forward progress: a loss
+    // during SELECT itself (card connects and instantly drops). A loss after a
+    // successful SELECT resets the bound by design.
+    async function failDuringSelect() {
+      mockSelect.mockRejectedValueOnce(new Error(ANDROID_TAG_LOST));
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+    }
+
+    it('three consecutive losses with no successful SELECT hit the counter bound', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await failDuringSelect();
+      await failDuringSelect();
+      expect(result.current.phase).toBe('nfc');
+      await failDuringSelect();
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(STABILITY_ERROR);
+    });
+
+    it('a successful SELECT resets the counter', async () => {
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await failDuringSelect();
+      await failDuringSelect();
+      // SELECT succeeds (forward progress) but the op drops the tag after it:
+      // the counter restarts (0 → 1 for the post-SELECT loss). One more
+      // select-level loss makes 2 — without the reset it would be 4 and the
+      // bound would already have fired.
+      await failOnce();
+      await failDuringSelect();
+      expect(result.current.phase).toBe('nfc');
+    });
+
+    it('unmount with a pending watchdog does not fire it', async () => {
+      const { result, unmount } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await failOnce();
+      unmount();
+      await act(async () => {
+        jest.advanceTimersByTime(10000);
+      });
+      // No state-update-after-unmount warning; nothing to assert beyond survival.
+    });
+  });
+
+  // T10: iOS reopens the session after Apple's 60s cap, bounded and
+  // foreground-gated. Android keeps the immediate error.
+  describe('iOS timeout auto-restart', () => {
+    let Platform: { OS: string };
+    let origOS: string;
+
+    beforeEach(() => {
+      Platform = require('react-native').Platform;
+      origOS = Platform.OS;
+      Platform.OS = 'ios';
+      (AppState as any).currentState = 'active';
+    });
+
+    afterEach(() => {
+      Platform.OS = origOS;
+    });
+
+    it('restarts the reader 500ms after a timeout', async () => {
+      const { result } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      mockStartNFC.mockClear();
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      expect(result.current.phase).toBe('nfc');
+      expect(mockStartNFC).not.toHaveBeenCalled();
+      await act(async () => {
+        jest.advanceTimersByTime(500);
+      });
+      expect(mockStartNFC).toHaveBeenCalledTimes(1);
+      expect(result.current.phase).toBe('nfc');
+    });
+
+    it('falls back to the timeout error after the restart cap', async () => {
+      const { result } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      for (let i = 0; i < 2; i++) {
+        await act(async () => {
+          capturedOnTimeout?.();
+        });
+        await act(async () => {
+          jest.advanceTimersByTime(500);
+        });
+      }
+      expect(result.current.phase).toBe('nfc');
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('Timed out — tap again');
+    });
+
+    it('does not restart in the background', async () => {
+      (AppState as any).currentState = 'background';
+      const { result } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('Timed out — tap again');
+    });
+
+    it('does not restart when the operation already finished', async () => {
+      const { result } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('done');
+      mockStartNFC.mockClear();
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(500);
+      });
+      expect(mockStartNFC).not.toHaveBeenCalled();
+      expect(result.current.phase).toBe('done');
+    });
+
+    it('android keeps the immediate error', async () => {
+      Platform.OS = 'android';
+      const { result } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('Timed out — tap again');
+    });
+
+    it('unmount with a pending restart timer does not fire it', async () => {
+      const { result, unmount } = makeHook();
+      await act(async () => {
+        result.current.startNFC();
+      });
+      await act(async () => {
+        capturedOnTimeout?.();
+      });
+      mockStartNFC.mockClear();
+      unmount();
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      expect(mockStartNFC).not.toHaveBeenCalled();
     });
   });
 });

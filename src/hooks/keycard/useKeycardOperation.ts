@@ -12,8 +12,15 @@ import { loadPairing, savePairing } from '@/storage/pairingStorage';
 import { pubKeyFingerprint } from '@/utils/cryptoAccount';
 import { checkGenuine } from '@/utils/genuineCheck';
 import { toHex } from '@/utils/hex';
+import { isTagLostError } from '@/utils/keycardErrors';
 import { displayKeycardName, parseKeycardName } from '@/utils/keycardName';
-import { useNFCOperation, type NFCSessionPhase } from './useNFCOperation';
+import {
+  useNFCOperation,
+  type CardPresence,
+  type NFCSessionPhase,
+} from './useNFCOperation';
+
+export type { CardPresence };
 
 /**
  * The full phase vocabulary of a coordinated Keycard operation: the 4-state
@@ -34,11 +41,16 @@ export type KeycardOperationFn<T> = (
 export interface ExecuteOptions {
   requiresPin?: boolean;
   requiresMasterKey?: boolean;
+  /** Wait for a re-tap instead of failing when the card leaves the field
+   *  mid-operation. Default false — only read-only operations may opt in;
+   *  a replayed write can burn pairing slots or overwrite card state (R9). */
+  retryOnTagLoss?: boolean;
 }
 
 export interface UseKeycardOperation<T> {
   phase: KeycardPhase;
   status: string;
+  cardPresence: CardPresence;
   cardName: string | null;
   cardFingerprint: number | null;
   result: T | null;
@@ -79,6 +91,11 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const requiresPinRef = useRef(true);
   const requiresMasterKeyRef = useRef(true);
   const operationRunningRef = useRef(false);
+  const retryOnTagLossRef = useRef(false);
+  // The session's retryUnsafeRef only exists after the useNFCOperation call
+  // below, but doPairAndExecute (defined first) must raise it around autoPair.
+  // Held here and assigned each render; always set before any card contact.
+  const retryUnsafeHolderRef = useRef<{ current: boolean } | null>(null);
 
   const verifyPin = useCallback(
     async (
@@ -189,7 +206,17 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       } else {
         console.log('[Keycard] No pairing found — running autoPair');
         setStatus('Pairing with card...');
+        // Non-idempotent window (R9): PAIR step 2 commits a slot on the card
+        // before the response is read, so a tag loss in here must never be
+        // silently replayed — even for an operation that opted into retry.
+        // Cleared only on success, NOT in a finally: a finally would run while
+        // the exception unwinds, before the session's catch classifies it, and
+        // the window would never apply to the very throw it exists for. On the
+        // throw path the session clears the flag in the next startNFC/reset.
+        const retryUnsafeRef = retryUnsafeHolderRef.current;
+        if (retryUnsafeRef) retryUnsafeRef.current = true;
         const paired = await runAutoPair(cmdSet, uid);
+        if (retryUnsafeRef) retryUnsafeRef.current = false;
         if (!paired) return null;
       }
       setStatus('Opening secure channel...');
@@ -197,7 +224,25 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       console.log('[Keycard] Secure channel open');
 
       if (requiresPinRef.current) {
-        await verifyPin(cmdSet, setStatus);
+        // Non-idempotent window, same class as autoPair: the card decrements
+        // its 3-attempt counter before the response is read, so a tag loss in
+        // here means the attempt may have been consumed with nothing to show
+        // for it. Never silently resubmit an unconfirmed PIN — forget it so
+        // the next attempt is one the user explicitly authorised (device
+        // probe, 2026-08-22: a cached PIN replayed 0.43 s after reconnect,
+        // with no prompt). Cleared only on success, not in a finally (see
+        // the autoPair window above for why).
+        const retryUnsafeRef = retryUnsafeHolderRef.current;
+        if (retryUnsafeRef) retryUnsafeRef.current = true;
+        try {
+          await verifyPin(cmdSet, setStatus);
+        } catch (e) {
+          if (isTagLostError(e)) {
+            pinRef.current = '';
+          }
+          throw e;
+        }
+        if (retryUnsafeRef) retryUnsafeRef.current = false;
       }
 
       // Unnamed card: derive the master fingerprint for display, mirroring
@@ -301,14 +346,21 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const {
     phase: nfcPhase,
     status,
+    cardPresence,
     result,
     start: startNFC,
     cancel: nfcCancel,
     reset: nfcReset,
     openNFCSettings,
+    retryUnsafeRef,
   } = useNFCOperation<T | null>(handleCardConnected, {
     onNFCAvailable: () => retryRef.current(),
+    // Read at render: execute() writes the ref and then triggers a re-render
+    // (setWaitingForPin or the session's setPhase), so the session sees the new
+    // value long before any APDU can fail.
+    retryOnTagLoss: retryOnTagLossRef.current,
   });
+  retryUnsafeHolderRef.current = retryUnsafeRef;
 
   // 'genuine_warning' takes priority over all other phase overrides.
   const phase: KeycardPhase = showGenuineWarning
@@ -326,6 +378,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       operationRef.current = op;
       requiresPinRef.current = options.requiresPin ?? true;
       requiresMasterKeyRef.current = options.requiresMasterKey ?? true;
+      retryOnTagLossRef.current = options.retryOnTagLoss ?? false;
       operationRunningRef.current = false;
       setWaitingForPairingPassword(false);
       setPairingPasswordError(null);
@@ -425,6 +478,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   return {
     phase,
     status,
+    cardPresence,
     cardName,
     cardFingerprint,
     result,

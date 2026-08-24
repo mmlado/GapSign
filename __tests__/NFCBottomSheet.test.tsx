@@ -114,6 +114,49 @@ describe('NFCBottomSheet — Android sheet', () => {
     });
   });
 
+  // T5: variant selection — phase always wins over presence, and an omitted
+  // cardPresence behaves exactly as before the field existed.
+  describe('cardPresence variant selection', () => {
+    it('phase nfc + presence lost renders the disconnected hint', () => {
+      renderSheet(makeNfc('nfc', { cardPresence: 'lost' }));
+      expect(
+        screen.getByText('Hold your Keycard against the phone again'),
+      ).toBeTruthy();
+    });
+
+    it('phase nfc + presence connected renders no hints', () => {
+      renderSheet(makeNfc('nfc', { cardPresence: 'connected' }));
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+    });
+
+    it('phase error + presence lost: error UI wins', () => {
+      renderSheet(makeNfc('error', { cardPresence: 'lost' }));
+      expect(screen.getByText('Tap your card to try again')).toBeTruthy();
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+    });
+
+    it('phase done + presence lost: success UI wins', () => {
+      renderSheet(makeNfc('done', { cardPresence: 'lost' }), true);
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+      expect(screen.queryByText('Cancel')).toBeNull();
+    });
+
+    it('omitted cardPresence behaves as scanning (back-compat)', () => {
+      renderSheet(makeNfc('nfc'));
+      expect(screen.getByText('Cancel')).toBeTruthy();
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+    });
+  });
+
   describe('Cancel button — phase done with showOnDone', () => {
     it('hides the Cancel button (success variant)', () => {
       renderSheet(makeNfc('done'), true);

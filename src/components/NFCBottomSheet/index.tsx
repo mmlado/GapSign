@@ -21,7 +21,10 @@ import { Icons } from '@/assets/icons';
 
 import PinPad from '@/components/PinPad';
 
-import type { KeycardPhase } from '@/hooks/keycard/useKeycardOperation';
+import type {
+  CardPresence,
+  KeycardPhase,
+} from '@/hooks/keycard/useKeycardOperation';
 
 import GenuineWarning from './GenuineWarning';
 import NFCError from './NFCError';
@@ -31,11 +34,18 @@ import PairingPasswordEntry from './PairingPasswordEntry';
 /** Keeps the PIN modal inside the same bounds as a normal navigation screen. */
 const PIN_MODAL_EDGES: readonly Edge[] = ['top', 'bottom', 'left', 'right'];
 
-export type NFCVariant = 'scanning' | 'success' | 'error' | 'genuine_warning';
+export type NFCVariant =
+  | 'scanning'
+  | 'connected'
+  | 'disconnected'
+  | 'success'
+  | 'error'
+  | 'genuine_warning';
 
 export type NFCOperation = {
   phase: KeycardPhase;
   status: string;
+  cardPresence?: CardPresence;
   cardName?: string | null;
   cardFingerprint?: number | null;
   pinError?: string | null;
@@ -58,6 +68,7 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
   const {
     phase,
     status,
+    cardPresence,
     cardName,
     cardFingerprint,
     pinError,
@@ -76,6 +87,9 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
   const showGenuineWarning = phase === 'genuine_warning';
   const showPairingPassword = phase === 'pairing_password';
   const showIOSError = Platform.OS === 'ios' && phase === 'error';
+  // The connected/disconnected presence variants are Android-only by design:
+  // iOS shows Apple's system NFC sheet, which owns that feedback (mirrors
+  // status-legacy's platform/android? gate around its connection sheet).
   const showSheet =
     Platform.OS === 'android' &&
     (phase === 'nfc' ||
@@ -122,6 +136,8 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
     slideAnim,
   ]);
 
+  // Phase always wins over presence: an error must render as an error even if
+  // the card is technically still on the antenna.
   const variant: NFCVariant =
     phase === 'genuine_warning'
       ? 'genuine_warning'
@@ -129,6 +145,10 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
       ? 'success'
       : phase === 'error'
       ? 'error'
+      : cardPresence === 'lost'
+      ? 'disconnected'
+      : cardPresence === 'connected'
+      ? 'connected'
       : 'scanning';
 
   return (

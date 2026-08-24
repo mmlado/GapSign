@@ -89,6 +89,45 @@ describe('NFCSheet', () => {
     });
   });
 
+  // T5: presence variants. 'disconnected' must read as recoverable, not as a
+  // failure — reconnect hint, Cancel available, no failure icon treatment.
+  describe('presence variants', () => {
+    it('disconnected shows the reconnect hint', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      expect(
+        screen.getByText('Hold your Keycard against the phone again'),
+      ).toBeTruthy();
+    });
+
+    it('disconnected keeps the Cancel button (only exit from the wait)', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      fireEvent.press(screen.getByText('Cancel'));
+      expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('disconnected does not show the error retry hint', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+
+    it('connected shows no hints and keeps Cancel', () => {
+      render(
+        <NFCSheet variant="connected" status="Connected" onCancel={onCancel} />,
+      );
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+      expect(screen.getByText('Cancel')).toBeTruthy();
+    });
+  });
+
   describe('Cancel button', () => {
     it('shows Cancel for scanning variant', () => {
       render(<NFCSheet variant="scanning" status="" onCancel={onCancel} />);

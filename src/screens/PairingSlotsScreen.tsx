@@ -31,6 +31,7 @@ export default function PairingSlotsScreen({
 
   const {
     phase: checkPhase,
+    cardPresence: checkCardPresence,
     slotInfo,
     status: checkStatus,
     checkSlots,
@@ -112,7 +113,11 @@ export default function PairingSlotsScreen({
 
   const activeNfc: NFCOperation = isUnpairing
     ? unpairHook
-    : { phase: checkPhase, status: checkStatus };
+    : {
+        phase: checkPhase,
+        status: checkStatus,
+        cardPresence: checkCardPresence,
+      };
 
   if (pendingSlotIndex !== null) {
     return (
