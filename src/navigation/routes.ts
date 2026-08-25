@@ -21,6 +21,7 @@ import SetCardNameScreen from '../screens/SetCardNameScreen';
 import TransactionDetailScreen from '../screens/TransactionDetailScreen';
 import UrlQRScreen from '../screens/UrlQRScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import WelcomeScreen from '../screens/WelcomeScreen';
 
 // Address screens
 import AddressDetailScreen from '../screens/address/AddressDetailScreen';
@@ -59,6 +60,7 @@ type Route = {
 };
 
 export const routes: Route[] = [
+  { name: 'Welcome', component: WelcomeScreen },
   { name: 'Dashboard', component: DashboardScreen },
 
   // Keycard operations

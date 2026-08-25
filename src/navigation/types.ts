@@ -39,6 +39,7 @@ export type KeycardParams =
 export type SecretType = 'pin' | 'puk' | 'pairing';
 
 export type RootStackParamList = {
+  Welcome: undefined;
   Dashboard: { toast?: string } | undefined;
   WalletConnectPairing: { uri: string };
   KeycardMenu: undefined;
@@ -77,6 +78,11 @@ export type RootStackParamList = {
   };
   Settings: undefined;
 };
+
+export type WelcomeScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'Welcome'
+>;
 
 export type DashboardScreenProps = NativeStackScreenProps<
   RootStackParamList,

@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DASHBOARD_KEYCARD_NOTICE_DISMISSED =
-  'preference_dashboard_keycard_notice_dismissed';
 const PIN_PAD_SCRAMBLE = 'preference_pinpad_scramble';
 const TOKEN_IMAGES_ENABLED = 'preference_token_images_enabled';
+const WELCOME_SEEN = 'preference_welcome_seen';
 const XPUB_NOTICE_DISMISSED = 'preference_xpub_notice_dismissed';
 
 async function loadBoolean(key: string): Promise<boolean> {
@@ -16,16 +15,6 @@ async function loadBoolean(key: string): Promise<boolean> {
 
 async function saveBoolean(key: string, value: boolean): Promise<void> {
   await AsyncStorage.setItem(key, value ? '1' : '0');
-}
-
-export async function loadDashboardKeycardNoticeDismissed(): Promise<boolean> {
-  return loadBoolean(DASHBOARD_KEYCARD_NOTICE_DISMISSED);
-}
-
-export async function saveDashboardKeycardNoticeDismissed(
-  value: boolean,
-): Promise<void> {
-  return saveBoolean(DASHBOARD_KEYCARD_NOTICE_DISMISSED, value);
 }
 
 export async function loadPinPadScramble(): Promise<boolean> {
@@ -42,6 +31,14 @@ export async function loadTokenImagesEnabled(): Promise<boolean> {
 
 export async function saveTokenImagesEnabled(value: boolean): Promise<void> {
   return saveBoolean(TOKEN_IMAGES_ENABLED, value);
+}
+
+export async function loadWelcomeSeen(): Promise<boolean> {
+  return loadBoolean(WELCOME_SEEN);
+}
+
+export async function saveWelcomeSeen(value: boolean): Promise<void> {
+  return saveBoolean(WELCOME_SEEN, value);
 }
 
 export async function loadXpubNoticeDismissed(): Promise<boolean> {
