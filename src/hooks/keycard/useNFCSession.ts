@@ -73,6 +73,9 @@ export default function useNFCSession(
   const disconnectedRef = useRef(false);
   const realErrorRef = useRef(false);
   const inFlightRef = useRef(false);
+  /** A card connect that arrived while a previous run was still unwinding. */
+  const pendingConnectRef = useRef(false);
+  const handleCardConnectedRef = useRef<(() => Promise<void>) | null>(null);
   const startAttemptRef = useRef(0);
   const tagLossCountRef = useRef(0);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -130,6 +133,15 @@ export default function useNFCSession(
       return;
     }
     if (inFlightRef.current) {
+      // A tap landed while the previous run is still unwinding: the disconnect
+      // event arrives within ~50 ms of the card leaving, but the APDU it was
+      // in the middle of stays blocked in transceive until the bridge's
+      // timeout. Dropping the tap here strands the user — the tag is already
+      // on the antenna, so no new discovery fires and only a physical
+      // remove-and-tap produces another event. Remember it and replay when
+      // this run finishes.
+      console.log('[Keycard] Card connected (queued — previous run in flight)');
+      pendingConnectRef.current = true;
       return;
     }
     if (phaseRef.current === 'error') {
@@ -144,6 +156,10 @@ export default function useNFCSession(
     clearWatchdog();
     setCardPresence('connected');
     inFlightRef.current = true;
+    // Tracked locally, not from phaseRef: phaseRef is render-assigned and is
+    // still stale inside the finally below (R8), so it cannot say whether this
+    // run ended in an error.
+    let outcome: 'waiting' | 'done' | 'error' = 'waiting';
     try {
       setStatus('Selecting applet...');
       const channel = new RNKeycard.NFCCardChannel();
@@ -163,6 +179,7 @@ export default function useNFCSession(
       tagLossCountRef.current = 0;
 
       await onCardConnected(cmdSet, setStatus);
+      outcome = 'done';
       setPhase('done');
       RNKeycard.Core.stopNFC().catch(() => {});
     } catch (e: any) {
@@ -175,6 +192,7 @@ export default function useNFCSession(
         }
         // Replay is not safe for this operation (or we are inside a
         // non-idempotent window): surface the ambiguity instead of retrying.
+        outcome = 'error';
         realErrorRef.current = true;
         console.log('[Keycard] Tag lost mid-operation (no retry)');
         setStatus(AMBIGUOUS_LOSS_STATUS);
@@ -182,6 +200,7 @@ export default function useNFCSession(
         RNKeycard.Core.stopNFCWithError(AMBIGUOUS_LOSS_STATUS).catch(() => {});
         return;
       }
+      outcome = 'error';
       realErrorRef.current = true;
       const msg = e instanceof Error ? e.message : String(e);
       console.log(`[Keycard] Error: ${msg}`, e);
@@ -190,8 +209,23 @@ export default function useNFCSession(
       RNKeycard.Core.stopNFCWithError(msg).catch(() => {});
     } finally {
       inFlightRef.current = false;
+      if (pendingConnectRef.current) {
+        pendingConnectRef.current = false;
+        // Replay only while the session is still waiting for a card. A run
+        // that finished or failed must never be restarted behind the user's
+        // back — after an error the reader is stopped anyway, and Try again
+        // is the way back.
+        if (outcome === 'waiting') {
+          console.log('[Keycard] Replaying queued card connect');
+          handleCardConnectedRef.current?.().catch(() => {});
+        }
+      }
     }
   }, [onCardConnected, onTagLost, clearWatchdog]);
+
+  // Lets the finally above re-enter the latest handler without making the
+  // callback depend on itself.
+  handleCardConnectedRef.current = handleCardConnected;
 
   // Presence reporting only. The `!realErrorRef.current` guard is load-bearing:
   // phaseRef is render-assigned and still reads 'nfc' in the tick after a real

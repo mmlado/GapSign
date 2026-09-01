@@ -760,6 +760,79 @@ describe('useNFCSession', () => {
       expect(result.current.phase).toBe('done');
     });
 
+    // A tap that lands while the previous run is still unwinding must not be
+    // dropped: the tag is already on the antenna, so no new discovery fires
+    // and the user would have to physically remove and re-tap.
+    it('replays a connect that arrives while a run is still in flight', async () => {
+      let releaseFirstRun: (() => void) | null = null;
+      mockOnCardConnected
+        .mockImplementationOnce(
+          () =>
+            new Promise((_resolve, reject) => {
+              releaseFirstRun = () => reject(new Error(ANDROID_TAG_LOST));
+            }),
+        )
+        .mockResolvedValue(undefined);
+
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      let firstRun: Promise<void> | undefined;
+      act(() => {
+        firstRun = capturedOnConnected?.();
+      });
+      await act(async () => {});
+
+      // The user taps again while the first run is still blocked.
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(1); // queued, not run
+
+      // The blocked APDU finally fails; the queued tap is replayed.
+      await act(async () => {
+        releaseFirstRun?.();
+        await firstRun;
+      });
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(2);
+      expect(result.current.phase).toBe('done');
+    });
+
+    it('does not replay a queued connect after a real error', async () => {
+      let releaseFirstRun: (() => void) | null = null;
+      mockOnCardConnected
+        .mockImplementationOnce(
+          () =>
+            new Promise((_resolve, reject) => {
+              releaseFirstRun = () => reject(new Error('Invalid MAC'));
+            }),
+        )
+        .mockResolvedValue(undefined);
+
+      const { result } = makeHook({ retryOnTagLoss: true });
+      await act(async () => {
+        result.current.startNFC();
+      });
+      let firstRun: Promise<void> | undefined;
+      act(() => {
+        firstRun = capturedOnConnected?.();
+      });
+      await act(async () => {});
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+
+      await act(async () => {
+        releaseFirstRun?.();
+        await firstRun;
+      });
+      // The operation must not restart itself behind the user's back.
+      expect(mockOnCardConnected).toHaveBeenCalledTimes(1);
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe('Invalid MAC');
+    });
+
     it('startNFC resets presence to waiting', async () => {
       const { result } = makeHook({ retryOnTagLoss: true });
       await startAndFail(result, ANDROID_TAG_LOST);

@@ -15,7 +15,11 @@ import {
   buildRawEthHexSignature,
 } from './ethSignature';
 import { getExportTarget } from './exportTargets';
-import { exportKeysForTarget, type ExportKeysResult } from './keycardExport';
+import {
+  exportKeysForTarget,
+  makeExportResumeCache,
+  type ExportKeysResult,
+} from './keycardExport';
 
 /**
  * What happens after the card operation succeeds. 'ur' outcomes navigate to
@@ -166,9 +170,15 @@ function prepareBtcMessageSign(params: BtcMessageParams): KeycardFlowRun {
 
 function prepareExportKey(params: ExportKeyParams): KeycardFlowRun {
   const target = getExportTarget(params.target);
+  // Captured by the cardOp closure, so it survives reconnects within this
+  // screen visit: a tag loss mid-export resumes at the first key not yet
+  // fetched instead of re-exporting all of them (shorter re-tap, less chance
+  // of a second loss). Same-card only — the cache self-invalidates on UID
+  // change — and it dies with the flow, never outliving the screen.
+  const resumeCache = makeExportResumeCache();
   return flow<ExportKeysResult>({
     cardOp: (cmdSet, setStatus) =>
-      exportKeysForTarget(cmdSet, target.keys, setStatus),
+      exportKeysForTarget(cmdSet, target.keys, setStatus, resumeCache),
     buildOutput: result => ({
       kind: 'ur',
       urString: target.buildUr(result),

@@ -15,7 +15,12 @@ import { join } from 'path';
  * update isTagLostError and its ADR in the same commit, not just this test.
  */
 
-const bridgeRoot = join(__dirname, '..', 'node_modules', 'react-native-keycard');
+const bridgeRoot = join(
+  __dirname,
+  '..',
+  'node_modules',
+  'react-native-keycard',
+);
 
 function read(rel: string): string {
   return readFileSync(join(bridgeRoot, rel), 'utf8');
@@ -23,9 +28,7 @@ function read(rel: string): string {
 
 describe('installed react-native-keycard carries the tag-loss contract', () => {
   it('android channel guards the nulled IsoDep instead of NPE-ing', () => {
-    const channel = read(
-      'android/src/main/java/com/keycard/NFCCardChannel.kt',
-    );
+    const channel = read('android/src/main/java/com/keycard/NFCCardChannel.kt');
     expect(channel).toContain('TagLostException(TAG_LOST)');
     expect(channel).not.toContain('isoDep!!.transceive');
   });

@@ -87,6 +87,9 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const pendingGenuineUidRef = useRef<string | null>(null);
 
   const pinRef = useRef('');
+  /** True once this PIN has been accepted by the card in this session, which
+   *  makes replaying it safe: a correct verify resets the attempt counter. */
+  const pinVerifiedRef = useRef(false);
   const operationRef = useRef<KeycardOperationFn<T> | null>(null);
   const requiresPinRef = useRef(true);
   const requiresMasterKeyRef = useRef(true);
@@ -224,24 +227,32 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       console.log('[Keycard] Secure channel open');
 
       if (requiresPinRef.current) {
-        // Non-idempotent window, same class as autoPair: the card decrements
-        // its 3-attempt counter before the response is read, so a tag loss in
-        // here means the attempt may have been consumed with nothing to show
-        // for it. Never silently resubmit an unconfirmed PIN — forget it so
-        // the next attempt is one the user explicitly authorised (device
-        // probe, 2026-08-22: a cached PIN replayed 0.43 s after reconnect,
-        // with no prompt). Cleared only on success, not in a finally (see
-        // the autoPair window above for why).
-        const retryUnsafeRef = retryUnsafeHolderRef.current;
+        // An UNCONFIRMED PIN is a non-idempotent window, same class as
+        // autoPair: the card decrements its 3-attempt counter before the
+        // response is read, so a tag loss here may have consumed an attempt
+        // with nothing to show for it. Never silently resubmit one — forget
+        // it so the next attempt is one the user explicitly authorised
+        // (device probe, 2026-08-22: a cached PIN replayed 0.43 s after
+        // reconnect, with no prompt).
+        //
+        // Once the PIN has verified successfully in this session it is known
+        // correct, and a correct verify RESETS the counter rather than
+        // decrementing it — so replaying it on a reconnect cannot cost an
+        // attempt. Guarding those re-verifies too made every card slip during
+        // the handshake a hard error, which is what this narrower rule fixes.
+        const retryUnsafeRef = pinVerifiedRef.current
+          ? null
+          : retryUnsafeHolderRef.current;
         if (retryUnsafeRef) retryUnsafeRef.current = true;
         try {
           await verifyPin(cmdSet, setStatus);
         } catch (e) {
-          if (isTagLostError(e)) {
+          if (isTagLostError(e) && !pinVerifiedRef.current) {
             pinRef.current = '';
           }
           throw e;
         }
+        pinVerifiedRef.current = true;
         if (retryUnsafeRef) retryUnsafeRef.current = false;
       }
 
@@ -259,6 +270,12 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
           setCardFingerprint(fingerprint);
           setStatus(`Connected to ${displayKeycardName(name, fingerprint)}`);
         } catch (e) {
+          if (isTagLostError(e)) {
+            // The card is gone, not merely unnamed — swallowing this would
+            // send the operation onto a dead channel (observed on-device as a
+            // freeze in Processing). Let the session classify it.
+            throw e;
+          }
           console.warn('[Keycard] master fingerprint export failed', e);
         }
       }
@@ -409,6 +426,9 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const submitPin = useCallback(
     (pin: string) => {
       pinRef.current = pin;
+      // A newly entered PIN is unconfirmed again, even if a previous one in
+      // this session verified: it is protected until the card accepts it.
+      pinVerifiedRef.current = false;
       setPinError(null);
       setWaitingForPin(false);
       startNFC();
@@ -456,6 +476,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     setCardName(null);
     setCardFingerprint(null);
     pinRef.current = '';
+    pinVerifiedRef.current = false;
     operationRef.current = null;
     operationRunningRef.current = false;
     setShowGenuineWarning(false);

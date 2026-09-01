@@ -223,6 +223,7 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
                 cardName={cardName}
                 cardFingerprint={cardFingerprint}
                 onCancel={onCancel}
+                retry={retry}
                 openNFCSettings={openNFCSettings}
               />
             </Animated.View>

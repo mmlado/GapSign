@@ -117,6 +117,9 @@ export default function PairingSlotsScreen({
         phase: checkPhase,
         status: checkStatus,
         cardPresence: checkCardPresence,
+        // After an error the reader is disarmed (stopNFCWithError), so the
+        // sheet needs an explicit restart — re-tapping emits nothing.
+        retry: checkSlots,
       };
 
   if (pendingSlotIndex !== null) {

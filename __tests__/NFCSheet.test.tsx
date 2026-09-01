@@ -59,8 +59,66 @@ describe('NFCSheet', () => {
     });
   });
 
+  // After an error the bridge reader is disarmed (stopNFCWithError sets the
+  // channel's listening=false), so a re-tap emits nothing — the sheet must
+  // offer an explicit restart when the caller provides one.
+  describe('Try again button', () => {
+    it('shows "Try again" instead of the hint when retry is provided', () => {
+      render(
+        <NFCSheet
+          variant="error"
+          status="Bad MAC"
+          onCancel={onCancel}
+          retry={jest.fn()}
+        />,
+      );
+      expect(screen.getByText('Try again')).toBeTruthy();
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+
+    it('calls retry when the button is pressed', () => {
+      const retry = jest.fn();
+      render(
+        <NFCSheet
+          variant="error"
+          status="Bad MAC"
+          onCancel={onCancel}
+          retry={retry}
+        />,
+      );
+      fireEvent.press(screen.getByText('Try again'));
+      expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not show the button when openNFCSettings is present', () => {
+      render(
+        <NFCSheet
+          variant="error"
+          status="NFC off"
+          onCancel={onCancel}
+          retry={jest.fn()}
+          openNFCSettings={jest.fn()}
+        />,
+      );
+      expect(screen.queryByText('Try again')).toBeNull();
+      expect(screen.getByText('Open NFC Settings')).toBeTruthy();
+    });
+
+    it('does not show the button outside the error variant', () => {
+      render(
+        <NFCSheet
+          variant="disconnected"
+          status="lost"
+          onCancel={onCancel}
+          retry={jest.fn()}
+        />,
+      );
+      expect(screen.queryByText('Try again')).toBeNull();
+    });
+  });
+
   describe('retry hint', () => {
-    it('shows "Tap your card to try again" when variant is error', () => {
+    it('shows "Tap your card to try again" when variant is error and no retry is provided', () => {
       render(<NFCSheet variant="error" status="Bad MAC" onCancel={onCancel} />);
       expect(screen.getByText('Tap your card to try again')).toBeTruthy();
     });

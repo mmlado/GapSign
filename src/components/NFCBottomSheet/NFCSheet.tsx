@@ -13,6 +13,11 @@ type Props = {
   cardName?: string | null;
   cardFingerprint?: number | null;
   onCancel: () => void;
+  /** Restarts the operation (re-arms the NFC reader). After an error the
+   *  bridge has stopped listening — stopNFCWithError sets the channel's
+   *  listening=false — so a re-tap emits nothing and only an explicit
+   *  restart can recover. */
+  retry?: () => void;
   openNFCSettings?: () => void;
 };
 
@@ -67,6 +72,7 @@ export default function NFCSheet({
   cardName,
   cardFingerprint,
   onCancel,
+  retry,
   openNFCSettings,
 }: Props) {
   // 'disconnected' deliberately keeps the default icon, not the failure one:
@@ -101,7 +107,19 @@ export default function NFCSheet({
         {status}
       </Text>
 
-      {variant === 'error' && !openNFCSettings && (
+      {variant === 'error' && !openNFCSettings && retry && (
+        <Pressable
+          style={styles.settingsButton}
+          android_ripple={{ color: theme.colors.secondaryRipple }}
+          onPress={retry}
+        >
+          <Text variant="labelLarge" style={styles.settingsText}>
+            Try again
+          </Text>
+        </Pressable>
+      )}
+
+      {variant === 'error' && !openNFCSettings && !retry && (
         <Text variant="bodyMedium" style={styles.retryHint}>
           Tap your card to try again
         </Text>

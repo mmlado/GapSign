@@ -140,6 +140,14 @@ describe('NFCBottomSheet — Android sheet', () => {
       ).toBeNull();
     });
 
+    it('phase error with retry: the sheet offers Try again and it fires', () => {
+      const retry = jest.fn();
+      renderSheet(makeNfc('error', { retry }));
+      fireEvent.press(screen.getByText('Try again'));
+      expect(retry).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+
     it('phase done + presence lost: success UI wins', () => {
       renderSheet(makeNfc('done', { cardPresence: 'lost' }), true);
       expect(
