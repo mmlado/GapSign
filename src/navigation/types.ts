@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { WCContext } from '../constants/walletConnect';
 import type { ScanResult } from '../types';
+import type { ExportTargetId } from '../utils/exportTargets';
 
 export type KeycardParams =
   | {
@@ -31,14 +32,14 @@ export type KeycardParams =
     }
   | {
       operation: 'export_key';
-      derivationPath: string;
-      source?: string;
+      target: ExportTargetId;
     };
 // Future: | { operation: 'change_pin' } | { operation: 'generate_key' }
 
 export type SecretType = 'pin' | 'puk' | 'pairing';
 
 export type RootStackParamList = {
+  Welcome: undefined;
   Dashboard: { toast?: string } | undefined;
   WalletConnectPairing: { uri: string };
   KeycardMenu: undefined;
@@ -60,7 +61,7 @@ export type RootStackParamList = {
   PairingSlots: undefined;
   AddressMenu: undefined;
   AddressList: { coin: 'btc' | 'eth' };
-  AddressDetail: { address: string; index: number; title?: string };
+  AddressDetail: { address: string; derivationPath?: string; title?: string };
   QRResult: {
     urString: string; // fully encoded UR string, ready for QR display
     title: string;
@@ -77,6 +78,11 @@ export type RootStackParamList = {
   };
   Settings: undefined;
 };
+
+export type WelcomeScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'Welcome'
+>;
 
 export type DashboardScreenProps = NativeStackScreenProps<
   RootStackParamList,

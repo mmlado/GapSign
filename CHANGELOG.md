@@ -8,12 +8,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Full and pre-hashed EIP-712 sign requests (`dataType=2`) are now signable: the card signs the computed EIP-712 digest — the same digest shown in the review — instead of failing on raw bytes after PIN entry. Unclassifiable payloads now show a "cannot be signed" explanation in the review instead of a Sign button
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
 - Explainer on the Connect-software-wallet screen and above the exported-key QR code
+- View Addresses now shows the full BIP32 derivation path (e.g. `m/44'/60'/0'/0/0`) under each address in the list and on the address detail screen, replacing the bare index column
+- First-run welcome screen with a Keycard product photo explaining what the app does (hardware-held keys, air-gapped QR flow, NFC signing), plus a buy-Keycard button (browser link in the online build, QR code in the offline build); shown once, then remembered via a `welcome_seen` preference
 
 ### Changed
 
+- The dismissible buy-Keycard notice is gone from the dashboard; the purchase link now lives on the welcome screen and remains available on the About screen
+- Importing a key pair (recovery phrase or backup check) now returns to a fresh Dashboard like every other completed Keycard operation, clearing the seed-entry screens from the navigation stack
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
+- iOS back button now shows only the arrow instead of the previous screen's title text
+- Renamed "Keypair" to "Key pair" across the menu and screen titles
+- Dimmed the NFC indicator icon in menu lists
+- New app icon: the orange Keycard "K" mark on a black background (iOS and Android)
+- Updated vulnerable dependencies flagged by Dependabot (nanoid, js-yaml, brace-expansion, shell-quote, svgo, joi, ws, uuid, concurrent-ruby); `image-size` and `elliptic` alerts remain open because no patched releases exist
+
+### Fixed
+
+- Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
+- Malformed PSBTs are now rejected at scan time with a clear error instead of opening a review whose Sign button crashed; a failure while encoding the result QR after signing shows an error screen instead of doing nothing
+- Navigating back during an active Keycard tap now cancels the NFC session on every Keycard screen; previously only Initialize Card and Change PIN/PUK did this, leaving the session running elsewhere
+- The WalletConnect pairing screen's unsupported-proposal banner and the rejection reason sent to the dApp now come from one shared check with identical wording; previously the two could disagree about the same proposal
+- Generated recovery-phrase list: two-digit word numbers (`10.`, `11.`, `12.`) no longer wrap onto a second line on iOS; the number column is now auto-width
 
 ## [1.8.0] - 2026-06-30
 

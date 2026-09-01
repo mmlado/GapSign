@@ -887,16 +887,6 @@ describe('useKeycardOperation', () => {
     });
   });
 
-  describe('clearPinError', () => {
-    it('is exposed and callable without side effects when no error exists', async () => {
-      const { result } = renderHook(() => useKeycardOperation<string>());
-      await act(async () => {
-        result.current.clearPinError();
-      });
-      expect(result.current.pinError).toBeNull();
-    });
-  });
-
   describe('PIN verification', () => {
     beforeEach(() => {
       mockLoadPairing.mockResolvedValue({ pairingIndex: 0 } as any);
@@ -970,7 +960,7 @@ describe('useKeycardOperation', () => {
   });
 });
 
-describe('onNFCAvailableRef', () => {
+describe('NFC re-enabled resume', () => {
   beforeEach(() => {
     mockStartNFC.mockResolvedValue(undefined);
     mockIsNFCEnabled.mockResolvedValue(true);

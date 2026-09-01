@@ -10,7 +10,6 @@ import theme from '../theme';
 import SignRequestDetail from '../components/SignRequestDetail';
 import PrimaryButton from '../components/PrimaryButton';
 import { useWalletConnectSession } from '../hooks/useWalletConnectSession.online';
-import { inspectBtcPsbt } from '../utils/btcPsbt';
 import { buildSignKeycardParams } from '../utils/signNavigation';
 
 export default function TransactionDetailScreen({
@@ -26,16 +25,7 @@ export default function TransactionDetailScreen({
 
   const isBip322Message =
     result.kind === 'crypto-psbt' &&
-    (() => {
-      try {
-        return (
-          inspectBtcPsbt(result.request.psbtHex).requestType ===
-          'bip322-message'
-        );
-      } catch {
-        return false;
-      }
-    })();
+    result.summary.requestType === 'bip322-message';
 
   const keycardParams = buildSignKeycardParams(result);
 

@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useLayoutEffect } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type {
@@ -10,6 +9,7 @@ import type {
 
 import { useChangeSecret } from '../../hooks/keycard/useChangeSecret';
 import { useConfirmedEntry } from '../../hooks/useConfirmedEntry';
+import { useKeycardScreen } from '../../hooks/useKeycardScreen';
 
 import theme from '../../theme';
 import NFCBottomSheet from '../../components/NFCBottomSheet';
@@ -56,73 +56,34 @@ export default function ChangeSecretScreen({
   const insets = useSafeAreaInsets();
 
   const keycard = useChangeSecret(secretType);
-  const { phase, result, cancel } = keycard;
+  const { phase } = keycard;
 
   const entry = useConfirmedEntry(newSecret => keycard.start(newSecret), {
     length: config.length,
   });
 
-  useEffect(() => {
-    if (phase !== 'done') {
-      return;
-    }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard', params: { toast: config.toast } }],
-    });
-  }, [phase, result, navigation, config.toast]);
-
-  const handleCancel = useCallback(() => {
-    cancel();
-    navigation.goBack();
-  }, [cancel, navigation]);
-
-  const goBack = useCallback(() => {
-    if (phase === 'nfc' || phase === 'pin_entry') {
-      cancel();
-      navigation.goBack();
-      return true;
-    }
-
+  const onScreenBack = useCallback(() => {
     const handled = entry.goBack();
     if (!handled) {
       navigation.goBack();
     }
     return true;
-  }, [phase, entry, cancel, navigation]);
+  }, [entry, navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const sub = BackHandler.addEventListener('hardwareBackPress', goBack);
-      return () => sub.remove();
-    }, [goBack]),
-  );
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', e => {
-      if (phase === 'nfc' || phase === 'pin_entry') {
-        cancel();
-        return;
-      }
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title: entry.step === 'entry' ? config.entryTitle : config.confirmTitle,
+    pinEntryTitle: 'Enter current PIN',
+    done: { toast: config.toast },
+    onHardwareBack: onScreenBack,
+    onBeforeRemove: e => {
       if (entry.step === 'confirm') {
         e.preventDefault();
         entry.goBack();
       }
-    });
-    return unsubscribe;
-  }, [navigation, phase, entry, cancel]);
-
-  const title =
-    phase === 'pin_entry'
-      ? 'Enter current PIN'
-      : entry.step === 'entry'
-      ? config.entryTitle
-      : config.confirmTitle;
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title });
-  }, [navigation, title]);
+    },
+  });
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
@@ -149,7 +110,7 @@ export default function ChangeSecretScreen({
         />
       )}
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} showOnDone />
     </View>
   );
 }

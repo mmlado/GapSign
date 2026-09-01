@@ -20,14 +20,7 @@ export function useInitCard(): UseInitCardOperation {
   const pinRef = useRef('');
   const duressPinRef = useRef<string | null>(null);
 
-  const {
-    phase,
-    status,
-    result,
-    start: startNFC,
-    cancel,
-    reset,
-  } = useNFCOperation(
+  const { start: startNFC, ...rest } = useNFCOperation(
     useCallback(async (cmdSet: Commandset) => {
       if (cmdSet.applicationInfo?.initializedCard) {
         throw new Error(
@@ -56,5 +49,5 @@ export function useInitCard(): UseInitCardOperation {
     [startNFC],
   );
 
-  return { phase, status, result, start, cancel, reset };
+  return { ...rest, start };
 }

@@ -110,19 +110,9 @@ export default function PairingSlotsScreen({
     }
   }, [isUnpairing, cancelUnpair, cancelCheck, navigation]);
 
-  // Build the NFCOperation object passed to NFCBottomSheet.
-  // The check flow maps 'checking' → 'nfc' so the bottom sheet shows.
   const activeNfc: NFCOperation = isUnpairing
     ? unpairHook
-    : {
-        phase:
-          checkPhase === 'checking'
-            ? 'nfc'
-            : checkPhase === 'ready'
-            ? 'done'
-            : checkPhase,
-        status: checkStatus,
-      };
+    : { phase: checkPhase, status: checkStatus };
 
   if (pendingSlotIndex !== null) {
     return (
@@ -141,7 +131,7 @@ export default function PairingSlotsScreen({
 
   const showContent =
     !isUnpairing &&
-    (checkPhase === 'idle' || checkPhase === 'ready' || checkPhase === 'error');
+    (checkPhase === 'idle' || checkPhase === 'done' || checkPhase === 'error');
 
   const menuEntries = slotInfo?.totalSlots
     ? Array.from({ length: slotInfo.totalSlots }, (_, i) => {

@@ -52,6 +52,7 @@ export default function Menu({ entries }: Props) {
                   width={20}
                   height={20}
                   color={theme.colors.primary}
+                  opacity={0.5}
                 />
               ) : null}
               <Icons.chevronRight width={24} height={24} />

@@ -3,7 +3,7 @@ import { Commandset } from 'keycard-sdk/dist/commandset';
 
 import { loadPairing } from '../../storage/pairingStorage';
 import { toHex } from '../../utils/hex';
-import { useNFCOperation } from './useNFCOperation';
+import { useNFCOperation, type NFCSessionPhase } from './useNFCOperation';
 
 const TOTAL_SLOTS = 10;
 
@@ -14,10 +14,8 @@ export interface SlotInfo {
   cardUid: string;
 }
 
-export type PairingSlotsPhase = 'idle' | 'checking' | 'ready' | 'error';
-
 export interface UsePairingSlots {
-  phase: PairingSlotsPhase;
+  phase: NFCSessionPhase;
   slotInfo: SlotInfo | null;
   status: string;
   checkSlots: () => void;
@@ -56,7 +54,7 @@ export function usePairingSlots(): UsePairingSlots {
     start,
     cancel: nfcCancel,
     reset: nfcReset,
-    phase: nfcPhase,
+    phase,
     status,
   } = useNFCOperation(handleConnected);
 
@@ -93,15 +91,6 @@ export function usePairingSlots(): UsePairingSlots {
     },
     [readSlotInfo],
   );
-
-  let phase: PairingSlotsPhase = 'idle';
-  if (nfcPhase === 'nfc') {
-    phase = 'checking';
-  } else if (nfcPhase === 'done' && slotInfo) {
-    phase = 'ready';
-  } else if (nfcPhase === 'error') {
-    phase = 'error';
-  }
 
   return {
     phase,

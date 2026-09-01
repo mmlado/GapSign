@@ -1,18 +1,12 @@
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardAction, InitCardScreenProps } from '../navigation/types';
 
 import { useInitCard } from '../hooks/keycard/useInitCard';
 import { useConfirmedEntry } from '../hooks/useConfirmedEntry';
+import { useKeycardScreen } from '../hooks/useKeycardScreen';
 
 import theme from '../theme';
 import ConfirmPrompt from '../components/ConfirmPropmpt';
@@ -32,7 +26,7 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
   const mainPinRef = useRef('');
 
   const keycard = useInitCard();
-  const { phase, result, start, cancel } = keycard;
+  const { phase, start } = keycard;
 
   const pinSetup = useConfirmedEntry(pin => {
     mainPinRef.current = pin;
@@ -44,22 +38,6 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
     mainPinRef.current = '';
   });
 
-  useEffect(() => {
-    if (phase !== 'done' || !result) {
-      return;
-    }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard', params: { toast: 'Card initialized' } }],
-    });
-  }, [phase, result, navigation]);
-
-  const handleCancel = useCallback(() => {
-    cancel();
-    navigation.goBack();
-  }, [cancel, navigation]);
-
   const handleDuressYes = useCallback(() => {
     setScreenStep('duress_setup');
   }, []);
@@ -69,13 +47,7 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
     mainPinRef.current = '';
   }, [start]);
 
-  const goBack = useCallback(() => {
-    if (phase === 'nfc') {
-      cancel();
-      navigation.goBack();
-      return true;
-    }
-
+  const onScreenBack = useCallback(() => {
     if (screenStep === 'pin_setup') {
       const handled = pinSetup.goBack();
       if (!handled) {
@@ -99,21 +71,27 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
     }
 
     return true;
-  }, [phase, screenStep, pinSetup, duressSetup, cancel, navigation]);
+  }, [screenStep, pinSetup, duressSetup, navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const sub = BackHandler.addEventListener('hardwareBackPress', goBack);
-      return () => sub.remove();
-    }, [goBack]),
-  );
+  const title = (() => {
+    if (screenStep === 'pin_setup') {
+      return pinSetup.step === 'entry' ? 'Create a PIN' : 'Confirm your PIN';
+    }
+    if (screenStep === 'duress_question') {
+      return 'Initialize Card';
+    }
+    return duressSetup.step === 'entry'
+      ? 'Create a duress PIN'
+      : 'Confirm duress PIN';
+  })();
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', e => {
-      if (phase === 'nfc') {
-        cancel();
-        return;
-      }
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title,
+    done: { toast: 'Card initialized', requireResult: true },
+    onHardwareBack: onScreenBack,
+    onBeforeRemove: e => {
       if (screenStep === 'pin_setup' && pinSetup.step === 'confirm') {
         e.preventDefault();
         pinSetup.goBack();
@@ -132,25 +110,8 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
           setScreenStep('duress_question');
         }
       }
-    });
-    return unsubscribe;
-  }, [navigation, phase, screenStep, pinSetup, duressSetup, cancel]);
-
-  const title = (() => {
-    if (screenStep === 'pin_setup') {
-      return pinSetup.step === 'entry' ? 'Create a PIN' : 'Confirm your PIN';
-    }
-    if (screenStep === 'duress_question') {
-      return 'Initialize Card';
-    }
-    return duressSetup.step === 'entry'
-      ? 'Create a duress PIN'
-      : 'Confirm duress PIN';
-  })();
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title });
-  }, [navigation, title]);
+    },
+  });
 
   const activePinSetup =
     screenStep === 'pin_setup'
@@ -185,7 +146,7 @@ export default function InitCardScreen({ navigation }: InitCardScreenProps) {
         />
       )}
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} showOnDone />
     </View>
   );
 }

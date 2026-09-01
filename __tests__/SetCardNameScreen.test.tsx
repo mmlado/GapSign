@@ -10,6 +10,10 @@ let mockPhase = 'idle';
 let keyboardDidShow: ((event: any) => void) | null = null;
 let keyboardDidHide: (() => void) | null = null;
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: jest.fn(),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -63,6 +67,7 @@ jest.mock('../src/hooks/keycard/useSetCardName', () => ({
 }));
 
 const navigation = {
+  addListener: jest.fn(() => jest.fn()),
   goBack: jest.fn(),
   reset: jest.fn(),
   setOptions: jest.fn(),

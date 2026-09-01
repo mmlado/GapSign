@@ -96,7 +96,6 @@ export default function AboutScreen({ navigation }: AboutScreenProps) {
         onShowQR={(label, address) =>
           navigation.navigate('AddressDetail', {
             address,
-            index: 0,
             title: `${label} address`,
           })
         }

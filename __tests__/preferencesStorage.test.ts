@@ -1,11 +1,11 @@
 import {
-  loadDashboardKeycardNoticeDismissed,
   loadPinPadScramble,
   loadTokenImagesEnabled,
+  loadWelcomeSeen,
   loadXpubNoticeDismissed,
-  saveDashboardKeycardNoticeDismissed,
   savePinPadScramble,
   saveTokenImagesEnabled,
+  saveWelcomeSeen,
   saveXpubNoticeDismissed,
 } from '../src/storage/preferencesStorage';
 
@@ -24,51 +24,6 @@ describe('preferencesStorage', () => {
   beforeEach(() => {
     mockGetItem.mockReset();
     mockSetItem.mockReset();
-  });
-
-  describe('loadDashboardKeycardNoticeDismissed', () => {
-    it('reads the correct storage key', async () => {
-      mockGetItem.mockResolvedValue(null);
-      await loadDashboardKeycardNoticeDismissed();
-      expect(mockGetItem).toHaveBeenCalledWith(
-        'preference_dashboard_keycard_notice_dismissed',
-      );
-    });
-
-    it('returns true when stored value is "1"', async () => {
-      mockGetItem.mockResolvedValue('1');
-      expect(await loadDashboardKeycardNoticeDismissed()).toBe(true);
-    });
-
-    it('returns false when nothing stored', async () => {
-      mockGetItem.mockResolvedValue(null);
-      expect(await loadDashboardKeycardNoticeDismissed()).toBe(false);
-    });
-
-    it('returns false when storage throws', async () => {
-      mockGetItem.mockRejectedValue(new Error('storage failure'));
-      expect(await loadDashboardKeycardNoticeDismissed()).toBe(false);
-    });
-  });
-
-  describe('saveDashboardKeycardNoticeDismissed', () => {
-    it('stores true as "1"', async () => {
-      mockSetItem.mockResolvedValue(undefined);
-      await saveDashboardKeycardNoticeDismissed(true);
-      expect(mockSetItem).toHaveBeenCalledWith(
-        'preference_dashboard_keycard_notice_dismissed',
-        '1',
-      );
-    });
-
-    it('stores false as "0"', async () => {
-      mockSetItem.mockResolvedValue(undefined);
-      await saveDashboardKeycardNoticeDismissed(false);
-      expect(mockSetItem).toHaveBeenCalledWith(
-        'preference_dashboard_keycard_notice_dismissed',
-        '0',
-      );
-    });
   });
 
   describe('loadPinPadScramble', () => {
@@ -161,6 +116,43 @@ describe('preferencesStorage', () => {
         'preference_token_images_enabled',
         '0',
       );
+    });
+  });
+
+  describe('loadWelcomeSeen', () => {
+    it('reads the correct storage key', async () => {
+      mockGetItem.mockResolvedValue(null);
+      await loadWelcomeSeen();
+      expect(mockGetItem).toHaveBeenCalledWith('preference_welcome_seen');
+    });
+
+    it('returns true when stored value is "1"', async () => {
+      mockGetItem.mockResolvedValue('1');
+      expect(await loadWelcomeSeen()).toBe(true);
+    });
+
+    it('returns false when nothing stored (first run)', async () => {
+      mockGetItem.mockResolvedValue(null);
+      expect(await loadWelcomeSeen()).toBe(false);
+    });
+
+    it('returns false when storage throws', async () => {
+      mockGetItem.mockRejectedValue(new Error('storage failure'));
+      expect(await loadWelcomeSeen()).toBe(false);
+    });
+  });
+
+  describe('saveWelcomeSeen', () => {
+    it('stores true as "1"', async () => {
+      mockSetItem.mockResolvedValue(undefined);
+      await saveWelcomeSeen(true);
+      expect(mockSetItem).toHaveBeenCalledWith('preference_welcome_seen', '1');
+    });
+
+    it('stores false as "0"', async () => {
+      mockSetItem.mockResolvedValue(undefined);
+      await saveWelcomeSeen(false);
+      expect(mockSetItem).toHaveBeenCalledWith('preference_welcome_seen', '0');
     });
   });
 

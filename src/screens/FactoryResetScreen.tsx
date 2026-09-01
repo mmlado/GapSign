@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useLayoutEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { DashboardAction, FactoryResetSreenProps } from '../navigation/types';
@@ -8,6 +8,7 @@ import NFCBottomSheet from '../components/NFCBottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFactoryReset } from '../hooks/keycard/useFactoryReset';
+import { useKeycardScreen } from '../hooks/useKeycardScreen';
 import { Icons } from '../assets/icons';
 
 export const dashboardEntry: DashboardAction = {
@@ -22,31 +23,18 @@ export default function FactoryResetScreen({
   const [checked, setChecked] = useState(false);
 
   const keycard = useFactoryReset();
-  const { phase, start, cancel } = keycard;
+  const { phase, start } = keycard;
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Factory reset' });
-  }, [navigation]);
-
-  useEffect(() => {
-    if (phase !== 'done') {
-      return;
-    }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard', params: { toast: 'Factory reset done' } }],
-    });
-  }, [phase, navigation]);
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title: 'Factory reset',
+    done: { toast: 'Factory reset done' },
+  });
 
   const handleStart = useCallback(() => {
     start();
   }, [start]);
-
-  const handleCancel = useCallback(() => {
-    cancel();
-    navigation.goBack();
-  }, [cancel, navigation]);
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
@@ -85,7 +73,7 @@ export default function FactoryResetScreen({
         </View>
       )}
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} showOnDone />
     </View>
   );
 }

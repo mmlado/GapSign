@@ -19,7 +19,7 @@ export default function KeycardMenuScreen({
       onPress: () => navigation.navigate('InitCard'),
     },
     {
-      label: 'Keypair',
+      label: 'Key pair',
       onPress: () => navigation.navigate('KeyPairMenu'),
     },
     {

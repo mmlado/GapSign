@@ -9,7 +9,7 @@ import theme from '../../theme';
 import Menu from '../../components/Menu';
 
 export const dashboardEntry: DashboardAction = {
-  label: 'Keypair',
+  label: 'Key pair',
   navigate: nav => nav.navigate('KeyPairMenu'),
 };
 

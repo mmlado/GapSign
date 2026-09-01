@@ -142,7 +142,7 @@ function makeCheckHook(
 ) {
   return {
     phase,
-    status: phase === 'checking' ? 'Selecting applet...' : '',
+    status: phase === 'nfc' ? 'Selecting applet...' : '',
     slotInfo,
     checkSlots: mockCheckSlots,
     cancel: mockCancel,
@@ -210,7 +210,7 @@ describe('PairingSlotsScreen', () => {
         ourSlotIndex: 3,
         cardUid: 'abcd',
       };
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       expect(mockCheckSlots).not.toHaveBeenCalled();
     });
   });
@@ -222,7 +222,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('passes check hook to NFCBottomSheet', () => {
-      renderScreen('checking');
+      renderScreen('nfc');
       const lastCall = MockNFCBottomSheet.mock.calls.at(-1);
       expect(lastCall?.[0].nfc.phase).toBe('nfc');
       expect(lastCall?.[0].showOnDone).toBe(false);
@@ -252,20 +252,20 @@ describe('PairingSlotsScreen', () => {
     };
 
     it('renders slot summary', () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       expect(screen.getByText('Slots free')).toBeTruthy();
       expect(screen.getByText('7 / 10')).toBeTruthy();
     });
 
     it('renders all 10 slots with 1-based numbering', () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       for (let i = 0; i < 10; i++) {
         expect(screen.getByText(`Slot ${i + 1}`)).toBeTruthy();
       }
     });
 
     it('marks our slot as This device', () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       expect(screen.getByText('This device')).toBeTruthy();
     });
   });
@@ -279,14 +279,14 @@ describe('PairingSlotsScreen', () => {
     };
 
     it('shows ConfirmPrompt with correct slot number when a row is pressed', () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 1'));
       expect(screen.getByText('Unpair slot 1?')).toBeTruthy();
       expect(mockExecute).not.toHaveBeenCalled();
     });
 
     it('executes unpair after user confirms', async () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 3'));
       await act(async () => {
         fireEvent.press(screen.getByText('Unpair'));
@@ -295,7 +295,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('returns to slot list when user cancels confirmation', () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 3'));
       fireEvent.press(screen.getByText('Cancel'));
       expect(mockExecute).not.toHaveBeenCalled();
@@ -303,7 +303,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('deletes local pairing when unpairing our own slot', async () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       // ourSlotIndex is 3, so Slot 4 (1-based) is our slot
       fireEvent.press(screen.getByText('Slot 4'));
       await act(async () => {
@@ -317,7 +317,7 @@ describe('PairingSlotsScreen', () => {
 
     it('keeps unpair success path when local pairing cleanup fails', async () => {
       mockDeletePairing.mockRejectedValueOnce(new Error('storage failed'));
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
 
       fireEvent.press(screen.getByText('Slot 4'));
       await act(async () => {
@@ -330,7 +330,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('does not delete local pairing when unpairing another slot', async () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 1'));
       await act(async () => {
         fireEvent.press(screen.getByText('Unpair'));
@@ -342,7 +342,7 @@ describe('PairingSlotsScreen', () => {
 
   describe('unpairing state', () => {
     it('passes unpair hook to NFCBottomSheet with showOnDone', () => {
-      renderScreen('ready', null, 'nfc');
+      renderScreen('done', null, 'nfc');
       const lastCall = MockNFCBottomSheet.mock.calls.at(-1);
       expect(lastCall?.[0].nfc.phase).toBe('nfc');
       expect(lastCall?.[0].showOnDone).toBe(true);
@@ -351,7 +351,7 @@ describe('PairingSlotsScreen', () => {
 
   describe('cancel NFC', () => {
     it('calls cancelCheck when cancelling during slot check', () => {
-      renderScreen('checking');
+      renderScreen('nfc');
       const lastCall = MockNFCBottomSheet.mock.calls.at(-1);
       lastCall?.[0].onCancel();
       expect(mockCancel).toHaveBeenCalled();
@@ -359,7 +359,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('calls cancelUnpair when cancelling during unpair', () => {
-      renderScreen('ready', null, 'nfc');
+      renderScreen('done', null, 'nfc');
       const lastCall = MockNFCBottomSheet.mock.calls.at(-1);
       lastCall?.[0].onCancel();
       expect(mockUnpairCancel).toHaveBeenCalled();
@@ -379,7 +379,7 @@ describe('PairingSlotsScreen', () => {
       const mockResetNFCOnly = jest.fn();
       const mockResetUnpair = jest.fn();
       mockUsePairingSlots.mockReturnValue({
-        ...makeCheckHook('ready', slotInfo),
+        ...makeCheckHook('done', slotInfo),
         resetNFCOnly: mockResetNFCOnly,
       });
       mockUseKeycardOperation.mockReturnValue({
@@ -391,7 +391,7 @@ describe('PairingSlotsScreen', () => {
       );
 
       mockUsePairingSlots.mockReturnValue({
-        ...makeCheckHook('ready', slotInfo),
+        ...makeCheckHook('done', slotInfo),
         resetNFCOnly: mockResetNFCOnly,
       });
       mockUseKeycardOperation.mockReturnValue({
@@ -416,7 +416,7 @@ describe('PairingSlotsScreen', () => {
     };
 
     it('shows snackbar with slot number after unpair operation runs', async () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 2'));
       await act(async () => {
         fireEvent.press(screen.getByText('Unpair'));
@@ -425,7 +425,7 @@ describe('PairingSlotsScreen', () => {
     });
 
     it('hides snackbar when dismissed', async () => {
-      renderScreen('ready', slotInfo);
+      renderScreen('done', slotInfo);
       fireEvent.press(screen.getByText('Slot 2'));
       await act(async () => {
         fireEvent.press(screen.getByText('Unpair'));

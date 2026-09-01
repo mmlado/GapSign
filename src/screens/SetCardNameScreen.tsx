@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Keyboard, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { Icons } from '../assets/icons';
 import NFCBottomSheet from '../components/NFCBottomSheet';
 import PrimaryButton from '../components/PrimaryButton';
 import { useSetCardName } from '../hooks/keycard/useSetCardName';
+import { useKeycardScreen } from '../hooks/useKeycardScreen';
 import { MAX_KEYCARD_NAME_LENGTH } from '../utils/keycardName';
 
 export default function SetCardNameScreen({
@@ -20,11 +21,14 @@ export default function SetCardNameScreen({
   const [error, setError] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const keycard = useSetCardName();
-  const { phase, start, cancel } = keycard;
+  const { phase, start } = keycard;
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: 'Set card name' });
-  }, [navigation]);
+  const { onCancel } = useKeycardScreen({
+    keycard,
+    navigation,
+    title: 'Set card name',
+    done: { toast: 'Card name updated' },
+  });
 
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -41,17 +45,6 @@ export default function SetCardNameScreen({
     };
   }, []);
 
-  useEffect(() => {
-    if (phase !== 'done') {
-      return;
-    }
-
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Dashboard', params: { toast: 'Card name updated' } }],
-    });
-  }, [phase, navigation]);
-
   const handleSubmit = useCallback(() => {
     try {
       setError(null);
@@ -60,11 +53,6 @@ export default function SetCardNameScreen({
       setError(e.message);
     }
   }, [name, start]);
-
-  const handleCancel = useCallback(() => {
-    cancel();
-    navigation.goBack();
-  }, [cancel, navigation]);
 
   return (
     <View
@@ -112,7 +100,7 @@ export default function SetCardNameScreen({
         </View>
       )}
 
-      <NFCBottomSheet nfc={keycard} onCancel={handleCancel} showOnDone />
+      <NFCBottomSheet nfc={keycard} onCancel={onCancel} showOnDone />
     </View>
   );
 }
