@@ -4,7 +4,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider } from 'react-native-paper';
@@ -16,10 +16,23 @@ import type { RootStackParamList } from './navigation/types';
 import { navigationRef } from './navigation/navigationRef';
 import { routes } from './navigation/routes';
 import { OnlineProviders } from './providers/onlineProviders.online';
+import { loadWelcomeSeen } from './storage/preferencesStorage';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  // First-run gate: the navigator only mounts once the welcome_seen flag is
+  // known, so the initial route can be Welcome without flashing the Dashboard.
+  const [initialRouteName, setInitialRouteName] = useState<
+    'Welcome' | 'Dashboard' | null
+  >(null);
+
+  useEffect(() => {
+    loadWelcomeSeen().then(seen =>
+      setInitialRouteName(seen ? 'Dashboard' : 'Welcome'),
+    );
+  }, []);
+
   return (
     <SafeAreaProvider style={styles.root}>
       <PaperProvider theme={theme}>
@@ -27,20 +40,25 @@ export default function App() {
           barStyle="light-content"
           backgroundColor={theme.colors.background}
         />
-        <NavigationContainer ref={navigationRef}>
-          <OnlineProviders>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              {routes.map(r => (
-                <Stack.Screen
-                  key={r.name}
-                  name={r.name}
-                  component={r.component}
-                  options={r.options}
-                />
-              ))}
-            </Stack.Navigator>
-          </OnlineProviders>
-        </NavigationContainer>
+        {initialRouteName != null && (
+          <NavigationContainer ref={navigationRef}>
+            <OnlineProviders>
+              <Stack.Navigator
+                initialRouteName={initialRouteName}
+                screenOptions={{ headerShown: false }}
+              >
+                {routes.map(r => (
+                  <Stack.Screen
+                    key={r.name}
+                    name={r.name}
+                    component={r.component}
+                    options={r.options}
+                  />
+                ))}
+              </Stack.Navigator>
+            </OnlineProviders>
+          </NavigationContainer>
+        )}
       </PaperProvider>
     </SafeAreaProvider>
   );

@@ -1,5 +1,4 @@
 import React, { act } from 'react';
-import { Linking } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DashboardScreen from '../src/screens/DashboardScreen';
@@ -56,20 +55,10 @@ jest.mock('../src/navigation/dashboardActions', () => ({
   },
 }));
 
-const mockLoadBooleanPreference = jest.fn();
-const mockSaveBooleanPreference = jest.fn();
-
 jest.mock(
   '../src/components/walletConnect/DashboardCard.online',
   () => () => null,
 );
-
-jest.mock('../src/storage/preferencesStorage', () => ({
-  loadDashboardKeycardNoticeDismissed: (...args: any[]) =>
-    mockLoadBooleanPreference(...args),
-  saveDashboardKeycardNoticeDismissed: (...args: any[]) =>
-    mockSaveBooleanPreference(...args),
-}));
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,12 +89,7 @@ describe('DashboardScreen', () => {
     navigation.setParams.mockClear();
     mockUseNavigationNavigate.mockClear();
     mockDashboardActions.length = 0;
-    mockLoadBooleanPreference.mockReset();
-    mockSaveBooleanPreference.mockReset();
-    mockLoadBooleanPreference.mockResolvedValue(true);
-    mockSaveBooleanPreference.mockResolvedValue(undefined);
     focusCallback = null;
-    jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -209,72 +193,9 @@ describe('DashboardScreen', () => {
     });
   });
 
-  describe('keycard notice', () => {
-    it('shows the notice when it has not been dismissed', async () => {
-      mockLoadBooleanPreference.mockResolvedValue(false);
-      await renderScreen();
-
-      expect(screen.getByText('Keycard required')).toBeTruthy();
-      expect(screen.getByText('Buy a Keycard')).toBeTruthy();
-      expect(screen.getByText(/ShellSummer9746/)).toBeTruthy();
-    });
-
-    it('hides the notice when it was already dismissed', async () => {
-      await renderScreen();
-      expect(screen.queryByText('Keycard required')).toBeNull();
-    });
-
-    it('opens the purchase link in the browser', async () => {
-      mockLoadBooleanPreference.mockResolvedValue(false);
-      await renderScreen();
-
-      fireEvent.press(screen.getByTestId('dashboard-keycard-purchase-link'));
-
-      expect(Linking.openURL).toHaveBeenCalledWith(
-        'https://get.keycard.tech/vuxxnf',
-      );
-    });
-
-    it('dismisses the notice and remembers that choice', async () => {
-      mockLoadBooleanPreference.mockResolvedValue(false);
-      await renderScreen();
-
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('dashboard-keycard-notice-close'));
-      });
-
-      expect(mockSaveBooleanPreference).toHaveBeenCalledWith(true);
-      expect(screen.queryByText('Keycard required')).toBeNull();
-    });
-
-    it('hides the notice when load rejects', async () => {
-      mockLoadBooleanPreference.mockRejectedValue(new Error('storage error'));
-      await renderScreen();
-      expect(screen.queryByText('Keycard required')).toBeNull();
-    });
-
-    it('dismisses the notice even when save rejects', async () => {
-      mockLoadBooleanPreference.mockResolvedValue(false);
-      mockSaveBooleanPreference.mockRejectedValue(new Error('storage error'));
-      await renderScreen();
-
-      await act(async () => {
-        fireEvent.press(screen.getByTestId('dashboard-keycard-notice-close'));
-      });
-
-      expect(screen.queryByText('Keycard required')).toBeNull();
-    });
-
-    it('navigates to UrlQR when the QR icon button is pressed', async () => {
-      mockLoadBooleanPreference.mockResolvedValue(false);
-      await renderScreen();
-
-      fireEvent.press(screen.getByTestId('dashboard-keycard-qr-button'));
-
-      expect(mockUseNavigationNavigate).toHaveBeenCalledWith('UrlQR', {
-        url: 'https://get.keycard.tech/vuxxnf',
-        title: 'Buy a Keycard',
-      });
-    });
+  it('does not render the buy-Keycard notice', async () => {
+    await renderScreen();
+    expect(screen.queryByText('Keycard required')).toBeNull();
+    expect(screen.queryByText('Buy a Keycard')).toBeNull();
   });
 });

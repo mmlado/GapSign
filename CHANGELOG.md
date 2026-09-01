@@ -12,11 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
 - Explainer on the Connect-software-wallet screen and above the exported-key QR code
 - View Addresses now shows the full BIP32 derivation path (e.g. `m/44'/60'/0'/0/0`) under each address in the list and on the address detail screen, replacing the bare index column
+- First-run welcome screen with a Keycard product photo explaining what the app does (hardware-held keys, air-gapped QR flow, NFC signing), plus a buy-Keycard button (browser link in the online build, QR code in the offline build); shown once, then remembered via a `welcome_seen` preference
 
 ### Changed
 
 - Losing card contact during a read-only operation (signing, key export, address checks) no longer fails it: the app asks you to reposition the card and resumes on the next tap. Operations that write to the card still stop safely instead of retrying
 - iOS now automatically reopens the NFC session after Apple's 60-second timeout (up to 2 restarts while the app is in the foreground) instead of failing immediately
+- The dismissible buy-Keycard notice is gone from the dashboard; the purchase link now lives on the welcome screen and remains available on the About screen
 - Importing a key pair (recovery phrase or backup check) now returns to a fresh Dashboard like every other completed Keycard operation, clearing the seed-entry screens from the navigation stack
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
 - iOS back button now shows only the arrow instead of the previous screen's title text
