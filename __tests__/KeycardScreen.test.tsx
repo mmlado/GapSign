@@ -580,6 +580,8 @@ describe('KeycardScreen', () => {
         cmdSet,
         getExportTarget('ethereum').keys,
         setStatus,
+        // The flow's resume cache (reconnect resume, see keycardExport.ts).
+        expect.objectContaining({ cardUid: null }),
       );
     });
   });

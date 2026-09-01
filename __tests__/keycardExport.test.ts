@@ -1,4 +1,7 @@
-import { exportKeysForTarget } from '../src/utils/keycardExport';
+import {
+  exportKeysForTarget,
+  makeExportResumeCache,
+} from '../src/utils/keycardExport';
 
 jest.mock('keycard-sdk', () => ({
   __esModule: true,
@@ -136,5 +139,85 @@ describe('exportKeysForTarget', () => {
       ]),
     ).rejects.toThrow('SW error');
     expect(cmdSet.exportExtendedKey).not.toHaveBeenCalled();
+  });
+
+  // Resume after a mid-export tag loss: keys already fetched are reused, the
+  // session-level reads are skipped, and the cache is bound to one card UID.
+  describe('resume cache', () => {
+    const PLAN = [
+      { derivationPath: "m/84'/0'/0'", parentPath: "m/84'/0'" },
+      { derivationPath: "m/44'/60'/0'", parentPath: "m/44'/60'" },
+    ];
+    const PARENTS = { "m/84'/0'": 2, "m/44'/60'": 3 };
+
+    function withUid(cmdSet: any, uid: number[]) {
+      cmdSet.applicationInfo = { instanceUID: new Uint8Array(uid) };
+      return cmdSet;
+    }
+
+    it('resumes at the first missing key on the same card', async () => {
+      const cache = makeExportResumeCache();
+
+      // First tap: key 1 exports, key 2 is cut short by tag loss.
+      const first = withUid(makeCmdSet(PARENTS), [0xaa, 0xbb]);
+      first.exportExtendedKey
+        .mockImplementationOnce((_p1: number, path: string) =>
+          Promise.resolve({
+            checkOK: jest.fn(),
+            data: new Uint8Array([0x50, path.length]),
+          }),
+        )
+        .mockImplementationOnce(() =>
+          Promise.reject(new Error('CardIO Error: Error: Tag was lost.')),
+        );
+      await expect(
+        exportKeysForTarget(first, PLAN, () => {}, cache),
+      ).rejects.toThrow('Tag was lost');
+      expect(first.exportExtendedKey).toHaveBeenCalledTimes(2);
+
+      // Re-tap, same card: master read skipped, only key 2 exported.
+      const second = withUid(makeCmdSet(PARENTS), [0xaa, 0xbb]);
+      const result = await exportKeysForTarget(second, PLAN, () => {}, cache);
+      expect(second.exportKey).not.toHaveBeenCalledWith(0, true, 'm', false);
+      expect(second.exportExtendedKey).toHaveBeenCalledTimes(1);
+      expect(second.exportExtendedKey).toHaveBeenCalledWith(
+        0,
+        "m/44'/60'/0'",
+        false,
+      );
+      expect(result.keys).toHaveLength(2);
+      expect(result.keys.map(k => k.entry.derivationPath)).toEqual([
+        "m/84'/0'/0'",
+        "m/44'/60'/0'",
+      ]);
+    });
+
+    it('discards the cache when the re-tap is a different card', async () => {
+      const cache = makeExportResumeCache();
+      const first = withUid(makeCmdSet(PARENTS), [0xaa, 0xbb]);
+      await exportKeysForTarget(first, PLAN, () => {}, cache);
+
+      const other = withUid(makeCmdSet(PARENTS), [0xcc, 0xdd]);
+      await exportKeysForTarget(other, PLAN, () => {}, cache);
+      // Everything re-fetched: cached keys from card A must never merge into
+      // card B's export.
+      expect(other.exportKey).toHaveBeenCalledWith(0, true, 'm', false);
+      expect(other.exportExtendedKey).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not trust the cache when the card has no applicationInfo', async () => {
+      const cache = makeExportResumeCache();
+      await exportKeysForTarget(
+        withUid(makeCmdSet(PARENTS), [0xaa]),
+        PLAN,
+        () => {},
+        cache,
+      );
+
+      const anonymous = makeCmdSet(PARENTS); // no applicationInfo
+      await exportKeysForTarget(anonymous, PLAN, () => {}, cache);
+      expect(anonymous.exportKey).toHaveBeenCalledWith(0, true, 'm', false);
+      expect(anonymous.exportExtendedKey).toHaveBeenCalledTimes(2);
+    });
   });
 });

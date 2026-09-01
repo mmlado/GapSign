@@ -39,6 +39,7 @@ jest.mock('react-native-keycard', () => ({
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
       isNFCEnabled: () => Promise.resolve(true),
       openNFCSettings: () => Promise.resolve(true),
+      setNFCMessage: () => Promise.resolve(true),
     },
     NFCCardChannel: class {},
   },
@@ -182,7 +183,7 @@ describe('useFactoryReset', () => {
       });
       expect(result.current.phase).toBe('nfc');
       expect(result.current.status).toBe(
-        'Connection lost - adjust Keycard position',
+        'Connection lost — hold your Keycard against the phone again',
       );
     });
 

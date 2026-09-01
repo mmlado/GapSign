@@ -4,21 +4,51 @@ import RNKeycard from 'react-native-keycard';
 import Keycard from 'keycard-sdk';
 import { Commandset } from 'keycard-sdk/dist/commandset';
 
+import { isTagLostError } from '@/utils/keycardErrors';
+
 export type NFCSessionPhase = 'idle' | 'nfc' | 'done' | 'error';
+
+/** Whether a card is on the antenna right now. Deliberately separate from
+ *  NFCSessionPhase: 31 call sites test `phase ===` against the 4-state machine,
+ *  so presence must never widen that union. */
+export type CardPresence = 'waiting' | 'connected' | 'lost';
+
+/** Single status string for both loss paths (event and classified error) so they
+ *  cannot flicker against each other. */
+export const CARD_MOVED_STATUS =
+  'Connection lost — hold your Keycard against the phone again';
+
+const STABILITY_ERROR_STATUS = 'Could not keep a stable connection. Try again.';
+const AMBIGUOUS_LOSS_STATUS =
+  'Connection lost mid-operation. Check the card state before retrying.';
+
+const MAX_CONSECUTIVE_TAG_LOSSES = 3;
+const TAG_LOSS_WATCHDOG_MS = 6000;
+
+const IOS_TIMEOUT_RESTART_DELAY_MS = 500;
+const MAX_IOS_TIMEOUT_RESTARTS = 2;
 
 export interface UseNFCSessionOptions {
   /** Called instead of restarting the NFC reader when NFC becomes available
    *  after being disabled (e.g. the coordinator shows the PIN pad first).
    *  Without it, the default restarts the reader directly. */
   onNFCAvailable?: () => void;
+  /** Keep the session alive and wait for a re-tap when an APDU fails because
+   *  the card left the field. Default false: a replayed operation can burn
+   *  pairing slots or overwrite card state, so only read-only operations opt in. */
+  retryOnTagLoss?: boolean;
 }
 
 export interface UseNFCSessionOperation {
   phase: NFCSessionPhase;
   status: string;
+  cardPresence: CardPresence;
   startNFC: () => void;
   reset: () => void;
   openNFCSettings: (() => void) | undefined;
+  /** Raised around a non-idempotent APDU sequence (e.g. autoPair) so a tag loss
+   *  inside it is never silently replayed, even for a retry-safe operation. */
+  retryUnsafeRef: { current: boolean };
 }
 
 export default function useNFCSession(
@@ -31,15 +61,86 @@ export default function useNFCSession(
 ): UseNFCSessionOperation {
   const [phase, setPhase] = useState<NFCSessionPhase>('idle');
   const [status, setStatus] = useState('');
+  const [cardPresence, setCardPresence] = useState<CardPresence>('waiting');
   const [nfcDisabled, setNfcDisabled] = useState(false);
   const onNFCAvailableRef = useRef(options.onNFCAvailable);
   onNFCAvailableRef.current = options.onNFCAvailable;
+  const retryOnTagLossRef = useRef(options.retryOnTagLoss ?? false);
+  retryOnTagLossRef.current = options.retryOnTagLoss ?? false;
+  const retryUnsafeRef = useRef(false);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
   const disconnectedRef = useRef(false);
   const realErrorRef = useRef(false);
   const inFlightRef = useRef(false);
+  /** A card connect that arrived while a previous run was still unwinding. */
+  const pendingConnectRef = useRef(false);
+  const handleCardConnectedRef = useRef<(() => Promise<void>) | null>(null);
   const startAttemptRef = useRef(0);
+  const tagLossCountRef = useRef(0);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const iosTimeoutRestartsRef = useRef(0);
+  const iosRestartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearWatchdog = useCallback(() => {
+    if (watchdogRef.current !== null) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+  }, []);
+
+  const clearIosRestartTimer = useCallback(() => {
+    if (iosRestartTimerRef.current !== null) {
+      clearTimeout(iosRestartTimerRef.current);
+      iosRestartTimerRef.current = null;
+    }
+  }, []);
+
+  /** Sets the status AND mirrors it into Apple's system NFC sheet, which is the
+   *  only NFC UI on iOS — Pal's own sheet is Android-only by design, so without
+   *  this the whole progress narrative, including the reconnect nudge, is
+   *  invisible there. Android's setNFCMessage is a documented no-op, so the
+   *  platform check saves a pointless bridge round trip rather than guarding
+   *  against anything.
+   *
+   *  Deliberately NOT used on the error paths: those call stopNFCWithError(msg),
+   *  which already puts the message on the sheet as it tears the session down.
+   *  Setting the same text again immediately before that would be redundant. */
+  const reportStatus = useCallback((next: string) => {
+    setStatus(next);
+    if (Platform.OS === 'ios') {
+      RNKeycard.Core.setNFCMessage(next).catch(() => {});
+    }
+  }, []);
+
+  // Terminal path for both reconnect bounds (R11). Marks the error as real so a
+  // trailing disconnect event cannot clobber the status text.
+  const failUnstableConnection = useCallback(() => {
+    clearWatchdog();
+    realErrorRef.current = true;
+    setStatus(STABILITY_ERROR_STATUS);
+    setPhase('error');
+    RNKeycard.Core.stopNFCWithError(STABILITY_ERROR_STATUS).catch(() => {});
+  }, [clearWatchdog]);
+
+  // A classified tag loss while waiting is allowed: bump the bound, nudge the
+  // user, keep the session alive. Either bound firing ends the wait (R11).
+  const onTagLost = useCallback(() => {
+    tagLossCountRef.current += 1;
+    if (tagLossCountRef.current >= MAX_CONSECUTIVE_TAG_LOSSES) {
+      failUnstableConnection();
+      return;
+    }
+    setCardPresence('lost');
+    reportStatus(CARD_MOVED_STATUS);
+    clearWatchdog();
+    watchdogRef.current = setTimeout(() => {
+      watchdogRef.current = null;
+      if (phaseRef.current === 'nfc') {
+        failUnstableConnection();
+      }
+    }, TAG_LOSS_WATCHDOG_MS);
+  }, [clearWatchdog, failUnstableConnection, reportStatus]);
 
   const handleCardConnected = useCallback(async () => {
     if (phaseRef.current !== 'nfc' && phaseRef.current !== 'error') {
@@ -49,6 +150,15 @@ export default function useNFCSession(
       return;
     }
     if (inFlightRef.current) {
+      // A tap landed while the previous run is still unwinding: the disconnect
+      // event arrives within ~50 ms of the card leaving, but the APDU it was
+      // in the middle of stays blocked in transceive until the bridge's
+      // timeout. Dropping the tap here strands the user — the tag is already
+      // on the antenna, so no new discovery fires and only a physical
+      // remove-and-tap produces another event. Remember it and replay when
+      // this run finishes.
+      console.log('[Keycard] Card connected (queued — previous run in flight)');
+      pendingConnectRef.current = true;
       return;
     }
     if (phaseRef.current === 'error') {
@@ -57,9 +167,18 @@ export default function useNFCSession(
       setPhase('nfc');
     }
     console.log('[Keycard] Card connected');
+    // Cleared unconditionally (R7): a loss where the disconnect event arrived
+    // after the classified error must not swallow the next real error.
+    disconnectedRef.current = false;
+    clearWatchdog();
+    setCardPresence('connected');
     inFlightRef.current = true;
+    // Tracked locally, not from phaseRef: phaseRef is render-assigned and is
+    // still stale inside the finally below (R8), so it cannot say whether this
+    // run ended in an error.
+    let outcome: 'waiting' | 'done' | 'error' = 'waiting';
     try {
-      setStatus('Selecting applet...');
+      reportStatus('Selecting applet...');
       const channel = new RNKeycard.NFCCardChannel();
       const cmdSet = new Keycard.Commandset(channel);
 
@@ -72,21 +191,33 @@ export default function useNFCSession(
           `SELECT failed: 0x${selectResp.sw.toString(16).toUpperCase()}`,
         );
       }
+      // Forward progress: only a successful SELECT resets the loss bound. A card
+      // that connects and instantly drops must not reset it (R11).
+      tagLossCountRef.current = 0;
 
-      await onCardConnected(cmdSet, setStatus);
+      await onCardConnected(cmdSet, reportStatus);
+      outcome = 'done';
       setPhase('done');
       RNKeycard.Core.stopNFC().catch(() => {});
     } catch (e: any) {
-      if (disconnectedRef.current) {
-        disconnectedRef.current = false;
-        if (Platform.OS === 'ios') {
-          // iOS NFC session dies on disconnect — show error so user can retry.
-          // Android keeps scanning; staying at 'nfc' lets the user re-tap.
-          setStatus('Connection lost — tap again');
-          setPhase('error');
+      if (isTagLostError(e)) {
+        if (retryOnTagLossRef.current && !retryUnsafeRef.current) {
+          // Session stays up: no setPhase, no stopNFCWithError. The next tap
+          // re-runs the operation from SELECT.
+          onTagLost();
+          return;
         }
+        // Replay is not safe for this operation (or we are inside a
+        // non-idempotent window): surface the ambiguity instead of retrying.
+        outcome = 'error';
+        realErrorRef.current = true;
+        console.log('[Keycard] Tag lost mid-operation (no retry)');
+        setStatus(AMBIGUOUS_LOSS_STATUS);
+        setPhase('error');
+        RNKeycard.Core.stopNFCWithError(AMBIGUOUS_LOSS_STATUS).catch(() => {});
         return;
       }
+      outcome = 'error';
       realErrorRef.current = true;
       const msg = e instanceof Error ? e.message : String(e);
       console.log(`[Keycard] Error: ${msg}`, e);
@@ -95,55 +226,35 @@ export default function useNFCSession(
       RNKeycard.Core.stopNFCWithError(msg).catch(() => {});
     } finally {
       inFlightRef.current = false;
+      if (pendingConnectRef.current) {
+        pendingConnectRef.current = false;
+        // Replay only while the session is still waiting for a card. A run
+        // that finished or failed must never be restarted behind the user's
+        // back — after an error the reader is stopped anyway, and Try again
+        // is the way back.
+        if (outcome === 'waiting') {
+          console.log('[Keycard] Replaying queued card connect');
+          handleCardConnectedRef.current?.().catch(() => {});
+        }
+      }
     }
-  }, [onCardConnected]);
+  }, [onCardConnected, onTagLost, clearWatchdog, reportStatus]);
 
+  // Lets the finally above re-enter the latest handler without making the
+  // callback depend on itself.
+  handleCardConnectedRef.current = handleCardConnected;
+
+  // Presence reporting only. The `!realErrorRef.current` guard is load-bearing:
+  // phaseRef is render-assigned and still reads 'nfc' in the tick after a real
+  // error's setPhase('error'), so the ref is the only same-tick signal (R8).
   const handleCardDisconnected = useCallback(() => {
     console.log('[Keycard] Card disconnected');
     onCardDisconnected();
-    // Set the ref synchronously so the catch block (which may fire right after)
-    // can see it before React processes the setPhase update.
-    if (phaseRef.current === 'nfc' && !realErrorRef.current) {
-      disconnectedRef.current = true;
-      // Update status before queuing setPhase so a subsequent catch-block
-      // setStatus (iOS path) is processed after this one, not before.
-      setStatus('Connection lost - adjust Keycard position');
-    }
-    setPhase(prev => {
-      if (prev !== 'nfc') return prev;
-      if (realErrorRef.current) {
-        realErrorRef.current = false;
-        return 'error';
-      }
-      return 'nfc';
-    });
-  }, [onCardDisconnected]);
-
-  useEffect(() => {
-    const connectedSub = RNKeycard.Core.onKeycardConnected(handleCardConnected);
-    const disconnectedSub = RNKeycard.Core.onKeycardDisconnected(
-      handleCardDisconnected,
-    );
-    const cancelledSub = RNKeycard.Core.onNFCUserCancelled(() => {
-      console.log('[Keycard] NFC cancelled by user');
-      setPhase(prev => (prev === 'nfc' ? 'idle' : prev));
-    });
-    const timeoutSub = RNKeycard.Core.onNFCTimeout(() => {
-      console.log('[Keycard] NFC timed out');
-      if (phaseRef.current === 'nfc') {
-        setStatus('Timed out — tap again');
-      }
-      setPhase(prev => (prev === 'nfc' ? 'error' : prev));
-    });
-
-    return () => {
-      connectedSub.remove();
-      disconnectedSub.remove();
-      cancelledSub.remove();
-      timeoutSub.remove();
-      RNKeycard.Core.stopNFC().catch(() => {});
-    };
-  }, [handleCardConnected, handleCardDisconnected]);
+    if (phaseRef.current !== 'nfc' || realErrorRef.current) return;
+    disconnectedRef.current = true;
+    setCardPresence('lost');
+    reportStatus(CARD_MOVED_STATUS);
+  }, [onCardDisconnected, reportStatus]);
 
   const doStartNFC = useCallback(() => {
     RNKeycard.Core.startNFC('Tap your Keycard')
@@ -159,6 +270,68 @@ export default function useNFCSession(
         setPhase('error');
       });
   }, []);
+
+  useEffect(() => {
+    const connectedSub = RNKeycard.Core.onKeycardConnected(handleCardConnected);
+    const disconnectedSub = RNKeycard.Core.onKeycardDisconnected(
+      handleCardDisconnected,
+    );
+    const cancelledSub = RNKeycard.Core.onNFCUserCancelled(() => {
+      console.log('[Keycard] NFC cancelled by user');
+      setPhase(prev => (prev === 'nfc' ? 'idle' : prev));
+    });
+    const timeoutSub = RNKeycard.Core.onNFCTimeout(() => {
+      console.log('[Keycard] NFC timed out');
+      // iOS: Apple caps the session at 60 s. Mirror status-legacy's auto-restart
+      // (nfc/events.cljs:12-15) but bounded — legacy has a persistent sheet to
+      // fall back on, Pal renders nothing at phase 'nfc' on iOS (R11). Each
+      // restart re-presents the system sheet, hence the cap.
+      if (
+        Platform.OS === 'ios' &&
+        phaseRef.current === 'nfc' &&
+        AppState.currentState === 'active' &&
+        iosTimeoutRestartsRef.current < MAX_IOS_TIMEOUT_RESTARTS
+      ) {
+        iosTimeoutRestartsRef.current += 1;
+        clearIosRestartTimer();
+        iosRestartTimerRef.current = setTimeout(() => {
+          iosRestartTimerRef.current = null;
+          if (phaseRef.current !== 'nfc') return;
+          // Re-check: an RN timer can fire on foreground resume long after the
+          // 500 ms it was scheduled for.
+          if (AppState.currentState !== 'active') {
+            setStatus('Timed out — tap again');
+            setPhase('error');
+            return;
+          }
+          // doStartNFC, not startNFC: the operation state must survive; only
+          // the CoreNFC session is being reopened.
+          doStartNFC();
+        }, IOS_TIMEOUT_RESTART_DELAY_MS);
+        return;
+      }
+      if (phaseRef.current === 'nfc') {
+        setStatus('Timed out — tap again');
+      }
+      setPhase(prev => (prev === 'nfc' ? 'error' : prev));
+    });
+
+    return () => {
+      connectedSub.remove();
+      disconnectedSub.remove();
+      cancelledSub.remove();
+      timeoutSub.remove();
+      clearWatchdog();
+      clearIosRestartTimer();
+      RNKeycard.Core.stopNFC().catch(() => {});
+    };
+  }, [
+    handleCardConnected,
+    handleCardDisconnected,
+    doStartNFC,
+    clearWatchdog,
+    clearIosRestartTimer,
+  ]);
 
   // When the user returns from the NFC settings screen with NFC now enabled,
   // invoke the onNFCAvailable option (e.g. show PIN pad) or restart NFC directly.
@@ -189,6 +362,12 @@ export default function useNFCSession(
     disconnectedRef.current = false;
     realErrorRef.current = false;
     inFlightRef.current = false;
+    retryUnsafeRef.current = false;
+    tagLossCountRef.current = 0;
+    iosTimeoutRestartsRef.current = 0;
+    clearWatchdog();
+    clearIosRestartTimer();
+    setCardPresence('waiting');
 
     // Open the NFC sheet immediately so there is no empty-screen gap while the
     // async isNFCEnabled() check runs. If NFC is off, we transition to 'error'
@@ -214,15 +393,21 @@ export default function useNFCSession(
         setNfcDisabled(false);
         doStartNFC();
       });
-  }, [doStartNFC]);
+  }, [doStartNFC, clearWatchdog, clearIosRestartTimer]);
 
   const reset = useCallback(() => {
     startAttemptRef.current++;
+    retryUnsafeRef.current = false;
+    tagLossCountRef.current = 0;
+    iosTimeoutRestartsRef.current = 0;
+    clearWatchdog();
+    clearIosRestartTimer();
     RNKeycard.Core.stopNFC().catch(() => {});
     setPhase('idle');
     setStatus('');
+    setCardPresence('waiting');
     setNfcDisabled(false);
-  }, []);
+  }, [clearWatchdog, clearIosRestartTimer]);
 
   const openNFCSettings: (() => void) | undefined =
     nfcDisabled && Platform.OS === 'android'
@@ -231,5 +416,13 @@ export default function useNFCSession(
         }
       : undefined;
 
-  return { phase, status, startNFC, reset, openNFCSettings };
+  return {
+    phase,
+    status,
+    cardPresence,
+    startNFC,
+    reset,
+    openNFCSettings,
+    retryUnsafeRef,
+  };
 }

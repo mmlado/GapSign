@@ -49,7 +49,8 @@ export function useAddressEnumeration(
       },
       [accountPath],
     ),
-    { requiresPin: true },
+    // Read-only xpub export: safe to re-run from SELECT on a re-tap.
+    { requiresPin: true, retryOnTagLoss: true },
   );
   const { phase, result } = nfc;
 

@@ -142,6 +142,7 @@ function makeCheckHook(
 ) {
   return {
     phase,
+    cardPresence: phase === 'nfc' ? 'lost' : 'waiting',
     status: phase === 'nfc' ? 'Selecting applet...' : '',
     slotInfo,
     checkSlots: mockCheckSlots,
@@ -434,6 +435,18 @@ describe('PairingSlotsScreen', () => {
       fireEvent.press(screen.getByText('Dismiss snackbar'));
 
       expect(screen.queryByText('Slot 2 was unpaired')).toBeNull();
+    });
+  });
+
+  // T11: the screen hand-builds its NFCOperation object, so cardPresence must
+  // be threaded through explicitly or the sheet never sees a loss.
+  describe('cardPresence threading', () => {
+    it('passes the check hook presence into the sheet object', () => {
+      renderScreen('nfc');
+      const sheetMock = NFCBottomSheet as unknown as jest.Mock;
+      const lastProps =
+        sheetMock.mock.calls[sheetMock.mock.calls.length - 1][0];
+      expect(lastProps.nfc.cardPresence).toBe('lost');
     });
   });
 });
