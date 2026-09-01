@@ -92,7 +92,10 @@ beforeEach(() => {
 describe('useAddressEnumeration', () => {
   it('exports the account path over NFC with PIN required', async () => {
     renderEnumeration();
-    expect(capturedOptions).toEqual({ requiresPin: true });
+    expect(capturedOptions).toEqual({
+      requiresPin: true,
+      retryOnTagLoss: true,
+    });
 
     const checkOK = jest.fn();
     const exportExtendedKey = jest

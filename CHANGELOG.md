@@ -16,7 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Losing card contact during a read-only operation (signing, key export, address checks) no longer fails it: the app asks you to reposition the card and resumes on the next tap. Operations that write to the card still stop safely instead of retrying
+- iOS now automatically reopens the NFC session after Apple's 60-second timeout (up to 2 restarts while the app is in the foreground) instead of failing immediately
 - The dismissible buy-Keycard notice is gone from the dashboard; the purchase link now lives on the welcome screen and remains available on the About screen
+- iOS now shows the operation's progress on Apple's NFC sheet — including the prompt to reposition the card after a connection loss — instead of leaving it on "Connected. Don't move your card." for the whole operation
 - Importing a key pair (recovery phrase or backup check) now returns to a fresh Dashboard like every other completed Keycard operation, clearing the seed-entry screens from the navigation stack
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
 - iOS back button now shows only the arrow instead of the previous screen's title text
@@ -27,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- A PIN whose verification was interrupted by NFC connection loss is no longer silently resubmitted on the next tap: the cached PIN is discarded and the PIN pad is shown again, so every attempt against the card's 3-attempt counter is one the user explicitly made
 - Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
 - Malformed PSBTs are now rejected at scan time with a clear error instead of opening a review whose Sign button crashed; a failure while encoding the result QR after signing shows an error screen instead of doing nothing
 - Navigating back during an active Keycard tap now cancels the NFC session on every Keycard screen; previously only Initialize Card and Change PIN/PUK did this, leaving the session running elsewhere

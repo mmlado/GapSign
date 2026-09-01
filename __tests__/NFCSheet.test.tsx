@@ -59,8 +59,66 @@ describe('NFCSheet', () => {
     });
   });
 
+  // After an error the bridge reader is disarmed (stopNFCWithError sets the
+  // channel's listening=false), so a re-tap emits nothing — the sheet must
+  // offer an explicit restart when the caller provides one.
+  describe('Try again button', () => {
+    it('shows "Try again" instead of the hint when retry is provided', () => {
+      render(
+        <NFCSheet
+          variant="error"
+          status="Bad MAC"
+          onCancel={onCancel}
+          retry={jest.fn()}
+        />,
+      );
+      expect(screen.getByText('Try again')).toBeTruthy();
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+
+    it('calls retry when the button is pressed', () => {
+      const retry = jest.fn();
+      render(
+        <NFCSheet
+          variant="error"
+          status="Bad MAC"
+          onCancel={onCancel}
+          retry={retry}
+        />,
+      );
+      fireEvent.press(screen.getByText('Try again'));
+      expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not show the button when openNFCSettings is present', () => {
+      render(
+        <NFCSheet
+          variant="error"
+          status="NFC off"
+          onCancel={onCancel}
+          retry={jest.fn()}
+          openNFCSettings={jest.fn()}
+        />,
+      );
+      expect(screen.queryByText('Try again')).toBeNull();
+      expect(screen.getByText('Open NFC Settings')).toBeTruthy();
+    });
+
+    it('does not show the button outside the error variant', () => {
+      render(
+        <NFCSheet
+          variant="disconnected"
+          status="lost"
+          onCancel={onCancel}
+          retry={jest.fn()}
+        />,
+      );
+      expect(screen.queryByText('Try again')).toBeNull();
+    });
+  });
+
   describe('retry hint', () => {
-    it('shows "Tap your card to try again" when variant is error', () => {
+    it('shows "Tap your card to try again" when variant is error and no retry is provided', () => {
       render(<NFCSheet variant="error" status="Bad MAC" onCancel={onCancel} />);
       expect(screen.getByText('Tap your card to try again')).toBeTruthy();
     });
@@ -86,6 +144,45 @@ describe('NFCSheet', () => {
         />,
       );
       expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+  });
+
+  // T5: presence variants. 'disconnected' must read as recoverable, not as a
+  // failure — reconnect hint, Cancel available, no failure icon treatment.
+  describe('presence variants', () => {
+    it('disconnected shows the reconnect hint', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      expect(
+        screen.getByText('Hold your Keycard against the phone again'),
+      ).toBeTruthy();
+    });
+
+    it('disconnected keeps the Cancel button (only exit from the wait)', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      fireEvent.press(screen.getByText('Cancel'));
+      expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('disconnected does not show the error retry hint', () => {
+      render(
+        <NFCSheet variant="disconnected" status="lost" onCancel={onCancel} />,
+      );
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+    });
+
+    it('connected shows no hints and keeps Cancel', () => {
+      render(
+        <NFCSheet variant="connected" status="Connected" onCancel={onCancel} />,
+      );
+      expect(screen.queryByText('Tap your card to try again')).toBeNull();
+      expect(
+        screen.queryByText('Hold your Keycard against the phone again'),
+      ).toBeNull();
+      expect(screen.getByText('Cancel')).toBeTruthy();
     });
   });
 

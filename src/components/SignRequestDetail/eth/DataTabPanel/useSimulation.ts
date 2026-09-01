@@ -80,7 +80,8 @@ export function useSimulation(
       const key = Keycard.BIP32KeyPair.extendedKey(resp.data);
       return pubKeyToEthAddress(key.publicKey!);
     }, []),
-    { requiresPin: true },
+    // Read-only key export: safe to re-run from SELECT on a re-tap.
+    { requiresPin: true, retryOnTagLoss: true },
   );
 
   const {

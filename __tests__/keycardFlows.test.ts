@@ -23,6 +23,12 @@ jest.mock('../src/utils/btcMessage', () => ({
 
 jest.mock('../src/utils/keycardExport', () => ({
   exportKeysForTarget: jest.fn(),
+  makeExportResumeCache: jest.fn(() => ({
+    cardUid: null,
+    masterFingerprint: null,
+    parentFingerprints: new Map(),
+    keys: new Map(),
+  })),
 }));
 
 jest.mock('../src/utils/cryptoHdKey', () => ({
@@ -251,7 +257,28 @@ describe('export key flow', () => {
       cmdSet,
       getExportTarget('ethereum').keys,
       setStatus,
+      // The per-flow resume cache: created in prepare, reused across re-taps.
+      expect.objectContaining({ cardUid: null }),
     );
+  });
+
+  it('reuses one resume cache across cardOp re-invocations (reconnect resume)', async () => {
+    exportKeysForTarget.mockResolvedValue({ masterFingerprint: 1, keys: [] });
+    const flowRun = prepareKeycardFlow(params);
+    const setStatus = jest.fn();
+
+    await flowRun.cardOp({} as any, setStatus);
+    await flowRun.cardOp({} as any, setStatus);
+
+    const firstCache = exportKeysForTarget.mock.calls[0][3];
+    const secondCache = exportKeysForTarget.mock.calls[1][3];
+    expect(firstCache).toBeDefined();
+    expect(secondCache).toBe(firstCache);
+
+    // A fresh prepare gets a fresh cache — resume never outlives the flow.
+    const nextRun = prepareKeycardFlow(params);
+    await nextRun.cardOp({} as any, setStatus);
+    expect(exportKeysForTarget.mock.calls[2][3]).not.toBe(firstCache);
   });
 
   it("buildOutput builds the target's UR with the xpub explainer and export navigation", () => {

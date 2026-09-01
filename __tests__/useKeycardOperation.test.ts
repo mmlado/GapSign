@@ -50,6 +50,7 @@ jest.mock('react-native-keycard', () => ({
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
       isNFCEnabled: () => mockIsNFCEnabled(),
       openNFCSettings: () => Promise.resolve(true),
+      setNFCMessage: () => Promise.resolve(true),
     },
     NFCCardChannel: class {},
   },
@@ -327,8 +328,9 @@ describe('useKeycardOperation', () => {
         capturedOnDisconnected?.();
       });
       expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
       expect(result.current.status).toBe(
-        'Connection lost - adjust Keycard position',
+        'Connection lost — hold your Keycard against the phone again',
       );
     });
 
@@ -628,6 +630,59 @@ describe('useKeycardOperation', () => {
       expect(cmdSet.exportKey).toHaveBeenCalledWith(0, true, 'm', false);
       expect(result.current.cardName).toBe('');
       expect(result.current.cardFingerprint).toBe(0x1a2b3c4d);
+    });
+
+    it('continues without a fingerprint when the export fails for a card reason', async () => {
+      const cmdSet = makeUnnamedCmdSet({
+        exportKey: jest.fn().mockRejectedValue(new Error('SW 0x6985')),
+      });
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => cmdSet);
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      const operation = jest.fn().mockResolvedValue('result');
+      await act(async () => {
+        result.current.execute(operation, { requiresPin: false });
+      });
+      await triggerCardConnect();
+
+      // Non-fatal by design: the op still ran, card shown as unnamed.
+      expect(operation).toHaveBeenCalled();
+      expect(result.current.phase).toBe('done');
+      expect(result.current.cardFingerprint).toBeNull();
+    });
+
+    it('does NOT swallow a tag loss during the fingerprint export', async () => {
+      // Observed on-device: the card left the field during the export; the
+      // old swallow sent the operation onto a dead channel, which froze in
+      // Processing until the 120 s transceive timeout.
+      const cmdSet = makeUnnamedCmdSet({
+        exportKey: jest
+          .fn()
+          .mockRejectedValue(
+            new Error(
+              'CardIO Error: android.nfc.TagLostException: Tag was lost.',
+            ),
+          ),
+      });
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => cmdSet);
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      const operation = jest.fn().mockResolvedValue('result');
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: false,
+          retryOnTagLoss: true,
+        });
+      });
+      await triggerCardConnect();
+
+      // The op never ran on the dead channel; the session entered the
+      // reconnect wait instead.
+      expect(operation).not.toHaveBeenCalled();
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
     });
 
     it('skips the fingerprint export for a named card', async () => {
@@ -956,6 +1011,276 @@ describe('useKeycardOperation', () => {
         'Card is locked. Use Unblock Card option.',
       );
       expect(result.current.pinError).toBeNull();
+    });
+  });
+
+  // T3/R9: the autoPair window is non-idempotent — PAIR step 2 commits a slot
+  // on the card before the response is read — so a tag loss inside it must
+  // never be silently replayed, even when the operation opted into retry.
+  describe('tag loss', () => {
+    const TAG_LOST = 'CardIO Error: Error: Tag was lost.';
+
+    it('inside autoPair: error with ambiguity copy, no silent replay', async () => {
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+      const Keycard = require('keycard-sdk').default;
+      const autoPair = jest.fn().mockRejectedValue(new Error(TAG_LOST));
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        autoPair,
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: false,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+      expect(autoPair).toHaveBeenCalledTimes(1);
+      expect(mockStopNFCWithError).toHaveBeenCalled();
+    });
+
+    it('outside autoPair with retry opted in: session stays up waiting for a re-tap', async () => {
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 1 } as any);
+      const Keycard = require('keycard-sdk').default;
+      const operation = jest.fn().mockRejectedValue(new Error(TAG_LOST));
+      Keycard.Commandset.mockImplementation(() => makeMockCmdSet());
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: false,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
+    });
+
+    // R14 amended by the 2026-08-22 device probe: verifyPIN is a
+    // non-idempotent window. The card may decrement its 3-attempt counter
+    // before the response is lost, so an unconfirmed PIN is never silently
+    // resubmitted — the loss is an error, the cached PIN is forgotten, and
+    // retry re-prompts so every attempt is user-authorised.
+    it('during verifyPIN: error, cached PIN forgotten, retry re-prompts', async () => {
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 1 } as any);
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        verifyPIN: jest.fn().mockRejectedValue(new Error(TAG_LOST)),
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      expect(result.current.phase).toBe('pin_entry');
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      // Unsafe window suppressed the reconnect wait; no wrong-PIN state.
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+      expect(result.current.pinError).toBeNull();
+
+      mockStartNFC.mockClear();
+      await act(async () => {
+        result.current.retry();
+      });
+      // The unconfirmed PIN was discarded, so retry shows the PIN pad again
+      // instead of restarting the reader with a cached value.
+      expect(result.current.phase).toBe('pin_entry');
+      expect(mockStartNFC).not.toHaveBeenCalled();
+    });
+
+    // Reported from device: pairing failed, Try again, then the card was
+    // removed during PIN validation and it failed hard rather than showing the
+    // reconnect nudge. These two pin down whether that is the designed
+    // verifyPIN window or a retryUnsafeRef left raised by the earlier failure.
+    it('after an autoPair failure and retry: a verifyPIN loss still fails hard', async () => {
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+      const Keycard = require('keycard-sdk').default;
+      const autoPair = jest
+        .fn()
+        .mockRejectedValueOnce(new Error(TAG_LOST))
+        .mockResolvedValue(undefined);
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        autoPair,
+        verifyPIN: jest.fn().mockRejectedValue(new Error(TAG_LOST)),
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+
+      await act(async () => {
+        result.current.retry();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+    });
+
+    // The load-bearing one: if the earlier hard failure left retryUnsafeRef
+    // raised, this later loss — which IS safe to replay — would wrongly fail
+    // hard too. It must reach the reconnect wait.
+    it('an earlier autoPair failure does not poison a later retryable loss', async () => {
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+      const Keycard = require('keycard-sdk').default;
+      const autoPair = jest
+        .fn()
+        .mockRejectedValueOnce(new Error(TAG_LOST))
+        .mockResolvedValue(undefined);
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        autoPair,
+      }));
+      const operation = jest.fn().mockRejectedValue(new Error(TAG_LOST));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+
+      mockStopNFCWithError.mockClear();
+      await act(async () => {
+        result.current.retry();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      // Pairing and PIN both succeeded this run; the loss landed in the
+      // operation itself, which opted into retry.
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
+    });
+
+    it('after a verified PIN: a loss during a RE-verify keeps the reconnect wait', async () => {
+      // On every reconnect the handshake re-runs, so verifyPIN runs again. A
+      // known-correct PIN resets the card's attempt counter rather than
+      // decrementing it, so those re-verifies are safe to replay — guarding
+      // them made every card slip during the handshake a hard error.
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 1 } as any);
+      const Keycard = require('keycard-sdk').default;
+      const verifyPIN = jest
+        .fn()
+        .mockResolvedValueOnce({ sw: 0x9000, checkAuthOK: jest.fn() })
+        .mockRejectedValue(new Error(TAG_LOST));
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        verifyPIN,
+      }));
+      const operation = jest
+        .fn()
+        .mockRejectedValueOnce(new Error(TAG_LOST))
+        .mockResolvedValue('result');
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      // First tap: PIN verifies, then the operation loses the card.
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('nfc');
+
+      // Re-tap: the re-verify itself loses the card. Still recoverable.
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
+    });
+
+    it('after a verified PIN: tag loss in the operation keeps the reconnect wait and the PIN', async () => {
+      mockLoadPairing.mockResolvedValue({ pairingIndex: 1 } as any);
+      const Keycard = require('keycard-sdk').default;
+      Keycard.Commandset.mockImplementation(() => makeMockCmdSet());
+      const operation = jest.fn().mockRejectedValue(new Error(TAG_LOST));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      // verifyPIN succeeded (window closed), the loss hit the op itself: the
+      // PIN is proven correct this session, so replaying it cannot walk the
+      // counter — the reconnect wait stays.
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+
+      mockStartNFC.mockClear();
+      await act(async () => {
+        result.current.retry();
+      });
+      // Retry keeps the verified PIN: reader restarts, no re-prompt.
+      expect(result.current.phase).toBe('nfc');
+      expect(mockStartNFC).toHaveBeenCalledWith('Tap your Keycard');
     });
   });
 });

@@ -2,6 +2,7 @@ import Keycard from 'keycard-sdk';
 import type { Commandset } from 'keycard-sdk/dist/commandset';
 
 import { pubKeyFingerprint } from './cryptoAccount';
+import { toHex } from './hex';
 
 /** One key an export target wants: the path to export and the parent path its fingerprint comes from. */
 export type ExportPlanEntry = {
@@ -21,6 +22,31 @@ export type ExportKeysResult<E extends ExportPlanEntry = ExportPlanEntry> = {
   keys: ExportedKey<E>[];
 };
 
+/**
+ * Checkpoint for resuming a multi-key export after a mid-operation tag loss:
+ * the session handshake (SELECT, pairing, secure channel, PIN) must re-run on
+ * every tap, but exported keys are deterministic reads, so keys fetched before
+ * the loss are reused and only the remainder is fetched. Bound to one physical
+ * card: the re-tap may be a DIFFERENT card, and merging keys from two cards
+ * would corrupt the export, so the cache self-invalidates on a UID change.
+ * Create one per prepared flow (screen visit), never share or persist it.
+ */
+export type ExportResumeCache = {
+  cardUid: string | null;
+  masterFingerprint: number | null;
+  parentFingerprints: Map<string, number>;
+  keys: Map<string, ExportedKey>;
+};
+
+export function makeExportResumeCache(): ExportResumeCache {
+  return {
+    cardUid: null,
+    masterFingerprint: null,
+    parentFingerprints: new Map(),
+    keys: new Map(),
+  };
+}
+
 function fingerprintFromExportResponse(data: Uint8Array): number {
   return pubKeyFingerprint(Keycard.BIP32KeyPair.fromTLV(data).publicKey);
 }
@@ -30,24 +56,52 @@ function fingerprintFromExportResponse(data: Uint8Array): number {
  * fingerprint once, then exports every planned key with its parent
  * fingerprint (parents are fetched once per distinct path). Which keys to
  * export and what UR to build from them is declared by an ExportTarget
- * (see exportTargets.ts).
+ * (see exportTargets.ts). With a cache, a re-run after a tag loss skips
+ * everything already fetched from the same card.
  */
 export async function exportKeysForTarget<E extends ExportPlanEntry>(
   cmdSet: Commandset,
   entries: readonly E[],
   setStatus: (s: string) => void = () => {},
+  cache?: ExportResumeCache,
 ): Promise<ExportKeysResult<E>> {
-  setStatus('Reading master key...');
-  const masterResp = await cmdSet.exportKey(0, true, 'm', false);
-  masterResp.checkOK();
-  const masterFingerprint = fingerprintFromExportResponse(masterResp.data);
+  if (cache) {
+    const appInfo = cmdSet.applicationInfo;
+    const uid = appInfo ? toHex(appInfo.instanceUID) : null;
+    if (uid === null || cache.cardUid !== uid) {
+      cache.cardUid = uid;
+      cache.masterFingerprint = null;
+      cache.parentFingerprints.clear();
+      cache.keys.clear();
+    }
+  }
 
-  const parentFingerprints = new Map<string, number>([
-    ['m', masterFingerprint],
-  ]);
+  let masterFingerprint = cache?.masterFingerprint ?? null;
+  if (masterFingerprint === null) {
+    setStatus('Reading master key...');
+    const masterResp = await cmdSet.exportKey(0, true, 'm', false);
+    masterResp.checkOK();
+    masterFingerprint = fingerprintFromExportResponse(masterResp.data);
+    if (cache) {
+      cache.masterFingerprint = masterFingerprint;
+    }
+  }
+
+  const parentFingerprints =
+    cache?.parentFingerprints ?? new Map<string, number>();
+  parentFingerprints.set('m', masterFingerprint);
 
   const keys: ExportedKey<E>[] = [];
   for (const [index, entry] of entries.entries()) {
+    // Entries within one target are unique by derivation path, and the cached
+    // entry object is the same table constant, so the base-typed cache read is
+    // safe to narrow back to E.
+    const cached = cache?.keys.get(entry.derivationPath);
+    if (cached) {
+      keys.push(cached as ExportedKey<E>);
+      continue;
+    }
+
     setStatus(`Exporting key ${index + 1} of ${entries.length}...`);
 
     let parentFingerprint = parentFingerprints.get(entry.parentPath);
@@ -65,7 +119,13 @@ export async function exportKeysForTarget<E extends ExportPlanEntry>(
 
     const resp = await cmdSet.exportExtendedKey(0, entry.derivationPath, false);
     resp.checkOK();
-    keys.push({ entry, exportRespData: resp.data, parentFingerprint });
+    const key: ExportedKey<E> = {
+      entry,
+      exportRespData: resp.data,
+      parentFingerprint,
+    };
+    keys.push(key);
+    cache?.keys.set(entry.derivationPath, key);
   }
 
   return { masterFingerprint, keys };

@@ -52,7 +52,11 @@ export default function KeycardScreen({
     try {
       const flowRun = prepareKeycardFlow(params);
       flowRef.current = flowRun;
-      execute((cmdSet, { setStatus }) => flowRun.cardOp(cmdSet, setStatus));
+      // Signing and key export do not mutate card state: safe to re-run the
+      // flow from SELECT when the card is re-tapped after a mid-operation loss.
+      execute((cmdSet, { setStatus }) => flowRun.cardOp(cmdSet, setStatus), {
+        retryOnTagLoss: true,
+      });
     } catch (e: any) {
       setFlowError(e?.message ?? 'Failed to prepare the operation.');
     }

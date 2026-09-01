@@ -31,6 +31,7 @@ export default function PairingSlotsScreen({
 
   const {
     phase: checkPhase,
+    cardPresence: checkCardPresence,
     slotInfo,
     status: checkStatus,
     checkSlots,
@@ -112,7 +113,14 @@ export default function PairingSlotsScreen({
 
   const activeNfc: NFCOperation = isUnpairing
     ? unpairHook
-    : { phase: checkPhase, status: checkStatus };
+    : {
+        phase: checkPhase,
+        status: checkStatus,
+        cardPresence: checkCardPresence,
+        // After an error the reader is disarmed (stopNFCWithError), so the
+        // sheet needs an explicit restart — re-tapping emits nothing.
+        retry: checkSlots,
+      };
 
   if (pendingSlotIndex !== null) {
     return (
