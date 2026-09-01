@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Losing card contact during a read-only operation (signing, key export, address checks) no longer fails it: the app asks you to reposition the card and resumes on the next tap. Operations that write to the card still stop safely instead of retrying
 - iOS now automatically reopens the NFC session after Apple's 60-second timeout (up to 2 restarts while the app is in the foreground) instead of failing immediately
 - The dismissible buy-Keycard notice is gone from the dashboard; the purchase link now lives on the welcome screen and remains available on the About screen
+- iOS now shows the operation's progress on Apple's NFC sheet — including the prompt to reposition the card after a connection loss — instead of leaving it on "Connected. Don't move your card." for the whole operation
 - Importing a key pair (recovery phrase or backup check) now returns to a fresh Dashboard like every other completed Keycard operation, clearing the seed-entry screens from the navigation stack
 - SeedQR scanning now opens from a QR icon inside the seed-phrase input instead of a separate "Scan SeedQR" button
 - iOS back button now shows only the arrow instead of the previous screen's title text

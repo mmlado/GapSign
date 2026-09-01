@@ -96,6 +96,23 @@ export default function useNFCSession(
     }
   }, []);
 
+  /** Sets the status AND mirrors it into Apple's system NFC sheet, which is the
+   *  only NFC UI on iOS — Pal's own sheet is Android-only by design, so without
+   *  this the whole progress narrative, including the reconnect nudge, is
+   *  invisible there. Android's setNFCMessage is a documented no-op, so the
+   *  platform check saves a pointless bridge round trip rather than guarding
+   *  against anything.
+   *
+   *  Deliberately NOT used on the error paths: those call stopNFCWithError(msg),
+   *  which already puts the message on the sheet as it tears the session down.
+   *  Setting the same text again immediately before that would be redundant. */
+  const reportStatus = useCallback((next: string) => {
+    setStatus(next);
+    if (Platform.OS === 'ios') {
+      RNKeycard.Core.setNFCMessage(next).catch(() => {});
+    }
+  }, []);
+
   // Terminal path for both reconnect bounds (R11). Marks the error as real so a
   // trailing disconnect event cannot clobber the status text.
   const failUnstableConnection = useCallback(() => {
@@ -115,7 +132,7 @@ export default function useNFCSession(
       return;
     }
     setCardPresence('lost');
-    setStatus(CARD_MOVED_STATUS);
+    reportStatus(CARD_MOVED_STATUS);
     clearWatchdog();
     watchdogRef.current = setTimeout(() => {
       watchdogRef.current = null;
@@ -123,7 +140,7 @@ export default function useNFCSession(
         failUnstableConnection();
       }
     }, TAG_LOSS_WATCHDOG_MS);
-  }, [clearWatchdog, failUnstableConnection]);
+  }, [clearWatchdog, failUnstableConnection, reportStatus]);
 
   const handleCardConnected = useCallback(async () => {
     if (phaseRef.current !== 'nfc' && phaseRef.current !== 'error') {
@@ -161,7 +178,7 @@ export default function useNFCSession(
     // run ended in an error.
     let outcome: 'waiting' | 'done' | 'error' = 'waiting';
     try {
-      setStatus('Selecting applet...');
+      reportStatus('Selecting applet...');
       const channel = new RNKeycard.NFCCardChannel();
       const cmdSet = new Keycard.Commandset(channel);
 
@@ -178,7 +195,7 @@ export default function useNFCSession(
       // that connects and instantly drops must not reset it (R11).
       tagLossCountRef.current = 0;
 
-      await onCardConnected(cmdSet, setStatus);
+      await onCardConnected(cmdSet, reportStatus);
       outcome = 'done';
       setPhase('done');
       RNKeycard.Core.stopNFC().catch(() => {});
@@ -221,7 +238,7 @@ export default function useNFCSession(
         }
       }
     }
-  }, [onCardConnected, onTagLost, clearWatchdog]);
+  }, [onCardConnected, onTagLost, clearWatchdog, reportStatus]);
 
   // Lets the finally above re-enter the latest handler without making the
   // callback depend on itself.
@@ -236,8 +253,8 @@ export default function useNFCSession(
     if (phaseRef.current !== 'nfc' || realErrorRef.current) return;
     disconnectedRef.current = true;
     setCardPresence('lost');
-    setStatus(CARD_MOVED_STATUS);
-  }, [onCardDisconnected]);
+    reportStatus(CARD_MOVED_STATUS);
+  }, [onCardDisconnected, reportStatus]);
 
   const doStartNFC = useCallback(() => {
     RNKeycard.Core.startNFC('Tap your Keycard')

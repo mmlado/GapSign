@@ -50,6 +50,7 @@ jest.mock('react-native-keycard', () => ({
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
       isNFCEnabled: () => mockIsNFCEnabled(),
       openNFCSettings: () => Promise.resolve(true),
+      setNFCMessage: () => Promise.resolve(true),
     },
     NFCCardChannel: class {},
   },
@@ -1110,6 +1111,97 @@ describe('useKeycardOperation', () => {
       // instead of restarting the reader with a cached value.
       expect(result.current.phase).toBe('pin_entry');
       expect(mockStartNFC).not.toHaveBeenCalled();
+    });
+
+    // Reported from device: pairing failed, Try again, then the card was
+    // removed during PIN validation and it failed hard rather than showing the
+    // reconnect nudge. These two pin down whether that is the designed
+    // verifyPIN window or a retryUnsafeRef left raised by the earlier failure.
+    it('after an autoPair failure and retry: a verifyPIN loss still fails hard', async () => {
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+      const Keycard = require('keycard-sdk').default;
+      const autoPair = jest
+        .fn()
+        .mockRejectedValueOnce(new Error(TAG_LOST))
+        .mockResolvedValue(undefined);
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        autoPair,
+        verifyPIN: jest.fn().mockRejectedValue(new Error(TAG_LOST)),
+      }));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(jest.fn().mockResolvedValue('result'), {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+
+      await act(async () => {
+        result.current.retry();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+      expect(result.current.status).toBe(
+        'Connection lost mid-operation. Check the card state before retrying.',
+      );
+    });
+
+    // The load-bearing one: if the earlier hard failure left retryUnsafeRef
+    // raised, this later loss — which IS safe to replay — would wrongly fail
+    // hard too. It must reach the reconnect wait.
+    it('an earlier autoPair failure does not poison a later retryable loss', async () => {
+      mockLoadPairing.mockResolvedValue(null);
+      mockCheckGenuine.mockResolvedValue(true);
+      const Keycard = require('keycard-sdk').default;
+      const autoPair = jest
+        .fn()
+        .mockRejectedValueOnce(new Error(TAG_LOST))
+        .mockResolvedValue(undefined);
+      Keycard.Commandset.mockImplementation(() => ({
+        ...makeMockCmdSet(),
+        autoPair,
+      }));
+      const operation = jest.fn().mockRejectedValue(new Error(TAG_LOST));
+
+      const { result } = renderHook(() => useKeycardOperation<string>());
+      await act(async () => {
+        result.current.execute(operation, {
+          requiresPin: true,
+          retryOnTagLoss: true,
+        });
+      });
+      await act(async () => {
+        result.current.submitPin('123456');
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      expect(result.current.phase).toBe('error');
+
+      mockStopNFCWithError.mockClear();
+      await act(async () => {
+        result.current.retry();
+      });
+      await act(async () => {
+        await capturedOnConnected?.();
+      });
+      // Pairing and PIN both succeeded this run; the loss landed in the
+      // operation itself, which opted into retry.
+      expect(result.current.phase).toBe('nfc');
+      expect(result.current.cardPresence).toBe('lost');
+      expect(mockStopNFCWithError).not.toHaveBeenCalled();
     });
 
     it('after a verified PIN: a loss during a RE-verify keeps the reconnect wait', async () => {

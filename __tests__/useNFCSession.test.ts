@@ -22,6 +22,7 @@ const mockStopNFC = jest.fn();
 const mockStopNFCWithError = jest.fn();
 const mockIsNFCEnabled = jest.fn();
 const mockOpenNFCSettings = jest.fn();
+const mockSetNFCMessage = jest.fn();
 
 jest.mock('react-native-keycard', () => ({
   __esModule: true,
@@ -48,6 +49,7 @@ jest.mock('react-native-keycard', () => ({
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
       isNFCEnabled: () => mockIsNFCEnabled(),
       openNFCSettings: () => mockOpenNFCSettings(),
+      setNFCMessage: (msg: string) => mockSetNFCMessage(msg),
     },
     NFCCardChannel: class {},
   },
@@ -81,12 +83,14 @@ describe('useNFCSession', () => {
     mockStopNFCWithError.mockResolvedValue(undefined);
     mockIsNFCEnabled.mockResolvedValue(true);
     mockOpenNFCSettings.mockResolvedValue(true);
+    mockSetNFCMessage.mockResolvedValue(true);
     mockSelect.mockResolvedValue({ sw: 0x9000 });
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
     mockStopNFCWithError.mockClear();
     mockIsNFCEnabled.mockClear();
     mockOpenNFCSettings.mockClear();
+    mockSetNFCMessage.mockClear();
     mockSelect.mockClear();
     mockOnCardConnected = jest.fn().mockResolvedValue(undefined);
     mockOnCardDisconnected = jest.fn().mockResolvedValue(undefined);
@@ -1082,6 +1086,143 @@ describe('useNFCSession', () => {
         jest.advanceTimersByTime(1000);
       });
       expect(mockStartNFC).not.toHaveBeenCalled();
+    });
+  });
+
+  // Apple's system sheet is the only NFC UI on iOS — Pal's own sheet is gated to
+  // Android — so every user-facing status has to be pushed into it explicitly or
+  // it is invisible there.
+  describe('iOS system sheet status mirroring', () => {
+    function withPlatform(os: string, body: () => Promise<void>) {
+      const Platform = require('react-native').Platform;
+      const origOS = Platform.OS;
+      Platform.OS = os;
+      return body().finally(() => {
+        Platform.OS = origOS;
+      });
+    }
+
+    it('pushes handshake progress to the system sheet', async () => {
+      await withPlatform('ios', async () => {
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(mockSetNFCMessage).toHaveBeenCalledWith('Selecting applet...');
+      });
+    });
+
+    it("pushes the operation's own progress to the system sheet", async () => {
+      await withPlatform('ios', async () => {
+        mockOnCardConnected.mockImplementation(
+          async (_cmdSet: unknown, setStatus: (s: string) => void) => {
+            setStatus('Exporting key 2 of 3...');
+          },
+        );
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(mockSetNFCMessage).toHaveBeenCalledWith(
+          'Exporting key 2 of 3...',
+        );
+      });
+    });
+
+    // The reason this whole mechanism exists: during a reconnect wait the
+    // session stays up and Pal renders nothing on iOS, so the sheet is the only
+    // place the user can be told to re-tap.
+    it('pushes the reconnect nudge on a classified tag loss', async () => {
+      await withPlatform('ios', async () => {
+        mockOnCardConnected.mockRejectedValue(new Error(IOS_TAG_LOST));
+        const { result } = makeHook({ retryOnTagLoss: true });
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(result.current.phase).toBe('nfc');
+        expect(mockSetNFCMessage).toHaveBeenCalledWith(CARD_MOVED_STATUS);
+      });
+    });
+
+    it('pushes the reconnect nudge on a disconnect event', async () => {
+      await withPlatform('ios', async () => {
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        mockSetNFCMessage.mockClear();
+        await act(async () => {
+          capturedOnDisconnected?.();
+        });
+        expect(mockSetNFCMessage).toHaveBeenCalledWith(CARD_MOVED_STATUS);
+      });
+    });
+
+    // stopNFCWithError already puts the message on the sheet as it tears the
+    // session down; pushing it first would be a redundant second write.
+    it('leaves error copy to stopNFCWithError', async () => {
+      await withPlatform('ios', async () => {
+        mockOnCardConnected.mockRejectedValue(
+          new Error('SELECT failed: 0x6A82'),
+        );
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(mockStopNFCWithError).toHaveBeenCalledWith(
+          'SELECT failed: 0x6A82',
+        );
+        expect(mockSetNFCMessage).not.toHaveBeenCalledWith(
+          'SELECT failed: 0x6A82',
+        );
+      });
+    });
+
+    it('never calls the bridge on android, where it is a no-op', async () => {
+      await withPlatform('android', async () => {
+        mockOnCardConnected.mockImplementation(
+          async (_cmdSet: unknown, setStatus: (s: string) => void) => {
+            setStatus('Exporting key 2 of 3...');
+          },
+        );
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        await act(async () => {
+          capturedOnDisconnected?.();
+        });
+        expect(mockSetNFCMessage).not.toHaveBeenCalled();
+      });
+    });
+
+    it('a rejected setNFCMessage does not break the session', async () => {
+      await withPlatform('ios', async () => {
+        mockSetNFCMessage.mockRejectedValue(new Error('unavailable'));
+        const { result } = makeHook();
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(result.current.phase).toBe('done');
+      });
     });
   });
 });
