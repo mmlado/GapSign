@@ -37,6 +37,9 @@ export interface UseNFCSessionOptions {
    *  the card left the field. Default false: a replayed operation can burn
    *  pairing slots or overwrite card state, so only read-only operations opt in. */
   retryOnTagLoss?: boolean;
+  /** Wording for Apple's NFC sheet on the success path, in place of the
+   *  bridge's generic "Success". iOS-only; ignored elsewhere. */
+  successMessage?: string;
 }
 
 export interface UseNFCSessionOperation {
@@ -67,6 +70,8 @@ export default function useNFCSession(
   onNFCAvailableRef.current = options.onNFCAvailable;
   const retryOnTagLossRef = useRef(options.retryOnTagLoss ?? false);
   retryOnTagLossRef.current = options.retryOnTagLoss ?? false;
+  const successMessageRef = useRef(options.successMessage);
+  successMessageRef.current = options.successMessage;
   const retryUnsafeRef = useRef(false);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -111,6 +116,23 @@ export default function useNFCSession(
     if (Platform.OS === 'ios') {
       RNKeycard.Core.setNFCMessage(next).catch(() => {});
     }
+  }, []);
+
+  /** Ends the session on the success path, wording Apple's sheet with the
+   *  operation's own message instead of the bridge's generic "Success". The
+   *  sheet stays up ~3.4 s after invalidation (device probe 2026-09-01), so it
+   *  is the first place the user reads the outcome — and on iOS the only NFC UI
+   *  there is.
+   *
+   *  Android has no system sheet, so it takes the plain stop: its
+   *  stopNFCWithMessage is a no-op delegate and the round trip buys nothing. */
+  const stopWithSuccess = useCallback(() => {
+    const message = successMessageRef.current;
+    if (message && Platform.OS === 'ios') {
+      RNKeycard.Core.stopNFCWithMessage(message).catch(() => {});
+      return;
+    }
+    RNKeycard.Core.stopNFC().catch(() => {});
   }, []);
 
   // Terminal path for both reconnect bounds (R11). Marks the error as real so a
@@ -198,7 +220,7 @@ export default function useNFCSession(
       await onCardConnected(cmdSet, reportStatus);
       outcome = 'done';
       setPhase('done');
-      RNKeycard.Core.stopNFC().catch(() => {});
+      stopWithSuccess();
     } catch (e: any) {
       if (isTagLostError(e)) {
         if (retryOnTagLossRef.current && !retryUnsafeRef.current) {
@@ -238,7 +260,7 @@ export default function useNFCSession(
         }
       }
     }
-  }, [onCardConnected, onTagLost, clearWatchdog, reportStatus]);
+  }, [onCardConnected, onTagLost, clearWatchdog, reportStatus, stopWithSuccess]);
 
   // Lets the finally above re-enter the latest handler without making the
   // callback depend on itself.
