@@ -124,6 +124,17 @@ export default function KeycardScreen({
     navigation.setOptions({ title: 'Enter Keycard PIN' });
   }, [navigation]);
 
+  // The PIN pad no longer covers the navigator header, so the real back button
+  // and the iOS swipe-back gesture can leave this screen mid-session. Tear the
+  // NFC session down on the way out; navigation itself is already happening, so
+  // this deliberately does not call handleCancel's reset.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      cancel();
+    });
+    return unsubscribe;
+  }, [navigation, cancel]);
+
   const handleCancel = useCallback(async () => {
     cancel();
     if (wcContext) {

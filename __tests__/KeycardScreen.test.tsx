@@ -88,6 +88,9 @@ jest.mock('../src/hooks/useWalletConnectSession.online', () => ({
 
 const navigation = {
   goBack: jest.fn(),
+  // The screen tears its NFC session down on beforeRemove, now that the real
+  // back button can leave it mid-session.
+  addListener: jest.fn(() => jest.fn()),
   reset: jest.fn(),
   setOptions: jest.fn(),
 } as any;
@@ -466,6 +469,21 @@ describe('KeycardScreen', () => {
       const calls = MockNFCBottomSheet.mock.calls;
       return calls[calls.length - 1][0].onCancel as () => Promise<void>;
     }
+
+    // The PIN pad no longer covers the navigator header, so the real back
+    // button and the iOS swipe-back gesture can leave the screen mid-session.
+    // The reader has to be torn down without also re-running the reset that
+    // handleCancel does, since navigation is already happening.
+    it('cancels the session when the screen is removed', async () => {
+      await renderScreen('nfc');
+      const beforeRemove = navigation.addListener.mock.calls.find(
+        (c: unknown[]) => c[0] === 'beforeRemove',
+      );
+      expect(beforeRemove).toBeTruthy();
+      (beforeRemove?.[1] as () => void)();
+      expect(mockCancel).toHaveBeenCalledTimes(1);
+      expect(navigation.reset).not.toHaveBeenCalled();
+    });
 
     it('calls cancel and resets to Dashboard', async () => {
       await renderScreen('nfc');

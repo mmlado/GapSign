@@ -2,24 +2,20 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   BackHandler,
+  Dimensions,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-  type Edge,
-} from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import theme from '@/theme';
 
-import { Icons } from '@/assets/icons';
-
 import PinPad from '@/components/PinPad';
+
+/** Slide distance for the PIN pad, matching the Modal's old slide-up. */
+const PIN_SLIDE_DISTANCE = Dimensions.get('window').height;
 
 import type {
   CardPresence,
@@ -30,9 +26,6 @@ import GenuineWarning from './GenuineWarning';
 import NFCError from './NFCError';
 import NFCSheet from './NFCSheet';
 import PairingPasswordEntry from './PairingPasswordEntry';
-
-/** Keeps the PIN modal inside the same bounds as a normal navigation screen. */
-const PIN_MODAL_EDGES: readonly Edge[] = ['top', 'bottom', 'left', 'right'];
 
 export type NFCVariant =
   | 'scanning'
@@ -82,6 +75,10 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(400)).current;
   const [modalVisible, setModalVisible] = useState(false);
+  // Replaces the Modal's animationType="slide". Kept mounted through the
+  // outgoing animation so the pad does not vanish the instant the phase flips.
+  const pinSlide = useRef(new Animated.Value(PIN_SLIDE_DISTANCE)).current;
+  const [pinMounted, setPinMounted] = useState(false);
 
   const showPinPad = phase === 'pin_entry';
   const showGenuineWarning = phase === 'genuine_warning';
@@ -104,6 +101,27 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
     });
     return () => sub.remove();
   }, [showPinPad, onCancel]);
+
+  useEffect(() => {
+    if (showPinPad) {
+      setPinMounted(true);
+      Animated.timing(pinSlide, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+    Animated.timing(pinSlide, {
+      toValue: PIN_SLIDE_DISTANCE,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setPinMounted(false);
+      }
+    });
+  }, [showPinPad, pinSlide]);
 
   useEffect(() => {
     if (showIOSError) {
@@ -153,29 +171,21 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
 
   return (
     <>
-      <Modal
-        visible={showPinPad}
-        transparent={false}
-        statusBarTranslucent
-        animationType="slide"
-        onRequestClose={onCancel}
-      >
-        <SafeAreaView style={styles.pinModal} edges={PIN_MODAL_EDGES}>
-          <View style={styles.header}>
-            <Pressable
-              onPress={onCancel}
-              hitSlop={12}
-              style={styles.headerBack}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <Icons.arrowLeft />
-            </Pressable>
-            <Text style={styles.headerTitle}>Enter PIN</Text>
-          </View>
+      {/* Deliberately not a Modal: a Modal covers the navigator's own header,
+          which is why this used to paint a fake one with a fake back arrow.
+          Filling the screen's content area instead leaves the real header —
+          and with it the real back button, its iOS swipe-back gesture, and the
+          'Enter Keycard PIN' title useKeycardScreen already sets — in place. */}
+      {pinMounted && (
+        <Animated.View
+          style={[
+            styles.pinOverlay,
+            { transform: [{ translateY: pinSlide }] },
+          ]}
+        >
           <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
-        </SafeAreaView>
-      </Modal>
+        </Animated.View>
+      )}
 
       {showIOSError && (
         <NFCError
@@ -255,28 +265,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     marginBottom: 24,
   },
-  pinModal: {
-    flex: 1,
+  /** Covers the screen's content but not the navigator header. Anchored to the
+   *  container's padding box, so a host screen's own insets are respected. */
+  pinOverlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: theme.colors.background,
-  },
-  header: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.background,
-  },
-  headerBack: {
-    position: 'absolute',
-    left: 8,
-    bottom: 0,
-    height: 56,
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-  },
-  headerTitle: {
-    color: theme.colors.onSurface,
-    fontSize: 17,
-    fontWeight: '600',
   },
 });
