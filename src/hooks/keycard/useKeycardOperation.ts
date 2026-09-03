@@ -45,6 +45,11 @@ export interface ExecuteOptions {
    *  mid-operation. Default false — only read-only operations may opt in;
    *  a replayed write can burn pairing slots or overwrite card state (R9). */
   retryOnTagLoss?: boolean;
+  /** Wording for Apple's NFC sheet when the operation succeeds, in place of the
+   *  generic "Success". Mirror the screen's done-toast: the sheet is read first
+   *  and the toast repeats it once the sheet clears, so two different strings
+   *  for one outcome read as two different outcomes. iOS-only. */
+  successMessage?: string;
 }
 
 export interface UseKeycardOperation<T> {
@@ -95,6 +100,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
   const requiresMasterKeyRef = useRef(true);
   const operationRunningRef = useRef(false);
   const retryOnTagLossRef = useRef(false);
+  const successMessageRef = useRef<string | undefined>(undefined);
   // The session's retryUnsafeRef only exists after the useNFCOperation call
   // below, but doPairAndExecute (defined first) must raise it around autoPair.
   // Held here and assigned each render; always set before any card contact.
@@ -376,6 +382,9 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
     // (setWaitingForPin or the session's setPhase), so the session sees the new
     // value long before any APDU can fail.
     retryOnTagLoss: retryOnTagLossRef.current,
+    // Same read-at-render contract, and it only has to be current by the time
+    // the operation resolves — far later than the first render.
+    successMessage: successMessageRef.current,
   });
   retryUnsafeHolderRef.current = retryUnsafeRef;
 
@@ -396,6 +405,7 @@ export function useKeycardOperation<T>(): UseKeycardOperation<T> {
       requiresPinRef.current = options.requiresPin ?? true;
       requiresMasterKeyRef.current = options.requiresMasterKey ?? true;
       retryOnTagLossRef.current = options.retryOnTagLoss ?? false;
+      successMessageRef.current = options.successMessage;
       operationRunningRef.current = false;
       setWaitingForPairingPassword(false);
       setPairingPasswordError(null);

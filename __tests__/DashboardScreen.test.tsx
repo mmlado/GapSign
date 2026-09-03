@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { AppState, Platform } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DashboardScreen from '../src/screens/DashboardScreen';
@@ -11,13 +12,17 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
+let lastSnackDuration: number | undefined;
+
 jest.mock('react-native-paper', () => {
   const { Text } = require('react-native');
   return {
     MD3DarkTheme: { colors: {} },
     Text,
-    Snackbar: ({ visible, children }: any) =>
-      visible ? require('react').createElement(Text, null, children) : null,
+    Snackbar: ({ visible, children, duration }: any) => {
+      lastSnackDuration = duration;
+      return visible ? require('react').createElement(Text, null, children) : null;
+    },
   };
 });
 
@@ -69,6 +74,12 @@ const navigation = {
   setParams: jest.fn(),
 } as any;
 
+// AppState.currentState is a jest.fn() in the RN preset, not a string, so any
+// test that depends on foreground state has to set it explicitly.
+function setAppState(state: 'active' | 'inactive' | 'background') {
+  (AppState as any).currentState = state;
+}
+
 async function renderScreen(routeParams?: { toast?: string }) {
   focusCallback = null;
   const route = routeParams ? { params: routeParams } : ({} as any);
@@ -90,6 +101,9 @@ describe('DashboardScreen', () => {
     mockUseNavigationNavigate.mockClear();
     mockDashboardActions.length = 0;
     focusCallback = null;
+    // mockImplementation alone leaves call history from earlier tests in place.
+    (AppState.addEventListener as jest.Mock).mockClear();
+    setAppState('active');
   });
 
   afterEach(() => {
@@ -190,6 +204,49 @@ describe('DashboardScreen', () => {
       });
       expect(navigation.setParams).not.toHaveBeenCalled();
       expect(screen.queryByText('Card initialized')).toBeNull();
+    });
+  });
+
+  // Apple's CoreNFC sheet covers the Snackbar's band for ~3.4 s after a Keycard
+  // operation ends. The toast is shown at once and simply outlasts the sheet,
+  // so it is revealed as the sheet slides away rather than appearing after it.
+  describe('toast vs the iOS NFC sheet', () => {
+    const origOS = Platform.OS;
+
+    afterEach(() => {
+      Platform.OS = origOS;
+    });
+
+    it('outlasts the NFC sheet on iOS', async () => {
+      Platform.OS = 'ios';
+      await renderScreen({ toast: 'Card name updated' });
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(lastSnackDuration).toBe(7000);
+    });
+
+    it('keeps the default duration on Android, which has no system sheet', async () => {
+      Platform.OS = 'android';
+      await renderScreen({ toast: 'Card name updated' });
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(lastSnackDuration).toBe(3000);
+    });
+
+    // Regression: an earlier fix held the toast back until AppState returned to
+    // 'active'. iOS posts that only after the sheet's dismissal animation ends,
+    // so the toast appeared into an already-empty screen after a visible gap.
+    it('shows immediately rather than waiting for the app to become active', async () => {
+      Platform.OS = 'ios';
+      setAppState('inactive');
+      await renderScreen({ toast: 'Card name updated' });
+      await act(async () => {
+        focusCallback?.();
+      });
+      expect(screen.getByText('Card name updated')).toBeTruthy();
+      expect(AppState.addEventListener).not.toHaveBeenCalled();
     });
   });
 

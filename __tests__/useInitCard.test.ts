@@ -12,6 +12,7 @@ let capturedOnTimeout: (() => void) | null = null;
 
 const mockStartNFC = jest.fn();
 const mockStopNFC = jest.fn();
+const mockStopNFCWithMessage = jest.fn();
 const mockStopNFCWithError = jest.fn();
 
 jest.mock('react-native-keycard', () => ({
@@ -37,6 +38,7 @@ jest.mock('react-native-keycard', () => ({
       startNFC: (msg: string) => mockStartNFC(msg),
       stopNFC: () => mockStopNFC(),
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
+      stopNFCWithMessage: (msg: string) => mockStopNFCWithMessage(msg),
       isNFCEnabled: () => Promise.resolve(true),
       openNFCSettings: () => Promise.resolve(true),
       setNFCMessage: () => Promise.resolve(true),
@@ -70,11 +72,13 @@ describe('useInitCard', () => {
   beforeEach(() => {
     mockStartNFC.mockResolvedValue(undefined);
     mockStopNFC.mockResolvedValue(undefined);
+    mockStopNFCWithMessage.mockResolvedValue(undefined);
     mockStopNFCWithError.mockResolvedValue(undefined);
     mockSelect.mockResolvedValue({ sw: 0x9000 });
     mockInit.mockResolvedValue(undefined);
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
+    mockStopNFCWithMessage.mockClear();
     mockStopNFCWithError.mockClear();
     mockSelect.mockClear();
     mockInit.mockClear();

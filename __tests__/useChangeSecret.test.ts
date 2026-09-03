@@ -8,12 +8,17 @@ let capturedOperation: OperationFn | null = null;
 let capturedOptions: {
   requiresPin?: boolean;
   requiresMasterKey?: boolean;
+  successMessage?: string;
 } | null = null;
 
 const mockExecute = jest.fn(
   (
     fn: OperationFn,
-    opts: { requiresPin?: boolean; requiresMasterKey?: boolean },
+    opts: {
+      requiresPin?: boolean;
+      requiresMasterKey?: boolean;
+      successMessage?: string;
+    },
   ) => {
     capturedOperation = fn;
     capturedOptions = opts;
@@ -49,7 +54,10 @@ describe('useChangeSecret', () => {
       result.current.start('123456');
     });
 
-    expect(capturedOptions).toEqual({ requiresMasterKey: false });
+    expect(capturedOptions).toEqual({
+      requiresMasterKey: false,
+      successMessage: 'PIN changed',
+    });
   });
 
   it('changes PIN', async () => {

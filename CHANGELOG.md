@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Completing a Keycard operation on iOS now confirms what actually happened: Apple's NFC sheet names the operation — "Card name updated", "PIN changed", "Factory reset done" — instead of a bare "Success", and the app's own toast outlasts that sheet instead of counting down behind it, so it is readable once the sheet clears
 - A PIN whose verification was interrupted by NFC connection loss is no longer silently resubmitted on the next tap: the cached PIN is discarded and the PIN pad is shown again, so every attempt against the card's 3-attempt counter is one the user explicitly made
 - Ethereum signature `v` is now derived from the classified payload kind instead of sniffing the first byte of the payload: a personal-sign message or EIP-712 digest that happened to start with `0x01`/`0x02` no longer produces an invalid signature (`v = recId` instead of `27 + recId`)
 - Malformed PSBTs are now rejected at scan time with a clear error instead of opening a review whose Sign button crashed; a failure while encoding the result QR after signing shows an error screen instead of doing nothing

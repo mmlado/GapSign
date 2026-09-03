@@ -20,6 +20,7 @@ let capturedOnTimeout: (() => void) | null = null;
 const mockStartNFC = jest.fn();
 const mockStopNFC = jest.fn();
 const mockStopNFCWithError = jest.fn();
+const mockStopNFCWithMessage = jest.fn();
 const mockIsNFCEnabled = jest.fn();
 const mockOpenNFCSettings = jest.fn();
 const mockSetNFCMessage = jest.fn();
@@ -47,6 +48,7 @@ jest.mock('react-native-keycard', () => ({
       startNFC: (msg: string) => mockStartNFC(msg),
       stopNFC: () => mockStopNFC(),
       stopNFCWithError: (msg: string) => mockStopNFCWithError(msg),
+      stopNFCWithMessage: (msg: string) => mockStopNFCWithMessage(msg),
       isNFCEnabled: () => mockIsNFCEnabled(),
       openNFCSettings: () => mockOpenNFCSettings(),
       setNFCMessage: (msg: string) => mockSetNFCMessage(msg),
@@ -81,6 +83,7 @@ describe('useNFCSession', () => {
     mockStartNFC.mockResolvedValue(undefined);
     mockStopNFC.mockResolvedValue(undefined);
     mockStopNFCWithError.mockResolvedValue(undefined);
+    mockStopNFCWithMessage.mockResolvedValue(undefined);
     mockIsNFCEnabled.mockResolvedValue(true);
     mockOpenNFCSettings.mockResolvedValue(true);
     mockSetNFCMessage.mockResolvedValue(true);
@@ -88,6 +91,7 @@ describe('useNFCSession', () => {
     mockStartNFC.mockClear();
     mockStopNFC.mockClear();
     mockStopNFCWithError.mockClear();
+    mockStopNFCWithMessage.mockClear();
     mockIsNFCEnabled.mockClear();
     mockOpenNFCSettings.mockClear();
     mockSetNFCMessage.mockClear();
@@ -110,6 +114,7 @@ describe('useNFCSession', () => {
   function makeHook(options?: {
     onNFCAvailable?: () => void;
     retryOnTagLoss?: boolean;
+    successMessage?: string;
   }) {
     return renderHook(() =>
       useNFCSession(
@@ -493,6 +498,53 @@ describe('useNFCSession', () => {
       });
       expect(mockOnCardConnected).not.toHaveBeenCalled();
       expect(result.current.phase).toBe('idle');
+    });
+
+    // Apple's sheet outlives the app's own toast, so the operation's wording
+    // goes there too rather than relying on the generic "Success".
+    describe('success message on the iOS sheet', () => {
+      const Platform = require('react-native').Platform;
+      const origOS = Platform.OS;
+
+      afterEach(() => {
+        Platform.OS = origOS;
+      });
+
+      async function runToDone(options?: { successMessage?: string }) {
+        const { result } = makeHook(options);
+        mockOnCardConnected.mockResolvedValue(undefined);
+        await act(async () => {
+          result.current.startNFC();
+        });
+        await act(async () => {
+          await capturedOnConnected?.();
+        });
+        expect(result.current.phase).toBe('done');
+      }
+
+      it('words the sheet with the operation message on iOS', async () => {
+        Platform.OS = 'ios';
+        await runToDone({ successMessage: 'Factory reset done' });
+        expect(mockStopNFCWithMessage).toHaveBeenCalledWith(
+          'Factory reset done',
+        );
+        expect(mockStopNFC).not.toHaveBeenCalled();
+      });
+
+      it('falls back to plain stopNFC when no message is set', async () => {
+        Platform.OS = 'ios';
+        await runToDone();
+        expect(mockStopNFC).toHaveBeenCalled();
+        expect(mockStopNFCWithMessage).not.toHaveBeenCalled();
+      });
+
+      it('does not word the sheet on Android, which has none', async () => {
+        Platform.OS = 'android';
+        await runToDone({ successMessage: 'Factory reset done' });
+        expect(mockStopNFC).toHaveBeenCalled();
+        expect(mockStopNFCWithMessage).not.toHaveBeenCalled();
+      });
+
     });
 
     it('ignores card connected when phase is done', async () => {
