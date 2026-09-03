@@ -52,7 +52,7 @@
     "react-native-animated-ur-qr": "^0.1.5",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-get-random-values": "^2.0.0",
-    "react-native-keycard": "github:mmlado/react-native-keycard#7e7e202b582777e92b0f99d4182d7eaa520e5023",
+    "react-native-keycard": "github:mmlado/react-native-keycard#a4623341a6c7189a6b8c812324918f02901d111a",
     "react-native-paper": "^5.15.0",
     "react-native-qrcode-svg": "^6.3.21",
     "react-native-safe-area-context": "^5.5.2",

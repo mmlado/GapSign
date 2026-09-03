@@ -29,7 +29,12 @@ export function useLoadKey() {
         keyPairRef.current = null;
       }
     }, []),
-    { requiresPin: true, requiresMasterKey: false },
+    {
+      requiresPin: true,
+      requiresMasterKey: false,
+      // Mirrors ConfirmKeyScreen's done toast.
+      successMessage: 'Key pair has been added to Keycard',
+    },
   );
 
   const start = useCallback(

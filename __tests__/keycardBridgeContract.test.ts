@@ -50,6 +50,21 @@ describe('installed react-native-keycard carries the tag-loss contract', () => {
     expect(mm).toContain('objectForKey:@"message"');
   });
 
+  // useNFCSession calls stopNFCWithMessage unguarded. A pin that predates the
+  // method turns every completed operation into a thrown TypeError inside
+  // handleCardConnected's try, surfacing as a bogus operation error — so the
+  // installed artifact has to prove the method is there, on both platforms.
+  it('installed bridge carries stopNFCWithMessage on both platforms', () => {
+    expect(read('src/NativeKeycard.ts')).toContain('stopNFCWithMessage');
+    expect(read('lib/typescript/src/NativeKeycard.d.ts')).toContain(
+      'stopNFCWithMessage',
+    );
+    expect(read('ios/Keycard.mm')).toContain('stopNFCWithSuccessMessage:');
+    expect(read('android/src/main/java/com/keycard/KeycardModule.kt')).toContain(
+      'override fun stopNFCWithMessage',
+    );
+  });
+
   it('built lib wraps APDUResponse construction inside the try', () => {
     // The BUILT artifact, not src/: Metro bundles lib/module, and lib/ is what
     // went stale before. The construction must sit between the state check and

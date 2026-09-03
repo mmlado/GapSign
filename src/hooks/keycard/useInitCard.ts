@@ -38,6 +38,8 @@ export function useInitCard(): UseInitCardOperation {
       duressPinRef.current = null;
       return puk;
     }, []),
+    // Mirrors InitCardScreen's done toast.
+    { successMessage: 'Card initialized' },
   );
 
   const start = useCallback(
