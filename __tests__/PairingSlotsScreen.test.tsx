@@ -127,6 +127,9 @@ const mockNavigate = jest.fn();
 
 const navigation = {
   goBack: jest.fn(),
+  // The screen tears its NFC session down on beforeRemove, now that the real
+  // back button can leave it mid-session.
+  addListener: jest.fn(() => jest.fn()),
   setOptions: jest.fn(),
   navigate: mockNavigate,
 } as any;
@@ -357,6 +360,20 @@ describe('PairingSlotsScreen', () => {
       lastCall?.[0].onCancel();
       expect(mockCancel).toHaveBeenCalled();
       expect(mockUnpairCancel).not.toHaveBeenCalled();
+    });
+
+    // The PIN pad no longer covers the navigator header, so the real back
+    // button and the iOS swipe-back gesture can leave the screen mid-session.
+    // Both readers have to be torn down on the way out.
+    it('cancels both sessions when the screen is removed', () => {
+      renderScreen('nfc');
+      const beforeRemove = navigation.addListener.mock.calls.find(
+        (c: unknown[]) => c[0] === 'beforeRemove',
+      );
+      expect(beforeRemove).toBeTruthy();
+      (beforeRemove?.[1] as () => void)();
+      expect(mockCancel).toHaveBeenCalled();
+      expect(mockUnpairCancel).toHaveBeenCalled();
     });
 
     it('calls cancelUnpair when cancelling during unpair', () => {

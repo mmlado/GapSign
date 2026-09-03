@@ -102,6 +102,18 @@ export default function PairingSlotsScreen({
     setPendingSlotIndex(null);
   }, []);
 
+  // The PIN pad no longer covers the navigator header, so the real back button
+  // and the iOS swipe-back gesture can leave this screen mid-session. Tear both
+  // sessions down on the way out; navigation is already happening, so this
+  // deliberately does not call handleCancel's goBack.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      cancelUnpair();
+      cancelCheck();
+    });
+    return unsubscribe;
+  }, [navigation, cancelUnpair, cancelCheck]);
+
   const handleCancel = useCallback(() => {
     if (isUnpairing) {
       cancelUnpair();

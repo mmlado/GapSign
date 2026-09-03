@@ -1,6 +1,11 @@
 import React from 'react';
 import { Platform } from 'react-native';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import NFCBottomSheet from '../src/components/NFCBottomSheet';
 import type { NFCOperation } from '../src/components/NFCBottomSheet';
 import type { KeycardPhase } from '../src/hooks/keycard/useKeycardOperation';
@@ -300,17 +305,34 @@ describe('NFCBottomSheet — Android sheet', () => {
       expect(screen.queryByText('Tap your Keycard')).toBeNull();
     });
 
-    it('shows the Enter PIN title bar', () => {
+    // The PIN pad used to sit in a full-screen Modal, which covered the
+    // navigator's header and so had to paint a fake one. It now fills only the
+    // screen's content area, leaving the real header — and its real back
+    // button and iOS swipe-back gesture — in place. Re-adding either of these
+    // would mean the Modal is back.
+    // The pad stays mounted through its slide-out so it does not vanish the
+    // instant the phase flips; it is removed when that animation reports done.
+    it('unmounts the pad once the exit animation finishes', async () => {
       const submitPin = jest.fn();
-      renderSheet(makeNfc('pin_entry', { submitPin }));
-      expect(screen.getByText('Enter PIN')).toBeTruthy();
+      const { rerender } = renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(screen.getByTestId('pin-pad')).toBeTruthy();
+
+      rerender(<NFCBottomSheet nfc={makeNfc('nfc')} onCancel={onCancel} />);
+      await waitFor(() =>
+        expect(screen.queryByTestId('pin-pad')).toBeNull(),
+      );
     });
 
-    it('calls onCancel when the back button is pressed', () => {
+    it('paints no title bar of its own', () => {
       const submitPin = jest.fn();
       renderSheet(makeNfc('pin_entry', { submitPin }));
-      fireEvent.press(screen.getByLabelText('Go back'));
-      expect(onCancel).toHaveBeenCalledTimes(1);
+      expect(screen.queryByText('Enter PIN')).toBeNull();
+    });
+
+    it('paints no back button of its own', () => {
+      const submitPin = jest.fn();
+      renderSheet(makeNfc('pin_entry', { submitPin }));
+      expect(screen.queryByLabelText('Go back')).toBeNull();
     });
   });
 

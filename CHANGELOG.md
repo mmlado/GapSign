@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Full and pre-hashed EIP-712 sign requests (`dataType=2`) are now signable: the card signs the computed EIP-712 digest — the same digest shown in the review — instead of failing on raw bytes after PIN entry. Unclassifiable payloads now show a "cannot be signed" explanation in the review instead of a Sign button
-- Title bar with a back affordance on the PIN-entry screen, matching every other screen and giving iOS a way to dismiss
+- PIN entry now keeps the app's real navigation header instead of covering it with a full-screen dialog, so it has the same back button as every other screen, the iOS swipe-back gesture works, and leaving mid-entry cancels the card session
 - Explainer on the Connect-software-wallet screen and above the exported-key QR code
 - View Addresses now shows the full BIP32 derivation path (e.g. `m/44'/60'/0'/0/0`) under each address in the list and on the address detail screen, replacing the bare index column
 - First-run welcome screen with a Keycard product photo explaining what the app does (hardware-held keys, air-gapped QR flow, NFC signing), plus a buy-Keycard button (browser link in the online build, QR code in the offline build); shown once, then remembered via a `welcome_seen` preference
