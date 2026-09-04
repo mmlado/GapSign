@@ -1,43 +1,26 @@
 #!/usr/bin/env bash
-# Installs the local git hooks. Run once per clone:
+# Points git at the versioned hooks in .githooks/. Run once per clone:
 #   ./scripts/install-hooks.sh
 #
-# Hooks live in .git/hooks, which git does not version, so this script is the
-# versioned source of truth for them.
-set -euo pipefail
-
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-HOOK="$ROOT/.git/hooks/pre-push"
-
-cat > "$HOOK" <<'HOOK_EOF'
-#!/usr/bin/env bash
-# Gate release tags on a real minified build launching on a real phone.
+# The hooks live in .githooks/ rather than .git/hooks so they are versioned,
+# reviewable, and survive a fresh clone. core.hooksPath is per-clone config,
+# which is why this still needs running once.
 #
-# The release workflow triggers on v* tags, so failing here means no tag, no
-# artifacts. This exists because 1.9.0 and 1.9.1 shipped an online build that
-# crashed on launch from every install source while the whole test suite was
-# green: everything else runs against unminified JS, so R8 damage is invisible
-# to it.
+# It also repairs a stale setting: this repo's core.hooksPath pointed at
+# ../GapSign/.git/hooks (the pre-rename path) long after that directory was
+# deleted, so every hook here was silently dead — a pushed release tag ran
+# nothing at all. A relative path cannot rot that way.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$(dirname "$0")/.."
 
-while read -r _local_ref _local_sha remote_ref _remote_sha; do
-  case "$remote_ref" in
-    refs/tags/v[0-9]*.[0-9]*.[0-9]*)
-      echo "==> Release tag ${remote_ref#refs/tags/} — running release smoke test"
-      echo "    (attach a phone with USB debugging; there is no skip)"
-      node "$ROOT/scripts/smoke-release.js" full || {
-        echo ""
-        echo "Refusing to push the release tag: the minified build did not launch."
-        exit 1
-      }
-      ;;
-  esac
-done
+current="$(git config --get core.hooksPath || true)"
+if [ -n "$current" ] && [ "$current" != ".githooks" ]; then
+  echo "Replacing core.hooksPath: $current -> .githooks"
+fi
 
-exit 0
-HOOK_EOF
+git config core.hooksPath .githooks
+chmod +x .githooks/* 2>/dev/null || true
 
-chmod +x "$HOOK"
-echo "Installed $HOOK"
+echo "Hooks active from .githooks:"
+ls -1 .githooks
