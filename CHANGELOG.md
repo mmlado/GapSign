@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-09-04
+
 ## [1.9.2] - 2026-09-04
 
 ### Fixed
@@ -315,7 +317,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.9.2...HEAD
+[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.9.3...HEAD
+[1.9.3]: https://github.com/mmlado/keycard-pal/compare/v1.9.2...v1.9.3
 [1.9.2]: https://github.com/mmlado/keycard-pal/compare/v1.9.1...v1.9.2
 [1.9.1]: https://github.com/mmlado/keycard-pal/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/mmlado/keycard-pal/compare/v1.8.0...v1.9.0
