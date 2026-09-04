@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keycard Pal — Privacy Policy</title>
+  <style>
+    body { max-width: 42rem; margin: 2rem auto; padding: 0 1rem; font-family: system-ui, sans-serif; line-height: 1.6; color: #222; background: #fff; }
+    h1, h2 { line-height: 1.25; }
+    code { background: #f2f2f2; padding: 0.1em 0.3em; border-radius: 3px; }
+    @media (prefers-color-scheme: dark) { body { color: #ddd; background: #111; } code { background: #222; } }
+  </style>
+</head>
+<body>
+  <h1>Keycard Pal — Privacy Policy</h1>
+  <p><em>Last updated: 2026-09-04</em></p>
+
+  <h2>Summary</h2>
+  <p>Keycard Pal collects no personal data. It has no accounts, no analytics, no telemetry,
+  and no advertising. Nothing you do in the app is sent to the developer.</p>
+
+  <h2>What the app is</h2>
+  <p>Keycard Pal is a companion app for the Status Keycard NFC smart card. It signs
+  Ethereum and Bitcoin transactions on the card and communicates with wallet software
+  through QR codes. Private keys never leave the Keycard.</p>
+
+  <h2>Data collection</h2>
+  <p>None. The developer receives no data from the app — no identifiers, no usage
+  statistics, no crash reports, no addresses, no transaction contents.</p>
+
+  <h2>Data stored on your device</h2>
+  <ul>
+    <li>Keycard pairing data, kept in encrypted storage backed by the Android Keystore</li>
+    <li>App preferences (settings toggles), stored locally</li>
+  </ul>
+  <p>This data never leaves your device and is deleted when you uninstall the app.</p>
+
+  <h2>Network access</h2>
+  <p>Every network-using feature is <strong>disabled by default</strong> and used only if
+  you turn it on in Settings. When enabled, the app talks directly to services you choose
+  and configure — none of this traffic passes through, or is visible to, the developer:</p>
+  <ul>
+    <li>ENS name resolution, via an RPC endpoint you configure</li>
+    <li>WalletConnect sessions, via the WalletConnect relay to the dApp you connect</li>
+    <li>Transaction simulation, via Tenderly using your own Tenderly account credentials</li>
+    <li>Token images and clear-signing descriptor downloads, from their public sources</li>
+  </ul>
+  <p>Those services see the requests you send them under their own privacy policies.
+  A separate app variant, Keycard Pal Offline, has no network permission at all.</p>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li><strong>Camera</strong> — scanning QR codes; images are processed on-device and never stored or transmitted</li>
+    <li><strong>NFC</strong> — communicating with the Keycard</li>
+    <li><strong>Internet</strong> — only for the opt-in features listed above</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>The app is a financial tool intended for adults (18+). It is not directed at children.</p>
+
+  <h2>Changes</h2>
+  <p>Changes to this policy will be posted at this address. The source of the app —
+  and of this page — is public at
+  <a href="https://github.com/mmlado/keycard-pal">github.com/mmlado/keycard-pal</a>.</p>
+
+  <h2>Contact</h2>
+  <p>Questions: open an issue at
+  <a href="https://github.com/mmlado/keycard-pal/issues">github.com/mmlado/keycard-pal/issues</a>.</p>
+</body>
+</html>
