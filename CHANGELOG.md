@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-09-04
+
 ### Added
 
 - Privacy policy page, served at fdroid.keycardpal.com/privacy.html alongside the F-Droid repo
@@ -307,7 +309,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.9.1...HEAD
+[1.9.1]: https://github.com/mmlado/keycard-pal/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/mmlado/keycard-pal/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/mmlado/keycard-pal/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/mmlado/keycard-pal/compare/v1.6.2...v1.7.0
