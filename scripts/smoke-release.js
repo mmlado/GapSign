@@ -28,8 +28,12 @@ const gradleTask = flavor === 'offline'
   ? 'assembleOfflineRelease'
   : 'assembleFullRelease';
 
-const adb = (args, opts = {}) =>
-  execFileSync('adb', args, { encoding: 'utf8', ...opts }).trim();
+// execFileSync returns null when stdout is not captured (stdio: 'ignore'),
+// so callers that only care about the exit status still get a string back.
+const adb = (args, opts = {}) => {
+  const out = execFileSync('adb', args, { encoding: 'utf8', ...opts });
+  return out ? out.trim() : '';
+};
 
 function fail(message, detail) {
   console.error(`\n✗ SMOKE FAILED: ${message}`);
