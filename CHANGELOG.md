@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The online build crashed on launch in 1.9.0 and 1.9.1, on every install source. The offline build was unaffected
+
 ## [1.9.1] - 2026-09-04
 
 ### Added

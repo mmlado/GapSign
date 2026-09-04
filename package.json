@@ -14,6 +14,7 @@
     "test": "jest",
     "postinstall": "npx react-native-asset",
     "bump": "node scripts/bump-version.js",
+    "smoke": "node scripts/smoke-release.js",
     "generate:abi": "node scripts/generate-abi.js",
     "generate:selectors": "node scripts/generate-selectors.js",
     "generate:tokens": "node scripts/generate-tokens.js",
