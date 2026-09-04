@@ -140,7 +140,15 @@ android {
     }
     splits {
         abi {
-            enable true
+            // AGP rejects bundle builds while ABI splits are enabled
+            // (https://issuetracker.google.com/402800800), and splits only shape APK
+            // outputs anyway — the AAB carries per-ABI delivery itself. So disable
+            // splits whenever a bundle task was requested; run assemble and bundle
+            // in separate Gradle invocations (as CI does) to get split APKs.
+            def bundleRequested = gradle.startParameter.taskNames.any {
+                it.toLowerCase(Locale.ROOT).contains("bundle")
+            }
+            enable !bundleRequested
             reset()
             include "arm64-v8a", "armeabi-v7a"
             universalApk true

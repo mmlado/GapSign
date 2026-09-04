@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Privacy policy page, served at fdroid.keycardpal.com/privacy.html alongside the F-Droid repo
+- Releases now upload a `com.keycardpal` app bundle to Google Play as a draft; rollout stays manual. The Play copy is re-signed by Play App Signing, so it and the self-signed GitHub/F-Droid builds cannot replace each other — pick one install source
+
 ## [1.9.0] - 2026-09-04
 
 ### Added
