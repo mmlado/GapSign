@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-09-04
+
 ### Added
 
 - Full and pre-hashed EIP-712 sign requests (`dataType=2`) are now signable: the card signs the computed EIP-712 digest — the same digest shown in the review — instead of failing on raw bytes after PIN entry. Unclassifiable payloads now show a "cannot be signed" explanation in the review instead of a Sign button
@@ -300,7 +302,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Signing transaction with Keycard
 - Scan back result QR code into the compatible Ethereum wallet
 
-[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/mmlado/keycard-pal/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/mmlado/keycard-pal/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/mmlado/keycard-pal/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/mmlado/keycard-pal/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/mmlado/keycard-pal/compare/v1.6.1...v1.6.2
