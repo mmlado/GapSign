@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Scanning a SeedQR while importing a recovery phrase now asks for camera permission instead of opening a blank viewfinder, and the keyboard no longer covers the viewfinder
+
 ## [1.9.3] - 2026-09-04
 
 ## [1.9.2] - 2026-09-04
