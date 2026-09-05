@@ -325,6 +325,18 @@ describe('MnemonicScreen', () => {
       expect(screen.getByTestId('camera')).toBeTruthy();
     });
 
+    it('dismisses the keyboard so it does not cover the viewfinder', async () => {
+      // The scanner is an overlay on this screen, so the word input keeps
+      // focus and the keyboard stays up over the camera unless dismissed.
+      const dismiss = jest.spyOn(Keyboard, 'dismiss');
+      renderScreen();
+      await act(async () => {
+        fireEvent.press(screen.getByTestId('scan-seedqr-button'));
+      });
+      expect(dismiss).toHaveBeenCalled();
+      dismiss.mockRestore();
+    });
+
     it('fills word input and dismisses overlay after valid scan', async () => {
       renderScreen();
       await act(async () => {

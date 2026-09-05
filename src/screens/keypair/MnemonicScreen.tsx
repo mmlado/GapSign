@@ -86,6 +86,9 @@ export default function MnemonicScreen({
   }, [loadKey, mode, passphrase, verifyFingerprint, words]);
 
   const handleScanPress = useCallback(() => {
+    // The scanner is an overlay on this screen, so the word input keeps focus
+    // and the keyboard would otherwise stay up covering the viewfinder.
+    Keyboard.dismiss();
     setScanError(null);
     setScanning(true);
   }, []);
