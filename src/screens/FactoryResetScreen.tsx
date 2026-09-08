@@ -42,8 +42,11 @@ export default function FactoryResetScreen({
         <View style={styles.content}>
           <View style={styles.body}>
             <Text style={styles.description}>
-              Factory reset permanently erases key pair on your Keycard. Ensure
-              you back up your seed phrase before proceeding.
+              Factory reset will permanently erase the keypair on your Keycard.
+            </Text>
+            <Text style={styles.description}>
+              Ensure that you have backed up your recovery phrase before
+              proceeding.
             </Text>
           </View>
 
@@ -91,6 +94,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     justifyContent: 'center',
+    gap: 12,
   },
   description: {
     color: theme.colors.onSurfaceMuted,

@@ -111,7 +111,10 @@ describe('FactoryResetScreen', () => {
     it('shows the warning description', () => {
       renderScreen('idle');
       expect(
-        screen.getByText(/Factory reset permanently erases key pair/),
+        screen.getByText(/Factory reset will permanently erase the keypair/),
+      ).toBeTruthy();
+      expect(
+        screen.getByText(/backed up your recovery phrase before proceeding/),
       ).toBeTruthy();
     });
 
