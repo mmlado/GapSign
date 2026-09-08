@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import {
   render,
   screen,
@@ -14,10 +14,12 @@ import type { KeycardPhase } from '../src/hooks/keycard/useKeycardOperation';
 // Mocks
 // ---------------------------------------------------------------------------
 
+const mockInsets = { top: 0, bottom: 0, left: 0, right: 0 };
+
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return {
-    useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+    useSafeAreaInsets: () => mockInsets,
     SafeAreaView: View,
   };
 });
@@ -47,6 +49,7 @@ function makeNfc(
 
 beforeEach(() => {
   onCancel.mockClear();
+  mockInsets.bottom = 0;
 });
 
 function renderSheet(nfc: NFCOperation, showOnDone?: boolean) {
@@ -318,9 +321,7 @@ describe('NFCBottomSheet — Android sheet', () => {
       expect(screen.getByTestId('pin-pad')).toBeTruthy();
 
       rerender(<NFCBottomSheet nfc={makeNfc('nfc')} onCancel={onCancel} />);
-      await waitFor(() =>
-        expect(screen.queryByTestId('pin-pad')).toBeNull(),
-      );
+      await waitFor(() => expect(screen.queryByTestId('pin-pad')).toBeNull());
     });
 
     it('paints no title bar of its own', () => {
@@ -333,6 +334,20 @@ describe('NFCBottomSheet — Android sheet', () => {
       const submitPin = jest.fn();
       renderSheet(makeNfc('pin_entry', { submitPin }));
       expect(screen.queryByLabelText('Go back')).toBeNull();
+    });
+
+    // #282: the overlay is absolutely positioned, so Yoga anchors it to the
+    // host container's padding box and the host's own bottom-inset padding is
+    // covered rather than inherited. The overlay has to pad for the system
+    // navigation bar itself or the bottom keypad row (the 0 key) lands under
+    // it on edge-to-edge Android.
+    it('pads the overlay by the bottom safe-area inset', () => {
+      mockInsets.bottom = 48;
+      renderSheet(makeNfc('pin_entry', { submitPin: jest.fn() }));
+      const style = StyleSheet.flatten(
+        screen.getByTestId('pin-overlay').props.style,
+      );
+      expect(style.paddingBottom).toBe(48);
     });
   });
 
