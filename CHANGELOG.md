@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Scanning a SeedQR while importing a recovery phrase now asks for camera permission instead of opening a blank viewfinder, and the keyboard no longer covers the viewfinder
+- The PIN keypad's bottom row (the 0 key) was hidden behind the Android navigation. The keypad now sits above it in both 3-button and gesture navigation
 
 ## [1.9.3] - 2026-09-04
 

@@ -14,9 +14,6 @@ import theme from '@/theme';
 
 import PinPad from '@/components/PinPad';
 
-/** Slide distance for the PIN pad, matching the Modal's old slide-up. */
-const PIN_SLIDE_DISTANCE = Dimensions.get('window').height;
-
 import type {
   CardPresence,
   KeycardPhase,
@@ -26,6 +23,9 @@ import GenuineWarning from './GenuineWarning';
 import NFCError from './NFCError';
 import NFCSheet from './NFCSheet';
 import PairingPasswordEntry from './PairingPasswordEntry';
+
+/** Slide distance for the PIN pad, matching the Modal's old slide-up. */
+const PIN_SLIDE_DISTANCE = Dimensions.get('window').height;
 
 export type NFCVariant =
   | 'scanning'
@@ -178,9 +178,13 @@ export default function NFCBottomSheet({ nfc, onCancel, showOnDone }: Props) {
           'Enter Keycard PIN' title useKeycardScreen already sets — in place. */}
       {pinMounted && (
         <Animated.View
+          testID="pin-overlay"
           style={[
             styles.pinOverlay,
-            { transform: [{ translateY: pinSlide }] },
+            {
+              paddingBottom: insets.bottom,
+              transform: [{ translateY: pinSlide }],
+            },
           ]}
         >
           <PinPad onComplete={submitPin!} error={pinError ?? undefined} />
@@ -265,8 +269,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     marginBottom: 24,
   },
-  /** Covers the screen's content but not the navigator header. Anchored to the
-   *  container's padding box, so a host screen's own insets are respected. */
+  /** Covers the screen's content but not the navigator header. Yoga anchors an
+   *  absolute child to the parent's padding box, so the host screen's own
+   *  bottom-inset padding is covered rather than inherited: the overlay pads
+   *  for the system navigation bar itself (see the paddingBottom above; #282). */
   pinOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: theme.colors.background,
